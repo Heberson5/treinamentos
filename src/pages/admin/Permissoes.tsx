@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -109,14 +110,121 @@ const permissoesDisponiveis: Permission[] = [
   { id: "financial.plans", nome: "Gerenciar Planos", descricao: "Permite criar e atribuir planos", categoria: "Financeiro", ativo: true, masterOnly: true },
 ]
 
+const PERMISSOES_ROLES_QUERY_KEY = "permissoes-roles"
+
+async function fetchRolesData(empresaId: string | null): Promise<Role[]> {
+  // Fetch all roles with user counts
+  const { data: rolesData } = await supabase
+    .from("usuario_roles")
+    .select("role, usuario_id")
+
+  const roleCounts: Record<string, number> = {}
+  if (rolesData) {
+    for (const r of rolesData) {
+      roleCounts[r.role] = (roleCounts[r.role] || 0) + 1
+    }
+  }
+
+  // Buscar permissões customizadas salvas no banco
+  let permsQuery = supabase.from("permissoes_role").select("role, permissao_id, ativo")
+  if (empresaId) {
+    permsQuery = permsQuery.or(`empresa_id.eq.${empresaId},empresa_id.is.null`)
+  } else {
+    permsQuery = permsQuery.is("empresa_id", null)
+  }
+  const { data: permsCustom } = await permsQuery
+
+  const customByRole: Record<TipoRoleDb, string[] | null> = {
+    master: null, admin: null, instrutor: null, usuario: null,
+  }
+  if (permsCustom && permsCustom.length > 0) {
+    const seen = new Set<TipoRoleDb>()
+    permsCustom.forEach((row: any) => seen.add(row.role))
+    seen.forEach((r) => { customByRole[r] = [] })
+    permsCustom.forEach((row: any) => {
+      if (row.ativo) customByRole[row.role as TipoRoleDb]!.push(row.permissao_id)
+    })
+  }
+
+  const padraoAdmin = [
+    "trainings.view","trainings.create","trainings.edit","trainings.delete","trainings.manage","trainings.assign","trainings.certificates",
+    "catalog.view","catalog.manage",
+    "users.view","users.create","users.edit","users.delete","users.roles","users.import","users.progress",
+    "reports.view","reports.export","reports.advanced","reports.department","reports.compliance",
+    "departments.view","departments.create","departments.edit","departments.delete",
+    "integrations.view","integrations.configure","integrations.ai",
+    "system.settings","system.notifications",
+  ]
+  const padraoInstrutor = [
+    "trainings.view","trainings.create","trainings.edit","trainings.assign","trainings.certificates",
+    "catalog.view",
+    "users.view","users.progress",
+    "reports.view","reports.export","reports.department",
+    "departments.view",
+    "integrations.ai",
+  ]
+  const padraoUsuario = ["trainings.view","catalog.view"]
+
+  return [
+    {
+      id: 1,
+      nome: "Master",
+      descricao: "Acesso total ao sistema - gerencia todas as empresas e configurações críticas",
+      cor: "bg-yellow-500",
+      permissoes: permissoesDisponiveis.map(p => p.id),
+      usuariosCount: roleCounts["master"] || 0,
+      ativo: true,
+      isMasterRole: true,
+    },
+    {
+      id: 2,
+      nome: "Administrador",
+      descricao: "Gestão completa da empresa - usuários, treinamentos, relatórios e configurações",
+      cor: "bg-blue-500",
+      permissoes: customByRole.admin ?? padraoAdmin,
+      usuariosCount: roleCounts["admin"] || 0,
+      ativo: true,
+    },
+    {
+      id: 3,
+      nome: "Instrutor",
+      descricao: "Criação e gestão de treinamentos - pode criar conteúdo e acompanhar progresso dos alunos",
+      cor: "bg-green-500",
+      permissoes: customByRole.instrutor ?? padraoInstrutor,
+      usuariosCount: roleCounts["instrutor"] || 0,
+      ativo: true,
+    },
+    {
+      id: 4,
+      nome: "Usuário",
+      descricao: "Acesso para realizar treinamentos - visualiza conteúdos e certificados próprios",
+      cor: "bg-gray-500",
+      permissoes: customByRole.usuario ?? padraoUsuario,
+      usuariosCount: roleCounts["usuario"] || 0,
+      ativo: true,
+    },
+  ]
+}
+
 export default function Permissoes() {
   const { user } = useAuth()
   const isMaster = user?.role === "master"
-  const [roles, setRoles] = useState<Role[]>([])
+  const queryClient = useQueryClient()
+  const empresaId = (user as any)?.empresa_id ?? null
+
+  const { data: roles = [], isLoading } = useQuery({
+    queryKey: [PERMISSOES_ROLES_QUERY_KEY, empresaId],
+    queryFn: () => fetchRolesData(empresaId),
+    enabled: !!user,
+  })
+
+  const setRoles = (updater: (prev: Role[]) => Role[]) => {
+    queryClient.setQueryData<Role[]>([PERMISSOES_ROLES_QUERY_KEY, empresaId], (prev) => updater(prev || []))
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
   const [newRole, setNewRole] = useState<{
@@ -131,127 +239,17 @@ export default function Permissoes() {
     permissoes: []
   })
 
-  // Fetch real data from database
+  // Realtime subscription for role changes
   useEffect(() => {
-    const fetchRoles = async () => {
-      setIsLoading(true)
-      try {
-        const empresaId = (user as any)?.empresa_id ?? null
-
-        // Fetch all roles with user counts
-        const { data: rolesData } = await supabase
-          .from("usuario_roles")
-          .select("role, usuario_id")
-
-        const roleCounts: Record<string, number> = {}
-        if (rolesData) {
-          for (const r of rolesData) {
-            roleCounts[r.role] = (roleCounts[r.role] || 0) + 1
-          }
-        }
-
-        // Buscar permissões customizadas salvas no banco
-        let permsQuery = supabase.from("permissoes_role").select("role, permissao_id, ativo")
-        if (empresaId) {
-          permsQuery = permsQuery.or(`empresa_id.eq.${empresaId},empresa_id.is.null`)
-        } else {
-          permsQuery = permsQuery.is("empresa_id", null)
-        }
-        const { data: permsCustom } = await permsQuery
-
-        const customByRole: Record<TipoRoleDb, string[] | null> = {
-          master: null, admin: null, instrutor: null, usuario: null,
-        }
-        if (permsCustom && permsCustom.length > 0) {
-          const seen = new Set<TipoRoleDb>()
-          permsCustom.forEach((row: any) => seen.add(row.role))
-          seen.forEach((r) => { customByRole[r] = [] })
-          permsCustom.forEach((row: any) => {
-            if (row.ativo) customByRole[row.role as TipoRoleDb]!.push(row.permissao_id)
-          })
-        }
-
-        const padraoAdmin = [
-          "trainings.view","trainings.create","trainings.edit","trainings.delete","trainings.manage","trainings.assign","trainings.certificates",
-          "catalog.view","catalog.manage",
-          "users.view","users.create","users.edit","users.delete","users.roles","users.import","users.progress",
-          "reports.view","reports.export","reports.advanced","reports.department","reports.compliance",
-          "departments.view","departments.create","departments.edit","departments.delete",
-          "integrations.view","integrations.configure","integrations.ai",
-          "system.settings","system.notifications",
-        ]
-        const padraoInstrutor = [
-          "trainings.view","trainings.create","trainings.edit","trainings.assign","trainings.certificates",
-          "catalog.view",
-          "users.view","users.progress",
-          "reports.view","reports.export","reports.department",
-          "departments.view",
-          "integrations.ai",
-        ]
-        const padraoUsuario = ["trainings.view","catalog.view"]
-
-        const builtRoles: Role[] = [
-          {
-            id: 1,
-            nome: "Master",
-            descricao: "Acesso total ao sistema - gerencia todas as empresas e configurações críticas",
-            cor: "bg-yellow-500",
-            permissoes: permissoesDisponiveis.map(p => p.id),
-            usuariosCount: roleCounts["master"] || 0,
-            ativo: true,
-            isMasterRole: true,
-          },
-          {
-            id: 2,
-            nome: "Administrador",
-            descricao: "Gestão completa da empresa - usuários, treinamentos, relatórios e configurações",
-            cor: "bg-blue-500",
-            permissoes: customByRole.admin ?? padraoAdmin,
-            usuariosCount: roleCounts["admin"] || 0,
-            ativo: true,
-          },
-          {
-            id: 3,
-            nome: "Instrutor",
-            descricao: "Criação e gestão de treinamentos - pode criar conteúdo e acompanhar progresso dos alunos",
-            cor: "bg-green-500",
-            permissoes: customByRole.instrutor ?? padraoInstrutor,
-            usuariosCount: roleCounts["instrutor"] || 0,
-            ativo: true,
-          },
-          {
-            id: 4,
-            nome: "Usuário",
-            descricao: "Acesso para realizar treinamentos - visualiza conteúdos e certificados próprios",
-            cor: "bg-gray-500",
-            permissoes: customByRole.usuario ?? padraoUsuario,
-            usuariosCount: roleCounts["usuario"] || 0,
-            ativo: true,
-          },
-        ]
-        setRoles(builtRoles)
-      } catch (error) {
-        console.error("Erro ao buscar dados de papéis:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchRoles()
-
-    // Realtime subscription for role changes
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: [PERMISSOES_ROLES_QUERY_KEY] })
     const channel = supabase
       .channel('permissions-roles-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'usuario_roles' }, () => {
-        fetchRoles()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'permissoes_role' }, () => {
-        fetchRoles()
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'usuario_roles' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'permissoes_role' }, invalidate)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user])
+  }, [queryClient])
 
 
   // Filter permissions: admins should not see masterOnly permissions
