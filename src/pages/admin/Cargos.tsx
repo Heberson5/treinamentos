@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,74 +37,55 @@ interface Empresa {
   nome_fantasia: string | null
 }
 
+interface CargosData {
+  cargos: Cargo[]
+  empresas: Empresa[]
+}
+
+async function fetchCargosData(): Promise<CargosData> {
+  const [{ data: cargosData, error: cargosError }, { data: empresasData, error: empresasError }] = await Promise.all([
+    supabase.from("cargos").select("*").order("nome"),
+    supabase.from("empresas").select("id, nome, nome_fantasia").eq("ativo", true),
+  ])
+
+  if (cargosError) throw cargosError
+  if (empresasError) console.error("Erro ao carregar empresas:", empresasError)
+
+  const cargosList: Cargo[] = (cargosData || []).map((cargo) => {
+    const empresa = empresasData?.find((e) => e.id === cargo.empresa_id)
+    return {
+      ...cargo,
+      empresa_nome: empresa?.nome_fantasia || empresa?.nome || "Global (todas empresas)"
+    }
+  })
+
+  return { cargos: cargosList, empresas: empresasData || [] }
+}
+
 export default function Cargos() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { isMaster } = useEmpresaFilter()
-  
-  const [cargos, setCargos] = useState<Cargo[]>([])
-  const [empresas, setEmpresas] = useState<Empresa[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["cargos", "admin-all"],
+    queryFn: fetchCargosData,
+  })
+  const cargos = data?.cargos ?? []
+  const empresas = data?.empresas ?? []
+
+  const invalidateCargos = () => queryClient.invalidateQueries({ queryKey: ["cargos"] })
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingCargo, setEditingCargo] = useState<Cargo | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
 
   const [newCargo, setNewCargo] = useState({
     nome: "",
     descricao: "",
     empresa_id: ""
   })
-
-  // Carregar dados
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        // Carregar cargos
-        const { data: cargosData, error: cargosError } = await supabase
-          .from("cargos")
-          .select("*")
-          .order("nome")
-
-        if (cargosError) {
-          console.error("Erro ao carregar cargos:", cargosError)
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os cargos.",
-            variant: "destructive"
-          })
-        }
-
-        // Carregar empresas
-        const { data: empresasData, error: empresasError } = await supabase
-          .from("empresas")
-          .select("id, nome, nome_fantasia")
-          .eq("ativo", true)
-
-        if (empresasError) {
-          console.error("Erro ao carregar empresas:", empresasError)
-        }
-
-        if (empresasData) setEmpresas(empresasData)
-
-        // Montar lista de cargos com nome da empresa
-        const cargosList: Cargo[] = (cargosData || []).map((cargo) => {
-          const empresa = empresasData?.find((e) => e.id === cargo.empresa_id)
-          return {
-            ...cargo,
-            empresa_nome: empresa?.nome_fantasia || empresa?.nome || "Global (todas empresas)"
-          }
-        })
-
-        setCargos(cargosList)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadData()
-  }, [toast])
 
   const resetForm = () => {
     setNewCargo({
@@ -122,7 +104,30 @@ export default function Cargos() {
     setIsCreateOpen(true)
   }
 
-  const handleCreate = async () => {
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("cargos")
+        .insert({
+          nome: newCargo.nome.trim(),
+          descricao: newCargo.descricao.trim() || null,
+          empresa_id: newCargo.empresa_id || null
+        })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      setIsCreateOpen(false)
+      resetForm()
+      toast({ title: "Cargo criado!", description: "O cargo foi criado com sucesso." })
+      invalidateCargos()
+    },
+    onError: (error) => {
+      console.error("Erro:", error)
+      toast({ title: "Erro", description: "Não foi possível criar o cargo.", variant: "destructive" })
+    }
+  })
+
+  const handleCreate = () => {
     if (!newCargo.nome.trim()) {
       toast({
         title: "Campo obrigatório",
@@ -131,52 +136,7 @@ export default function Cargos() {
       })
       return
     }
-
-    setIsSaving(true)
-
-    try {
-      const { data, error } = await supabase
-        .from("cargos")
-        .insert({
-          nome: newCargo.nome.trim(),
-          descricao: newCargo.descricao.trim() || null,
-          empresa_id: newCargo.empresa_id || null
-        })
-        .select()
-        .single()
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível criar o cargo.",
-          variant: "destructive"
-        })
-        return
-      }
-
-      const empresa = empresas.find((e) => e.id === newCargo.empresa_id)
-      setCargos([...cargos, {
-        ...data,
-        empresa_nome: empresa?.nome_fantasia || empresa?.nome || "Global (todas empresas)"
-      }])
-
-      setIsCreateOpen(false)
-      resetForm()
-      
-      toast({
-        title: "Cargo criado!",
-        description: "O cargo foi criado com sucesso."
-      })
-    } catch (error) {
-      console.error("Erro:", error)
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao criar o cargo.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSaving(false)
-    }
+    createMutation.mutate()
   }
 
   const handleEdit = (cargo: Cargo) => {
@@ -189,19 +149,9 @@ export default function Cargos() {
     setIsCreateOpen(true)
   }
 
-  const handleUpdate = async () => {
-    if (!editingCargo || !newCargo.nome.trim()) {
-      toast({
-        title: "Campo obrigatório",
-        description: "O nome do cargo é obrigatório.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    setIsSaving(true)
-
-    try {
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingCargo) return
       const { error } = await supabase
         .from("cargos")
         .update({
@@ -210,98 +160,62 @@ export default function Cargos() {
           empresa_id: newCargo.empresa_id || null
         })
         .eq("id", editingCargo.id)
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível atualizar o cargo.",
-          variant: "destructive"
-        })
-        return
-      }
-
-      const empresa = empresas.find((e) => e.id === newCargo.empresa_id)
-      setCargos(cargos.map(c => 
-        c.id === editingCargo.id 
-          ? { 
-              ...c, 
-              nome: newCargo.nome.trim(),
-              descricao: newCargo.descricao.trim() || null,
-              empresa_id: newCargo.empresa_id || null,
-              empresa_nome: empresa?.nome_fantasia || empresa?.nome || "Global (todas empresas)"
-            }
-          : c
-      ))
-      
+      if (error) throw error
+    },
+    onSuccess: () => {
       setIsCreateOpen(false)
       resetForm()
-      
-      toast({
-        title: "Cargo atualizado!",
-        description: "O cargo foi atualizado com sucesso."
-      })
-    } catch (error) {
+      toast({ title: "Cargo atualizado!", description: "O cargo foi atualizado com sucesso." })
+      invalidateCargos()
+    },
+    onError: (error) => {
       console.error("Erro:", error)
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao atualizar o cargo.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSaving(false)
+      toast({ title: "Erro", description: "Não foi possível atualizar o cargo.", variant: "destructive" })
     }
-  }
+  })
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("cargos")
-      .delete()
-      .eq("id", id)
-
-    if (error) {
+  const handleUpdate = () => {
+    if (!editingCargo || !newCargo.nome.trim()) {
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir o cargo.",
+        title: "Campo obrigatório",
+        description: "O nome do cargo é obrigatório.",
         variant: "destructive"
       })
       return
     }
-
-    setCargos(cargos.filter(c => c.id !== id))
-    toast({
-      title: "Cargo excluído",
-      description: "O cargo foi removido com sucesso."
-    })
+    updateMutation.mutate()
   }
 
-  const toggleStatus = async (cargo: Cargo) => {
-    const novoStatus = !cargo.ativo
-
-    const { error } = await supabase
-      .from("cargos")
-      .update({ ativo: novoStatus })
-      .eq("id", cargo.id)
-
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível alterar o status.",
-        variant: "destructive"
-      })
-      return
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("cargos").delete().eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({ title: "Cargo excluído", description: "O cargo foi removido com sucesso." })
+      invalidateCargos()
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Não foi possível excluir o cargo.", variant: "destructive" })
     }
+  })
 
-    setCargos(cargos.map(c => 
-      c.id === cargo.id 
-        ? { ...c, ativo: novoStatus }
-        : c
-    ))
+  const toggleStatusMutation = useMutation({
+    mutationFn: async (cargo: Cargo) => {
+      const { error } = await supabase.from("cargos").update({ ativo: !cargo.ativo }).eq("id", cargo.id)
+      if (error) throw error
+      return !cargo.ativo
+    },
+    onSuccess: (novoStatus) => {
+      toast({ title: "Status atualizado", description: `Cargo ${novoStatus ? "ativado" : "desativado"} com sucesso.` })
+      invalidateCargos()
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Não foi possível alterar o status.", variant: "destructive" })
+    }
+  })
 
-    toast({
-      title: "Status atualizado",
-      description: `Cargo ${novoStatus ? "ativado" : "desativado"} com sucesso.`
-    })
-  }
+  const isSaving = createMutation.isPending || updateMutation.isPending
 
   const filteredCargos = cargos.filter(cargo =>
     cargo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -528,7 +442,7 @@ export default function Cargos() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => toggleStatus(cargo)}
+                      onClick={() => toggleStatusMutation.mutate(cargo)}
                     >
                       {cargo.ativo ? "Desativar" : "Ativar"}
                     </Button>
@@ -543,7 +457,7 @@ export default function Cargos() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleDelete(cargo.id)}
+                        onClick={() => deleteMutation.mutate(cargo.id)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />

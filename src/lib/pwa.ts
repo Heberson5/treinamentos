@@ -1,8 +1,8 @@
 /**
  * Registra o service worker do PWA.
- * IMPORTANTE: NÃO registramos dentro de iframes (preview do Lovable) nem em hosts de preview,
+ * IMPORTANTE: NÃO registramos dentro de iframes nem em ambiente local de desenvolvimento,
  * para evitar cache stale e bloqueio de navegação durante o desenvolvimento.
- * Em produção (URL .lovable.app publicada ou domínio próprio), o SW é registrado.
+ * Em produção (domínio próprio), o SW é registrado normalmente.
  */
 export function registerServiceWorker() {
   if (typeof window === "undefined") return;
@@ -18,8 +18,6 @@ export function registerServiceWorker() {
 
   const hostname = window.location.hostname;
   const isPreviewHost =
-    hostname.includes("id-preview--") ||
-    hostname.includes("lovableproject.com") ||
     hostname === "localhost" ||
     hostname === "127.0.0.1";
 

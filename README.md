@@ -1,73 +1,64 @@
-# Welcome to your Lovable project
+# Sauberlich System — Plataforma de Treinamentos
 
-## Project info
+Plataforma corporativa de treinamentos: catálogo de cursos, avaliações, certificados, relatórios e gestão multi-empresa (master / admin / instrutor / usuário).
 
-**URL**: https://lovable.dev/projects/be33942b-87bc-4682-afb5-07d6770a6004
+## Stack
 
-## How can I edit this code?
+- [Vite](https://vitejs.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [React](https://react.dev/)
+- [shadcn-ui](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
+- [Supabase](https://supabase.com/) (banco de dados, autenticação, storage e edge functions)
 
-There are several ways of editing your application.
+## Rodando localmente
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/be33942b-87bc-4682-afb5-07d6770a6004) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Pré-requisito: Node.js 18+ (ou [Bun](https://bun.sh/)).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 1. Clone o repositório
+git clone https://github.com/Heberson5/treinamentos.git
+cd treinamentos
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Instale as dependências
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Copie o arquivo de variáveis de ambiente e preencha os valores
+cp .env.example .env
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Variáveis de ambiente
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Veja [.env.example](.env.example) para a lista de variáveis necessárias (URL e chave pública do projeto Supabase).
 
-**Use GitHub Codespaces**
+## Scripts
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera o build de produção em `dist/` |
+| `npm run preview` | Serve o build de produção localmente |
+| `npm run lint` | Roda o ESLint |
+| `npm run test` | Roda os testes automatizados |
 
-## What technologies are used for this project?
+## Estrutura do projeto
 
-This project is built with:
+```
+src/
+├── components/   # Componentes reutilizáveis (auth, training, layout, ui, ...)
+├── contexts/     # Contextos React (auth, empresa, treinamentos, ...)
+├── hooks/        # Hooks customizados
+├── integrations/ # Cliente e tipos do Supabase
+├── lib/          # Utilitários (sanitização, exportação, PWA, ...)
+├── pages/        # Páginas da aplicação, incluindo /admin
+└── services/     # Integrações com serviços externos
+supabase/
+├── functions/    # Edge functions
+└── migrations/   # Migrations SQL do banco
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Deploy
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/be33942b-87bc-4682-afb5-07d6770a6004) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+O projeto é uma SPA estática (build via Vite) que pode ser publicada em qualquer hosting de arquivos estáticos (Vercel, Netlify, Cloudflare Pages, etc.), com o backend hospedado no Supabase.

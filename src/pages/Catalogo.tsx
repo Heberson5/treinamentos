@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -42,126 +43,131 @@ interface TrainingCatalog {
   thumbnail: string
 }
 
+interface FetchCatalogoParams {
+  userId: string | undefined
+  empresaFilter: string | null
+}
+
+async function fetchCatalogo({ userId, empresaFilter }: FetchCatalogoParams): Promise<TrainingCatalog[]> {
+  // Buscar treinamentos publicados
+  let query = supabase
+    .from("treinamentos")
+    .select(`*`)
+    .eq("publicado", true)
+
+  if (empresaFilter) {
+    query = query.eq("empresa_id", empresaFilter)
+  }
+
+  const { data: treinamentos, error } = await query
+
+  if (error) throw error
+
+  // Buscar progresso do usuário para filtrar já selecionados
+  let selectedIds: string[] = []
+  if (userId) {
+    const { data: progressData } = await supabase
+      .from("progresso_treinamentos")
+      .select("treinamento_id")
+      .eq("usuario_id", userId)
+
+    selectedIds = (progressData || []).map(p => p.treinamento_id)
+  }
+
+  // Filtrar treinamentos já selecionados
+  const availableTrainings = (treinamentos || []).filter(t => !selectedIds.includes(t.id))
+
+  // Buscar instrutores
+  const instrutorIds = (treinamentos || []).map(t => t.instrutor_id).filter(Boolean)
+  const { data: instrutores } = await supabase
+    .from("perfis")
+    .select("id, nome")
+    .in("id", instrutorIds.length > 0 ? instrutorIds : [''])
+
+  // Buscar contagem de participantes por treinamento
+  const { data: progressoData } = await supabase
+    .from("progresso_treinamentos")
+    .select("treinamento_id, nota_avaliacao")
+
+  // Processar dados
+  return availableTrainings.map(training => {
+    const trainingProgress = (progressoData || []).filter(p => p.treinamento_id === training.id)
+    const participantes = trainingProgress.length
+    const avgRating = trainingProgress.length > 0
+      ? trainingProgress.reduce((acc, p) => acc + (p.nota_avaliacao || 4.5), 0) / trainingProgress.length
+      : 4.5
+
+    const createdAt = new Date(training.criado_em)
+    const isNew = (new Date().getTime() - createdAt.getTime()) < 30 * 24 * 60 * 60 * 1000 // 30 dias
+
+    const formatDuration = (minutes: number | null) => {
+      if (!minutes) return "N/A"
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      if (hours > 0) return `${hours}h ${mins}min`
+      return `${mins}min`
+    }
+
+    const getNivel = (nivel: string | null): "basico" | "intermediario" | "avancado" => {
+      if (nivel === "intermediario" || nivel === "avancado") return nivel
+      return "basico"
+    }
+
+    const instrutor = (instrutores || []).find(i => i.id === training.instrutor_id)
+
+    return {
+      id: training.id,
+      titulo: training.titulo,
+      descricao: training.descricao || "",
+      categoria: training.categoria || "Geral",
+      nivel: getNivel(training.nivel),
+      duracao: formatDuration(training.duracao_minutos),
+      duracaoMinutos: training.duracao_minutos || 0,
+      rating: Math.round(avgRating * 10) / 10,
+      participantes,
+      instrutor: instrutor?.nome || "Não definido",
+      tags: training.categoria ? [training.categoria] : [],
+      popular: participantes > 10,
+      novo: isNew,
+      thumbnail: training.thumbnail_url || DEFAULT_COVER_IMAGE
+    }
+  })
+}
+
 export default function Catalogo() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { empresaSelecionada, isMaster } = useEmpresaFilter()
   const { toast } = useToast()
-  
+  const queryClient = useQueryClient()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("todas")
   const [levelFilter, setLevelFilter] = useState("todos")
-  const [isLoading, setIsLoading] = useState(true)
-  const [trainings, setTrainings] = useState<TrainingCatalog[]>([])
-  const [isStarting, setIsStarting] = useState<string | null>(null)
+
+  const empresaFilter = isMaster && empresaSelecionada && empresaSelecionada !== "todas"
+    ? empresaSelecionada
+    : null
+
+  const catalogoQueryKey = ["catalogo", user?.id, empresaFilter] as const
+
+  const { data: trainings = [], isLoading, error: catalogoError } = useQuery({
+    queryKey: catalogoQueryKey,
+    queryFn: () => fetchCatalogo({ userId: user?.id, empresaFilter }),
+  })
 
   useEffect(() => {
-    const fetchTrainings = async () => {
-      setIsLoading(true)
-      try {
-        const empresaFilter = isMaster && empresaSelecionada && empresaSelecionada !== "todas" 
-          ? empresaSelecionada 
-          : null
-
-        // Buscar treinamentos publicados
-        let query = supabase
-          .from("treinamentos")
-          .select(`*`)
-          .eq("publicado", true)
-
-        if (empresaFilter) {
-          query = query.eq("empresa_id", empresaFilter)
-        }
-
-        const { data: treinamentos, error } = await query
-
-        if (error) throw error
-
-        // Buscar progresso do usuário para filtrar já selecionados
-        let selectedIds: string[] = []
-        if (user) {
-          const { data: progressData } = await supabase
-            .from("progresso_treinamentos")
-            .select("treinamento_id")
-            .eq("usuario_id", user.id)
-          
-          selectedIds = (progressData || []).map(p => p.treinamento_id)
-        }
-
-        // Filtrar treinamentos já selecionados
-        const availableTrainings = (treinamentos || []).filter(t => !selectedIds.includes(t.id))
-
-        // Buscar instrutores
-        const instrutorIds = (treinamentos || []).map(t => t.instrutor_id).filter(Boolean)
-        const { data: instrutores } = await supabase
-          .from("perfis")
-          .select("id, nome")
-          .in("id", instrutorIds.length > 0 ? instrutorIds : [''])
-
-        // Buscar contagem de participantes por treinamento
-        const { data: progressoData } = await supabase
-          .from("progresso_treinamentos")
-          .select("treinamento_id, nota_avaliacao")
-
-        // Processar dados
-        const processedTrainings: TrainingCatalog[] = availableTrainings.map(training => {
-          const trainingProgress = (progressoData || []).filter(p => p.treinamento_id === training.id)
-          const participantes = trainingProgress.length
-          const avgRating = trainingProgress.length > 0
-            ? trainingProgress.reduce((acc, p) => acc + (p.nota_avaliacao || 4.5), 0) / trainingProgress.length
-            : 4.5
-
-          const createdAt = new Date(training.criado_em)
-          const isNew = (new Date().getTime() - createdAt.getTime()) < 30 * 24 * 60 * 60 * 1000 // 30 dias
-
-          const formatDuration = (minutes: number | null) => {
-            if (!minutes) return "N/A"
-            const hours = Math.floor(minutes / 60)
-            const mins = minutes % 60
-            if (hours > 0) return `${hours}h ${mins}min`
-            return `${mins}min`
-          }
-
-          const getNivel = (nivel: string | null): "basico" | "intermediario" | "avancado" => {
-            if (nivel === "intermediario" || nivel === "avancado") return nivel
-            return "basico"
-          }
-
-          const instrutor = (instrutores || []).find(i => i.id === training.instrutor_id)
-
-          return {
-            id: training.id,
-            titulo: training.titulo,
-            descricao: training.descricao || "",
-            categoria: training.categoria || "Geral",
-            nivel: getNivel(training.nivel),
-            duracao: formatDuration(training.duracao_minutos),
-            duracaoMinutos: training.duracao_minutos || 0,
-            rating: Math.round(avgRating * 10) / 10,
-            participantes,
-            instrutor: instrutor?.nome || "Não definido",
-            tags: training.categoria ? [training.categoria] : [],
-            popular: participantes > 10,
-            novo: isNew,
-            thumbnail: training.thumbnail_url || DEFAULT_COVER_IMAGE
-          }
-        })
-
-        setTrainings(processedTrainings)
-      } catch (error) {
-        console.error("Erro ao buscar treinamentos:", error)
-        toast({
-          title: "Erro ao carregar treinamentos",
-          description: "Não foi possível carregar o catálogo de treinamentos.",
-          variant: "destructive"
-        })
-      } finally {
-        setIsLoading(false)
-      }
+    if (catalogoError) {
+      console.error("Erro ao buscar treinamentos:", catalogoError)
+      toast({
+        title: "Erro ao carregar treinamentos",
+        description: "Não foi possível carregar o catálogo de treinamentos.",
+        variant: "destructive"
+      })
     }
+  }, [catalogoError, toast])
 
-    fetchTrainings()
-  }, [empresaSelecionada, isMaster, toast])
+  const [isStarting, setIsStarting] = useState<string | null>(null)
 
   const getNivelColor = (nivel: string) => {
     switch (nivel) {
@@ -225,9 +231,12 @@ export default function Catalogo() {
         title: "Treinamento selecionado!",
         description: "O treinamento foi adicionado a Meus Treinamentos."
       })
-      
-      // Remove from catalog list
-      setTrainings(prev => prev.filter(t => t.id !== trainingId))
+
+      // Remove from catalog list e invalida "Meus Treinamentos" para refletir a seleção
+      queryClient.setQueryData<TrainingCatalog[]>(catalogoQueryKey, prev =>
+        (prev || []).filter(t => t.id !== trainingId)
+      )
+      queryClient.invalidateQueries({ queryKey: ["treinamentos"] })
     } catch (error) {
       console.error("Erro ao selecionar treinamento:", error)
       toast({

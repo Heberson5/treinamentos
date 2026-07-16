@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Users, Zap, Crown, Building2, BookOpen } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 
@@ -128,69 +129,60 @@ interface PlansContextType {
 
 const PlansContext = createContext<PlansContextType | undefined>(undefined)
 
+// Converter recursos do banco para o formato do sistema
+function converterRecursos(recursosDB: RecursoDB[] | null): RecursoPlano[] {
+  if (!recursosDB || !Array.isArray(recursosDB)) return []
+
+  return recursosDB.map(r => ({
+    recursoId: r.id as RecursoId,
+    habilitado: r.habilitado ?? true,
+    descricaoCustomizada: r.descricao
+  }))
+}
+
+async function fetchPlanos(): Promise<Plano[]> {
+  const { data, error } = await supabase
+    .from("planos")
+    .select("*")
+    // IMPORTANTE: buscamos TODOS os planos e deixamos o filtro de ativos
+    // apenas para a página pública (planosAtivos)
+    .order("ordem", { ascending: true })
+
+  if (error) throw error
+
+  return (data || []).map(p => ({
+    id: p.id,
+    nome: p.nome,
+    preco: Number(p.preco),
+    periodo: p.periodo || "/mês",
+    descricao: p.descricao || "",
+    limiteUsuarios: p.limite_usuarios,
+    limiteTreinamentos: p.limite_treinamentos,
+    limiteArmazenamentoGb: p.limite_armazenamento_gb,
+    recursos: converterRecursos(p.recursos as unknown as RecursoDB[]),
+    popular: p.popular,
+    icon: p.icone || "Users",
+    cor: p.cor || "bg-blue-500",
+    ativo: p.ativo
+  }))
+}
+
+const PLANOS_QUERY_KEY = ["planos"] as const
+
 export function PlansProvider({ children }: { children: ReactNode }) {
-  const [planos, setPlanos] = useState<Plano[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [descontoAnual, setDescontoAnual] = useState<ConfiguracaoDescontoAnual>({
     habilitado: true,
     percentual: 15 // 15% de desconto padrão
   })
 
-  // Converter recursos do banco para o formato do sistema
-  const converterRecursos = (recursosDB: RecursoDB[] | null): RecursoPlano[] => {
-    if (!recursosDB || !Array.isArray(recursosDB)) return []
-    
-    return recursosDB.map(r => ({
-      recursoId: r.id as RecursoId,
-      habilitado: r.habilitado ?? true,
-      descricaoCustomizada: r.descricao
-    }))
-  }
-
-  // Carregar planos do banco de dados
-  const carregarPlanos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("planos")
-        .select("*")
-        // IMPORTANTE: buscamos TODOS os planos e deixamos o filtro de ativos
-        // apenas para a página pública (planosAtivos)
-        .order("ordem", { ascending: true })
-
-      if (error) {
-        console.error("Erro ao carregar planos:", error)
-        return
-      }
-
-      if (data) {
-        const planosFormatados: Plano[] = data.map(p => ({
-          id: p.id,
-          nome: p.nome,
-          preco: Number(p.preco),
-          periodo: p.periodo || "/mês",
-          descricao: p.descricao || "",
-          limiteUsuarios: p.limite_usuarios,
-          limiteTreinamentos: p.limite_treinamentos,
-          limiteArmazenamentoGb: p.limite_armazenamento_gb,
-          recursos: converterRecursos(p.recursos as unknown as RecursoDB[]),
-          popular: p.popular,
-          icon: p.icone || "Users",
-          cor: p.cor || "bg-blue-500",
-          ativo: p.ativo
-        }))
-        
-        setPlanos(planosFormatados)
-      }
-    } catch (error) {
-      console.error("Erro ao carregar planos:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const { data: planos = [], isLoading, refetch } = useQuery({
+    queryKey: PLANOS_QUERY_KEY,
+    queryFn: fetchPlanos,
+    staleTime: 30_000,
+  })
 
   useEffect(() => {
-    carregarPlanos()
-
     // Realtime: refletir ativação/desativação de planos imediatamente
     // na landing pública e em qualquer tela que consuma usePlans()
     const channel = supabase
@@ -198,12 +190,12 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "planos" },
-        () => { carregarPlanos() }
+        () => { queryClient.invalidateQueries({ queryKey: PLANOS_QUERY_KEY }) }
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [queryClient])
 
 
   const planosAtivos = planos.filter(p => p.ativo)
@@ -237,28 +229,23 @@ export function PlansProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      setPlanos(prev => prev.map(p => 
-        p.id === id ? { ...p, ...dados } : p
-      ))
+      queryClient.setQueryData<Plano[]>(PLANOS_QUERY_KEY, prev =>
+        (prev || []).map(p => p.id === id ? { ...p, ...dados } : p)
+      )
     } catch (error) {
       console.error("Erro ao atualizar plano:", error)
     }
   }
 
   const atualizarRecursoPlano = async (planoId: string, recursoId: RecursoId, dados: Partial<RecursoPlano>) => {
-    setPlanos(prev => {
-      const plano = prev.find(p => p.id === planoId)
-      if (!plano) return prev
+    const plano = queryClient.getQueryData<Plano[]>(PLANOS_QUERY_KEY)?.find(p => p.id === planoId)
+    if (!plano) return
 
-      const novosRecursos = plano.recursos.map(r => 
-        r.recursoId === recursoId ? { ...r, ...dados } : r
-      )
-      
-      // Chamamos a função de atualização persistente
-      atualizarPlano(planoId, { recursos: novosRecursos })
-      
-      return prev.map(p => p.id === planoId ? { ...p, recursos: novosRecursos } : p)
-    })
+    const novosRecursos = plano.recursos.map(r =>
+      r.recursoId === recursoId ? { ...r, ...dados } : r
+    )
+
+    await atualizarPlano(planoId, { recursos: novosRecursos })
   }
 
   const getPlanoById = (id: string) => planos.find(p => p.id === id)
@@ -310,7 +297,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       getLimiteRecurso,
       getRecursosHabilitados,
       calcularPrecoAnual,
-      recarregarPlanos: carregarPlanos
+      recarregarPlanos: async () => { await refetch() }
     }}>
       {children}
     </PlansContext.Provider>

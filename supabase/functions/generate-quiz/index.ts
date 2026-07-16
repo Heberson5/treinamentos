@@ -1,12 +1,71 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+const DEFAULT_MODEL: Record<string, string> = {
+  gemini: "gemini-2.5-flash",
+  chatgpt: "gpt-4o-mini",
+  deepseek: "deepseek-chat",
+};
+
+async function callProvider(
+  provedor: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<{ text?: string; errorStatus?: number; errorMessage?: string }> {
+  if (provedor === "gemini") {
+    const resolvedModel = model?.startsWith("gemini") ? model : DEFAULT_MODEL.gemini;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${resolvedModel}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        }),
+      }
+    );
+    if (!response.ok) {
+      return { errorStatus: response.status, errorMessage: await response.text() };
+    }
+    const data = await response.json();
+    return { text: data?.candidates?.[0]?.content?.parts?.[0]?.text };
+  }
+
+  // ChatGPT e DeepSeek usam formato compatível com OpenAI
+  const endpoint = provedor === "deepseek"
+    ? "https://api.deepseek.com/chat/completions"
+    : "https://api.openai.com/v1/chat/completions";
+  const resolvedModel = model || DEFAULT_MODEL[provedor] || DEFAULT_MODEL.chatgpt;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: resolvedModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    return { errorStatus: response.status, errorMessage: await response.text() };
+  }
+  const data = await response.json();
+  return { text: data?.choices?.[0]?.message?.content };
+}
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,26 +79,77 @@ serve(async (req) => {
     }
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const authed = createClient(supabaseUrl, supabaseAnon, {
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const callerClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: userData, error: userErr } = await authed.auth.getUser();
+    const { data: userData, error: userErr } = await callerClient.auth.getUser();
     if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { conteudo, configuracoes } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
     if (!conteudo || conteudo.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Conteúdo do treinamento não fornecido" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ---- Resolver empresa e configuração de IA do chamador (fonte da verdade no servidor) ----
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: perfil } = await adminClient
+      .from("perfis")
+      .select("empresa_id")
+      .eq("id", userData.user.id)
+      .single();
+
+    if (!perfil?.empresa_id) {
+      return new Response(
+        JSON.stringify({ error: "Usuário sem empresa vinculada. Configure a integração de IA em Integrações." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: contrato } = await adminClient
+      .from("plano_contratos")
+      .select("nome_plano")
+      .eq("empresa_id", perfil.empresa_id)
+      .eq("ativo", true)
+      .single();
+
+    if (!contrato || !["Premium", "Enterprise"].includes(contrato.nome_plano)) {
+      return new Response(
+        JSON.stringify({ error: "Recurso de IA disponível apenas nos planos Premium e Enterprise." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: configIA } = await adminClient
+      .from("configuracoes_ia_empresa")
+      .select("provedor_ia, modelo_ia, habilitado, api_key_gemini, api_key_chatgpt, api_key_deepseek")
+      .eq("empresa_id", perfil.empresa_id)
+      .single();
+
+    if (!configIA || !configIA.habilitado) {
+      return new Response(
+        JSON.stringify({ error: "IA não configurada. Configure em Integrações." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const provedor = configIA.provedor_ia || "gemini";
+    const apiKey =
+      provedor === "gemini" ? configIA.api_key_gemini :
+      provedor === "chatgpt" ? configIA.api_key_chatgpt :
+      provedor === "deepseek" ? configIA.api_key_deepseek : null;
+
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: `Chave de API do provedor "${provedor}" não configurada. Configure em Integrações.` }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -56,7 +166,7 @@ serve(async (req) => {
       escala: "Escala - classificar em uma escala de 1 a 5 ou 1 a 10",
     };
 
-    const tipoInstructions = tiposConfig.map((c: any) => 
+    const tipoInstructions = tiposConfig.map((c: any) =>
       `- ${c.quantidade} questão(ões) do tipo "${c.tipo}": ${tipoDescriptions[c.tipo] || c.tipo}`
     ).join("\n");
 
@@ -133,48 +243,34 @@ Retorne um JSON array com objetos no seguinte formato:
 
 IMPORTANTE: Retorne APENAS o JSON array válido.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-      }),
-    });
+    const { text: rawContent, errorStatus, errorMessage } = await callProvider(
+      provedor, apiKey, configIA.modelo_ia || "", systemPrompt, userPrompt
+    );
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    if (errorStatus) {
+      if (errorStatus === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (errorStatus === 401 || errorStatus === 403) {
         return new Response(
-          JSON.stringify({ error: "Créditos de IA esgotados." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Chave de API inválida ou sem permissão. Verifique em Integrações." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("AI provider error:", errorStatus, errorMessage);
       return new Response(
         JSON.stringify({ error: "Erro ao processar a solicitação de IA" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || "";
-    
+    let content = rawContent || "";
     // Clean up potential markdown wrapping
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    
+
     let questoes;
     try {
       questoes = JSON.parse(content);

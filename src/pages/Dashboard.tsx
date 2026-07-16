@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO, subDays } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -55,36 +56,26 @@ interface UserAttemptData {
   aprovado: boolean;
 }
 
-export default function Dashboard() {
-  const { user } = useAuth();
-  const { empresaSelecionada, isMaster } = useEmpresaFilter();
-  
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalTreinamentos: 0,
-    treinamentosAtivos: 0,
-    totalParticipantes: 0,
-    taxaConclusao: 0,
-    horasTreinamento: 0,
-    certificadosEmitidos: 0
-  });
-  const [trainings, setTrainings] = useState<TrainingData[]>([]);
-  const [activities, setActivities] = useState<ActivityData[]>([]);
-  const [userAttempts, setUserAttempts] = useState<UserAttemptData[]>([]);
-  
-  const [filters, setFilters] = useState<DashboardFiltersState>({
-    period: "30d",
-    departmentId: "",
-  });
+interface DashboardData {
+  stats: DashboardStats;
+  trainings: TrainingData[];
+  activities: ActivityData[];
+  userAttempts: UserAttemptData[];
+}
 
-  const fetchDashboardData = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
+interface FetchDashboardParams {
+  empresaScope: string | null;
+  departmentId: string;
+  startDate: Date;
+  endDate: Date;
+}
 
-    try {
-      const now = new Date();
-      let startDate: Date = filters.period === 'custom' && filters.startDate ? filters.startDate : getStartDateFromPeriod(filters.period);
-      let endDate: Date = filters.period === 'custom' && filters.endDate ? filters.endDate : now;
-
+async function fetchDashboardData({
+  empresaScope,
+  departmentId,
+  startDate,
+  endDate,
+}: FetchDashboardParams): Promise<DashboardData> {
       // Buscar dados de forma paralela para melhor performance
       const [
         { data: treinamentosData, error: treinamentosError },
@@ -99,13 +90,11 @@ export default function Dashboard() {
           .eq("publicado", true)
           .then(res => {
             let query = res.data || [];
-            if (isMaster && empresaSelecionada) {
-              query = query.filter(t => t.empresa_id === empresaSelecionada);
-            } else if (!isMaster && user?.empresa_id) {
-              query = query.filter(t => t.empresa_id === user.empresa_id);
+            if (empresaScope) {
+              query = query.filter(t => t.empresa_id === empresaScope);
             }
-            if (filters.departmentId) {
-              query = query.filter(t => t.departamento_id === filters.departmentId);
+            if (departmentId) {
+              query = query.filter(t => t.departamento_id === departmentId);
             }
             return { data: query, error: res.error };
           }),
@@ -195,7 +184,7 @@ export default function Dashboard() {
         if (t.aprovado) attemptGroups[key].aprovado = true;
       });
 
-      setUserAttempts(Object.values(attemptGroups));
+      const userAttempts = Object.values(attemptGroups);
 
       // Calcular estatísticas (usando dados filtrados sem master)
       const totalTreinamentos = treinamentosData?.length || 0;
@@ -230,38 +219,70 @@ export default function Dashboard() {
         };
       });
 
-      setStats({
-        totalTreinamentos,
-        treinamentosAtivos,
-        totalParticipantes,
-        taxaConclusao,
-        horasTreinamento: Math.round(horasTreinamento / 60),
-        certificadosEmitidos: conclusoes
-      });
-
-      setTrainings(treinamentosComStats.slice(0, 5));
       // Filter activities to exclude master users
       const filteredActivities = (atividadesData || []).filter(a => !a.usuario_id || !masterUserIds.has(a.usuario_id));
-      setActivities(filteredActivities);
 
-    } catch (error) {
-      console.error("Erro ao buscar dados do dashboard:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, empresaSelecionada, isMaster, filters]);
+      return {
+        stats: {
+          totalTreinamentos,
+          treinamentosAtivos,
+          totalParticipantes,
+          taxaConclusao,
+          horasTreinamento: Math.round(horasTreinamento / 60),
+          certificadosEmitidos: conclusoes
+        },
+        trainings: treinamentosComStats.slice(0, 5),
+        activities: filteredActivities,
+        userAttempts,
+      };
+}
 
-  // Buscar dados do dashboard
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+const DASHBOARD_QUERY_KEY = "dashboard";
 
-  // Realtime subscriptions (debounced silent refresh - evita flicker)
+export default function Dashboard() {
+  const { user } = useAuth();
+  const { empresaSelecionada, isMaster } = useEmpresaFilter();
+  const queryClient = useQueryClient();
+
+  const [filters, setFilters] = useState<DashboardFiltersState>({
+    period: "30d",
+    departmentId: "",
+  });
+
+  const empresaScope = isMaster ? (empresaSelecionada || null) : (user?.empresa_id || null);
+  const now = new Date();
+  const startDate = filters.period === 'custom' && filters.startDate ? filters.startDate : getStartDateFromPeriod(filters.period);
+  const endDate = filters.period === 'custom' && filters.endDate ? filters.endDate : now;
+
+  const queryKey = [DASHBOARD_QUERY_KEY, empresaScope, filters.departmentId, filters.period, filters.startDate, filters.endDate] as const;
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey,
+    queryFn: () => fetchDashboardData({ empresaScope, departmentId: filters.departmentId, startDate, endDate }),
+    enabled: !!user,
+  });
+
+  const stats: DashboardStats = data?.stats ?? {
+    totalTreinamentos: 0,
+    treinamentosAtivos: 0,
+    totalParticipantes: 0,
+    taxaConclusao: 0,
+    horasTreinamento: 0,
+    certificadosEmitidos: 0
+  };
+  const trainings = data?.trainings ?? [];
+  const activities = data?.activities ?? [];
+  const userAttempts = data?.userAttempts ?? [];
+
+  // Realtime subscriptions (debounced refresh - evita flicker)
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const scheduleRefresh = () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = setTimeout(() => fetchDashboardData(true), 2000);
+      refreshTimerRef.current = setTimeout(
+        () => queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEY] }),
+        2000
+      );
     };
     const channel = supabase
       .channel('dashboard-realtime')
@@ -274,7 +295,7 @@ export default function Dashboard() {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [fetchDashboardData]);
+  }, [queryClient]);
 
   const getDashboardTitle = () => {
     if (isMaster) {
@@ -362,10 +383,10 @@ export default function Dashboard() {
             }))}
           />
           
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => fetchDashboardData()}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refetch()}
             disabled={isLoading}
             title="Atualizar dados"
           >

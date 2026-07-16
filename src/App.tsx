@@ -1,9 +1,9 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import NewTrainingPage from "./pages/NewTrainingPage";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MainLayout } from "@/components/layout/main-layout";
 import { LoginForm } from "@/components/auth/login-form";
@@ -13,35 +13,37 @@ import { PlansProvider } from "@/contexts/plans-context";
 import { IntegrationProvider } from "@/contexts/integration-context";
 import { DepartmentProvider } from "@/contexts/department-context";
 import { EmpresaFilterProvider } from "@/contexts/empresa-filter-context";
-import Dashboard from "./pages/Dashboard";
-import MeusTreinamentos from "./pages/MeusTreinamentos";
-import Catalogo from "./pages/Catalogo";
-import TrainingPage from "./pages/TrainingPage";
-import ExecutarTreinamento from "./pages/ExecutarTreinamento";
-import GestaoTreinamentos from "./pages/admin/GestaoTreinamentos";
-import NovoTreinamentoModerno from "./pages/admin/NovoTreinamentoModerno";
-import EditarTreinamentoModerno from "./pages/admin/EditarTreinamentoModerno";
-import Usuarios from "./pages/admin/Usuarios";
-import Cargos from "./pages/admin/Cargos";
-import Departamentos from "./pages/admin/Departamentos";
-import NotFound from "./pages/NotFound";
-import Index from "./pages/Index";
-import Checkout from "./pages/Checkout";
-import TermosDeUso from "./pages/TermosDeUso";
-import SobreNos from "./pages/SobreNos";
-import Relatorios from "./pages/Relatorios";
-import Calendario from "./pages/Calendario";
-import EmpresasSupabase from "./pages/admin/EmpresasSupabase";
-import Planos from "./pages/admin/Planos";
-import Analytics from "./pages/admin/Analytics";
-import Permissoes from "./pages/admin/Permissoes";
-import Configuracoes from "./pages/admin/Configuracoes";
-import Integracoes from "./pages/admin/Integracoes";
-import DashboardExecutivo from "./pages/admin/DashboardExecutivo";
-import LandingPageEditor from "./pages/admin/LandingPageEditor";
-import Financeiro from "./pages/admin/Financeiro";
-import Categorias from "./pages/admin/Categorias";
-import ArquiteturaSistema from "./pages/admin/ArquiteturaSistema";
+
+// Rotas carregadas sob demanda (code-splitting) para reduzir o bundle inicial em dispositivos móveis
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const MeusTreinamentos = lazy(() => import("./pages/MeusTreinamentos"));
+const Catalogo = lazy(() => import("./pages/Catalogo"));
+const TrainingPage = lazy(() => import("./pages/TrainingPage"));
+const ExecutarTreinamento = lazy(() => import("./pages/ExecutarTreinamento"));
+const GestaoTreinamentos = lazy(() => import("./pages/admin/GestaoTreinamentos"));
+const NovoTreinamentoModerno = lazy(() => import("./pages/admin/NovoTreinamentoModerno"));
+const EditarTreinamentoModerno = lazy(() => import("./pages/admin/EditarTreinamentoModerno"));
+const Usuarios = lazy(() => import("./pages/admin/Usuarios"));
+const Cargos = lazy(() => import("./pages/admin/Cargos"));
+const Departamentos = lazy(() => import("./pages/admin/Departamentos"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Index = lazy(() => import("./pages/Index"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const TermosDeUso = lazy(() => import("./pages/TermosDeUso"));
+const SobreNos = lazy(() => import("./pages/SobreNos"));
+const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Calendario = lazy(() => import("./pages/Calendario"));
+const EmpresasSupabase = lazy(() => import("./pages/admin/EmpresasSupabase"));
+const Planos = lazy(() => import("./pages/admin/Planos"));
+const Analytics = lazy(() => import("./pages/admin/Analytics"));
+const Permissoes = lazy(() => import("./pages/admin/Permissoes"));
+const Configuracoes = lazy(() => import("./pages/admin/Configuracoes"));
+const Integracoes = lazy(() => import("./pages/admin/Integracoes"));
+const DashboardExecutivo = lazy(() => import("./pages/admin/DashboardExecutivo"));
+const LandingPageEditor = lazy(() => import("./pages/admin/LandingPageEditor"));
+const Financeiro = lazy(() => import("./pages/admin/Financeiro"));
+const Categorias = lazy(() => import("./pages/admin/Categorias"));
+const ArquiteturaSistema = lazy(() => import("./pages/admin/ArquiteturaSistema"));
 
 const queryClient = new QueryClient();
 
@@ -74,20 +76,22 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return (
-      <Routes>
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/auth" element={<LoginForm />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/termos-de-uso" element={<TermosDeUso />} />
-        <Route path="/sobre-nos" element={<SobreNos />} />
-        <Route path="/gestao/treinamentos/novo" element={<NewTrainingPage />} />
-        <Route path="*" element={<Index />} />
-      </Routes>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/auth" element={<LoginForm />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/termos-de-uso" element={<TermosDeUso />} />
+          <Route path="/sobre-nos" element={<SobreNos />} />
+          <Route path="*" element={<Index />} />
+        </Routes>
+      </Suspense>
     );
   }
 
   return (
     <MainLayout onLogout={logout}>
+      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
         <Route path="/login" element={<Navigate to={defaultRoute} replace />} />
@@ -127,6 +131,7 @@ function AppContent() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </MainLayout>
   );
 }

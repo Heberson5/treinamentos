@@ -356,7 +356,7 @@ export default function Calendario() {
                   <DialogDescription>{editingEvent ? "Atualize as informações do evento." : "Adicione um evento ao calendário."}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2"><Label>Título *</Label><Input value={newEvent.title} onChange={(e) => setNewEvent({...newEvent, title: e.target.value})} /></div>
                     <div className="space-y-2">
                       <Label>Tipo</Label>
@@ -372,7 +372,7 @@ export default function Calendario() {
                     </div>
                   </div>
                   <div className="space-y-2"><Label>Descrição</Label><Textarea value={newEvent.description} onChange={(e) => setNewEvent({...newEvent, description: e.target.value})} rows={2} /></div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-2"><Label>Data *</Label><Input type="date" value={newEvent.date} onChange={(e) => setNewEvent({...newEvent, date: e.target.value})} /></div>
                     <div className="space-y-2"><Label>Horário *</Label><Input type="time" value={newEvent.time} onChange={(e) => setNewEvent({...newEvent, time: e.target.value})} /></div>
                     <div className="space-y-2"><Label>Duração</Label><DurationInput value={newEvent.duration} onChange={(v) => setNewEvent({...newEvent, duration: v})} /></div>
@@ -390,16 +390,16 @@ export default function Calendario() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <Button variant="outline" size="icon" onClick={() => changeDate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <h2 className="text-xl font-semibold capitalize">{headerLabel()}</h2>
+          <h2 className="text-base sm:text-xl font-semibold capitalize">{headerLabel()}</h2>
           <Button variant="outline" size="icon" onClick={() => changeDate(1)}><ChevronRight className="h-4 w-4" /></Button>
           <Button variant="ghost" size="sm" onClick={() => setSelectedDate(new Date())}>Hoje</Button>
         </div>
         <div className="flex gap-1 bg-muted rounded-lg p-1">
           {(["month", "week", "day"] as const).map(m => (
-            <Button key={m} variant={viewMode === m ? "default" : "ghost"} size="sm" onClick={() => setViewMode(m)} className="px-4">
+            <Button key={m} variant={viewMode === m ? "default" : "ghost"} size="sm" onClick={() => setViewMode(m)} className="px-3 sm:px-4">
               {m === "month" ? "Mês" : m === "week" ? "Semana" : "Dia"}
             </Button>
           ))}
@@ -418,7 +418,7 @@ export default function Calendario() {
             <div className="grid grid-cols-7 gap-1">
               {generateMonthCalendar().map((day, i) => (
                 <div key={i} onClick={() => { setSelectedDate(day.date); setViewMode("day") }}
-                  className={`min-h-[90px] p-1 border rounded-lg cursor-pointer transition-colors hover:bg-accent/30
+                  className={`min-h-[60px] sm:min-h-[90px] p-1 border rounded-lg cursor-pointer transition-colors hover:bg-accent/30
                     ${day.isCurrentMonth ? 'bg-background' : 'bg-muted/20 opacity-50'}
                     ${day.date.toDateString() === new Date().toDateString() ? 'ring-2 ring-primary' : ''}`}>
                   <div className="text-sm font-medium mb-1 px-1">{day.date.getDate()}</div>
@@ -441,10 +441,10 @@ export default function Calendario() {
       {/* WEEK VIEW */}
       {viewMode === "week" && (
         <Card>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-7 gap-2">
+          <CardContent className="p-4 overflow-x-auto">
+            <div className="grid grid-cols-7 gap-2 min-w-[640px]">
               {generateWeekCalendar().map((day, i) => (
-                <div key={i} className={`border rounded-lg p-2 min-h-[300px] ${day.date.toDateString() === new Date().toDateString() ? 'ring-2 ring-primary' : ''}`}>
+                <div key={i} className={`border rounded-lg p-2 min-h-[220px] sm:min-h-[300px] ${day.date.toDateString() === new Date().toDateString() ? 'ring-2 ring-primary' : ''}`}>
                   <div className="text-center mb-2">
                     <div className="text-xs text-muted-foreground">{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][day.date.getDay()]}</div>
                     <div className="text-lg font-bold">{day.date.getDate()}</div>

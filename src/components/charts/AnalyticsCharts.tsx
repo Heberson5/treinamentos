@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   BarChart,
   Bar,
@@ -78,6 +79,7 @@ export function WeeklyEngagementChart({ data }: { data: EngagementData[] }) {
 }
 
 export function DepartmentEngagementChart({ data }: { data: DepartmentData[] }) {
+  const isMobile = useIsMobile()
   return (
     <Card>
       <CardHeader>
@@ -86,10 +88,10 @@ export function DepartmentEngagementChart({ data }: { data: DepartmentData[] }) 
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 80, bottom: 5 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 20, right: 20, left: isMobile ? 8 : 80, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis type="number" domain={[0, 100]} className="text-xs" />
-            <YAxis dataKey="nome" type="category" className="text-xs" width={70} />
+            <YAxis dataKey="nome" type="category" className="text-xs" width={isMobile ? 56 : 70} tick={{ fontSize: isMobile ? 9 : 12 }} />
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: 'hsl(var(--background))', 
@@ -111,6 +113,7 @@ export function DepartmentEngagementChart({ data }: { data: DepartmentData[] }) 
 }
 
 export function TrainingPerformanceChart({ data }: { data: TrainingData[] }) {
+  const isMobile = useIsMobile()
   return (
     <Card>
       <CardHeader>
@@ -119,16 +122,16 @@ export function TrainingPerformanceChart({ data }: { data: TrainingData[] }) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data.slice(0, 5)} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <BarChart data={data.slice(0, isMobile ? 3 : 5)} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis 
-              dataKey="titulo" 
-              className="text-xs" 
-              angle={-45} 
-              textAnchor="end" 
+            <XAxis
+              dataKey="titulo"
+              className="text-xs"
+              angle={-45}
+              textAnchor="end"
               height={80}
               interval={0}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: isMobile ? 8 : 10 }}
             />
             <YAxis className="text-xs" domain={[0, 100]} />
             <Tooltip 

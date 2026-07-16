@@ -463,17 +463,17 @@ export default function MeusTreinamentos() {
 
       {/* Tabs */}
       <Tabs defaultValue="todos" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="todos">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
+          <TabsTrigger value="todos" className="text-xs sm:text-sm">
             Todos {!isLoading && `(${trainings.length})`}
           </TabsTrigger>
-          <TabsTrigger value="em-progresso">
+          <TabsTrigger value="em-progresso" className="text-xs sm:text-sm">
             Em Progresso {!isLoading && `(${inProgressTrainings.length})`}
           </TabsTrigger>
-          <TabsTrigger value="concluidos">
+          <TabsTrigger value="concluidos" className="text-xs sm:text-sm">
             Concluídos {!isLoading && `(${completedTrainings.length})`}
           </TabsTrigger>
-          <TabsTrigger value="nao-iniciados">
+          <TabsTrigger value="nao-iniciados" className="text-xs sm:text-sm">
             Não Iniciados {!isLoading && `(${notStartedTrainings.length})`}
           </TabsTrigger>
         </TabsList>

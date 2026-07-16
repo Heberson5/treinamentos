@@ -106,13 +106,6 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
   useEffect(() => { checkAIAccess() }, [user])
   
   const checkAIAccess = async () => {
-    // Master sempre tem acesso (usa Lovable AI Gateway)
-    if (user?.role === "master") {
-      setAiAccessEnabled(true)
-      setAiAccessChecked(true)
-      return
-    }
-    
     if (!user?.empresa_id) {
       setAiAccessEnabled(false)
       setAiAccessChecked(true)
@@ -418,7 +411,7 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
           {/* Slider */}
           {q.tipo === "slider" && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Mínimo</Label>
                   <Input type="number" value={q.valor_minimo || 0} onChange={(e) => updateQuestao(index, { valor_minimo: Number(e.target.value) })} />
@@ -481,7 +474,7 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
           {/* Scale */}
           {q.tipo === "escala" && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Mínimo</Label>
                   <Input type="number" value={q.valor_minimo || 1} onChange={(e) => updateQuestao(index, { valor_minimo: Number(e.target.value) })} />

@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth-context";
 
@@ -21,53 +22,39 @@ interface EmpresaFilterContextType {
 
 const EmpresaFilterContext = createContext<EmpresaFilterContextType | undefined>(undefined);
 
+async function fetchEmpresas(): Promise<Empresa[]> {
+  const { data, error } = await supabase
+    .from("empresas")
+    .select("id, nome, nome_fantasia, cnpj, ativo")
+    .order("nome");
+
+  if (error) throw error;
+  return data || [];
+}
+
 export function EmpresaFilterProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [empresaSelecionada, setEmpresaSelecionada] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   const isMaster = user?.role === "master";
 
+  const { data: empresas = [], isLoading: isLoadingEmpresas } = useQuery({
+    queryKey: ["empresas", "filtro"],
+    queryFn: fetchEmpresas,
+    enabled: isMaster,
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
-    if (isMaster) {
-      fetchEmpresas();
-    } else {
-      // Se não for master, usa a empresa do usuário
-      if (user?.empresa_id) {
-        setEmpresaSelecionada(user.empresa_id);
-      }
-      setIsLoading(false);
+    if (!isMaster && user?.empresa_id) {
+      setEmpresaSelecionada(user.empresa_id);
     }
   }, [user, isMaster]);
 
-  const fetchEmpresas = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("empresas")
-        .select("id, nome, nome_fantasia, cnpj, ativo")
-        .order("nome");
+  const isLoading = isMaster ? isLoadingEmpresas : !user;
 
-      if (error) {
-        console.error("Erro ao buscar empresas:", error);
-        return;
-      }
-
-      setEmpresas(data || []);
-      
-      // Se tiver empresas e nenhuma selecionada, seleciona "todas"
-      if (!empresaSelecionada && data && data.length > 0) {
-        setEmpresaSelecionada(null); // null = todas as empresas
-      }
-    } catch (error) {
-      console.error("Erro ao buscar empresas:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const empresaSelecionadaNome = empresaSelecionada 
-    ? empresas.find(e => e.id === empresaSelecionada)?.nome_fantasia || 
+  const empresaSelecionadaNome = empresaSelecionada
+    ? empresas.find(e => e.id === empresaSelecionada)?.nome_fantasia ||
       empresas.find(e => e.id === empresaSelecionada)?.nome || "Empresa"
     : "Todas as empresas";
 

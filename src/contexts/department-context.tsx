@@ -1,48 +1,68 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./auth-context";
+import { useEmpresaFilter } from "./empresa-filter-context";
 
 export interface Department {
-  id: number;
+  id: string;
   nome: string;
-  descricao: string;
-  responsavel: string;
+  descricao: string | null;
+  empresa_id: string | null;
   ativo: boolean;
 }
 
 interface DepartmentContextType {
   departments: Department[];
-  getDepartmentById: (id: number) => Department | undefined;
+  isLoading: boolean;
+  getDepartmentById: (id: string) => Department | undefined;
   getDepartmentByName: (name: string) => Department | undefined;
   getActiveDepartments: () => Department[];
 }
 
 const DepartmentContext = createContext<DepartmentContextType | undefined>(undefined);
 
-const initialDepartments: Department[] = [
-  { id: 1, nome: "TI", descricao: "Tecnologia da Informação", responsavel: "Heber Sohas", ativo: true },
-  { id: 2, nome: "RH", descricao: "Recursos Humanos", responsavel: "Maria Silva", ativo: true },
-  { id: 3, nome: "Vendas", descricao: "Equipe de Vendas", responsavel: "João Santos", ativo: true },
-  { id: 4, nome: "Financeiro", descricao: "Setor Financeiro", responsavel: "Ana Costa", ativo: true },
-  { id: 5, nome: "Marketing", descricao: "Marketing e Comunicação", responsavel: "Pedro Lima", ativo: true }
-];
+async function fetchDepartments(empresaId: string | null): Promise<Department[]> {
+  let query = supabase
+    .from("departamentos")
+    .select("id, nome, descricao, empresa_id, ativo")
+    .order("nome");
+
+  if (empresaId) {
+    query = query.eq("empresa_id", empresaId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
-  const [departments] = useState<Department[]>(initialDepartments);
+  const { user } = useAuth();
+  const { isMaster, empresaSelecionada } = useEmpresaFilter();
 
-  const getDepartmentById = (id: number) => {
-    return departments.find(dept => dept.id === id);
-  };
+  // Master vê os departamentos da empresa selecionada no filtro (ou de todas, se nenhuma selecionada).
+  // Demais usuários sempre veem apenas os departamentos da própria empresa.
+  const empresaEscopo = isMaster ? empresaSelecionada : user?.empresa_id || null;
 
-  const getDepartmentByName = (name: string) => {
-    return departments.find(dept => dept.nome.toLowerCase() === name.toLowerCase());
-  };
+  const { data: departments = [], isLoading } = useQuery({
+    queryKey: ["departamentos", empresaEscopo],
+    queryFn: () => fetchDepartments(empresaEscopo),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
 
-  const getActiveDepartments = () => {
-    return departments.filter(dept => dept.ativo);
-  };
+  const getDepartmentById = (id: string) => departments.find(dept => dept.id === id);
+
+  const getDepartmentByName = (name: string) =>
+    departments.find(dept => dept.nome.toLowerCase() === name.toLowerCase());
+
+  const getActiveDepartments = () => departments.filter(dept => dept.ativo);
 
   return (
     <DepartmentContext.Provider value={{
       departments,
+      isLoading,
       getDepartmentById,
       getDepartmentByName,
       getActiveDepartments

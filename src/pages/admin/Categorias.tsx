@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,93 +19,106 @@ interface Categoria {
   ativo: boolean
 }
 
+async function fetchCategorias(): Promise<Categoria[]> {
+  const { data, error } = await supabase
+    .from("categorias" as any)
+    .select("*")
+    .order("nome")
+
+  if (error) throw error
+  return (data as any) || []
+}
+
 export default function Categorias() {
   const { toast } = useToast()
   const { user } = useAuth()
   const isMaster = user?.role === "master"
+  const queryClient = useQueryClient()
 
-  const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: categorias = [], isLoading } = useQuery({
+    queryKey: ["categorias"],
+    queryFn: fetchCategorias,
+  })
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
   const [formNome, setFormNome] = useState("")
   const [formDescricao, setFormDescricao] = useState("")
 
-  const fetchCategorias = async () => {
-    setIsLoading(true)
-    const { data, error } = await supabase
-      .from("categorias" as any)
-      .select("*")
-      .order("nome")
-
-    if (!error && data) {
-      setCategorias(data as any)
-    }
-    setIsLoading(false)
-  }
-
-  useEffect(() => { fetchCategorias() }, [])
+  const invalidateCategorias = () => queryClient.invalidateQueries({ queryKey: ["categorias"] })
 
   const resetForm = () => {
     setFormNome("")
     setFormDescricao("")
   }
 
-  const handleCreate = async () => {
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("categorias" as any)
+        .insert({ nome: formNome.trim(), descricao: formDescricao.trim() || null } as any)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({ title: "Categoria criada com sucesso" })
+      setIsCreateOpen(false)
+      resetForm()
+      invalidateCategorias()
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar", description: error.message, variant: "destructive" })
+    }
+  })
+
+  const handleCreate = () => {
     if (!formNome.trim()) {
       toast({ title: "Nome obrigatório", variant: "destructive" })
       return
     }
-    setIsSaving(true)
-    const { error } = await supabase
-      .from("categorias" as any)
-      .insert({ nome: formNome.trim(), descricao: formDescricao.trim() || null } as any)
-
-    if (error) {
-      toast({ title: "Erro ao criar", description: error.message, variant: "destructive" })
-    } else {
-      toast({ title: "Categoria criada com sucesso" })
-      setIsCreateOpen(false)
-      resetForm()
-      fetchCategorias()
-    }
-    setIsSaving(false)
+    createMutation.mutate()
   }
 
-  const handleUpdate = async () => {
-    if (!editingCategoria || !formNome.trim()) return
-    setIsSaving(true)
-    const { error } = await supabase
-      .from("categorias" as any)
-      .update({ nome: formNome.trim(), descricao: formDescricao.trim() || null } as any)
-      .eq("id", editingCategoria.id)
-
-    if (error) {
-      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" })
-    } else {
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingCategoria) return
+      const { error } = await supabase
+        .from("categorias" as any)
+        .update({ nome: formNome.trim(), descricao: formDescricao.trim() || null } as any)
+        .eq("id", editingCategoria.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
       toast({ title: "Categoria atualizada" })
       setEditingCategoria(null)
       resetForm()
-      fetchCategorias()
+      invalidateCategorias()
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" })
     }
-    setIsSaving(false)
+  })
+
+  const handleUpdate = () => {
+    if (!editingCategoria || !formNome.trim()) return
+    updateMutation.mutate()
   }
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("categorias" as any)
-      .delete()
-      .eq("id", id)
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" })
-    } else {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("categorias" as any).delete().eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
       toast({ title: "Categoria excluída" })
-      fetchCategorias()
+      invalidateCategorias()
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" })
     }
-  }
+  })
+
+  const isSaving = createMutation.isPending || updateMutation.isPending
 
   const openEdit = (cat: Categoria) => {
     setFormNome(cat.nome)
@@ -173,7 +187,7 @@ export default function Categorias() {
                       <Edit3 className="h-4 w-4" />
                     </Button>
                     {isMaster && (
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(cat.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(cat.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}

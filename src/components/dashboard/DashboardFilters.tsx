@@ -171,7 +171,7 @@ export function DashboardFilters({ filters, onFiltersChange }: DashboardFiltersP
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <div className="flex gap-2 p-3">
+            <div className="flex flex-col sm:flex-row gap-2 p-3">
               <div>
                 <p className="text-sm font-medium mb-2">Data Inicial</p>
                 <Calendar
@@ -222,7 +222,7 @@ export function DashboardFilters({ filters, onFiltersChange }: DashboardFiltersP
         <SelectContent>
           <SelectItem value="all">Todos departamentos</SelectItem>
           {departments.map((dept) => (
-            <SelectItem key={dept.id} value={dept.id.toString()}>
+            <SelectItem key={dept.id} value={dept.id}>
               {dept.nome}
             </SelectItem>
           ))}

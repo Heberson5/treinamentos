@@ -253,16 +253,16 @@ export function EmpresaConfigModal({
         </DialogHeader>
 
         <Tabs defaultValue="plano" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="plano" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 h-auto gap-1">
+            <TabsTrigger value="plano" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Building2 className="h-4 w-4" />
               Plano
             </TabsTrigger>
-            <TabsTrigger value="faturamento" className="flex items-center gap-2">
+            <TabsTrigger value="faturamento" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <CreditCard className="h-4 w-4" />
               Faturamento
             </TabsTrigger>
-            <TabsTrigger value="usuarios" className="flex items-center gap-2">
+            <TabsTrigger value="usuarios" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Users className="h-4 w-4" />
               Usuários
             </TabsTrigger>

@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePagination } from "@/hooks/use-pagination";
+import { ListPagination } from "@/components/shared/list-pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -179,6 +181,13 @@ export default function EmpresasSupabase() {
       }
     });
   }, [empresas, searchTerm, filterType, activeTab]);
+
+  const {
+    page: empresasPage,
+    setPage: setEmpresasPage,
+    totalPages: empresasTotalPages,
+    paginated: empresasPaginadas,
+  } = usePagination(empresasFiltradas, 24, `${searchTerm}|${filterType}|${activeTab}`);
 
   // Estatísticas
   const stats = useMemo(() => {
@@ -787,14 +796,25 @@ export default function EmpresasSupabase() {
                 </p>
               </CardContent>
             </Card>
-          ) : viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {empresasFiltradas.map(renderEmpresaCard)}
-            </div>
           ) : (
-            <div className="space-y-2">
-              {empresasFiltradas.map(renderEmpresaRow)}
-            </div>
+            <>
+              {viewMode === "grid" ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {empresasPaginadas.map(renderEmpresaCard)}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {empresasPaginadas.map(renderEmpresaRow)}
+                </div>
+              )}
+              <ListPagination
+                page={empresasPage}
+                totalPages={empresasTotalPages}
+                onPageChange={setEmpresasPage}
+                totalItems={empresasFiltradas.length}
+                pageSize={24}
+              />
+            </>
           )}
         </TabsContent>
 
@@ -809,14 +829,25 @@ export default function EmpresasSupabase() {
                 </p>
               </CardContent>
             </Card>
-          ) : viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {empresasFiltradas.map(renderEmpresaCard)}
-            </div>
           ) : (
-            <div className="space-y-2">
-              {empresasFiltradas.map(renderEmpresaRow)}
-            </div>
+            <>
+              {viewMode === "grid" ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {empresasPaginadas.map(renderEmpresaCard)}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {empresasPaginadas.map(renderEmpresaRow)}
+                </div>
+              )}
+              <ListPagination
+                page={empresasPage}
+                totalPages={empresasTotalPages}
+                onPageChange={setEmpresasPage}
+                totalItems={empresasFiltradas.length}
+                pageSize={24}
+              />
+            </>
           )}
         </TabsContent>
       </Tabs>

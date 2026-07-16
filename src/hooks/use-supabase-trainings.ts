@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context";
@@ -45,119 +45,110 @@ interface UseSupabaseTrainingsOptions {
   includeProgress?: boolean;
 }
 
+interface FetchTrainingsParams {
+  userId: string;
+  empresaScope: string | null;
+  onlyPublished: boolean;
+  includeProgress: boolean;
+}
+
+async function fetchTrainings({
+  userId,
+  empresaScope,
+  onlyPublished,
+  includeProgress,
+}: FetchTrainingsParams): Promise<SupabaseTraining[]> {
+  // Buscar treinamentos com empresa
+  let query = supabase
+    .from("treinamentos")
+    .select(`
+      *,
+      empresa:empresas(nome, nome_fantasia)
+    `)
+    .order("criado_em", { ascending: false });
+
+  if (onlyPublished) {
+    query = query.eq("publicado", true);
+  }
+
+  if (empresaScope) {
+    query = query.eq("empresa_id", empresaScope);
+  }
+
+  const { data: treinamentosData, error: treinamentosError } = await query;
+
+  if (treinamentosError) {
+    console.error("Erro ao buscar treinamentos:", treinamentosError);
+    throw treinamentosError;
+  }
+
+  // Buscar instrutores separadamente
+  const instrutorIds = [...new Set((treinamentosData || []).map(t => t.instrutor_id).filter(Boolean))];
+  let instrutorMap: Record<string, { nome: string }> = {};
+
+  if (instrutorIds.length > 0) {
+    const { data: instrutoresData } = await supabase
+      .from("perfis")
+      .select("id, nome")
+      .in("id", instrutorIds);
+
+    if (instrutoresData) {
+      instrutorMap = instrutoresData.reduce((acc, p) => {
+        acc[p.id] = { nome: p.nome };
+        return acc;
+      }, {} as Record<string, { nome: string }>);
+    }
+  }
+
+  // Se precisar do progresso, buscar separadamente
+  let progressoMap: Record<string, any> = {};
+  if (includeProgress && treinamentosData?.length > 0) {
+    const { data: progressoData, error: progressoError } = await supabase
+      .from("progresso_treinamentos")
+      .select("*")
+      .eq("usuario_id", userId)
+      .in("treinamento_id", treinamentosData.map(t => t.id));
+
+    if (progressoError) {
+      console.error("Erro ao buscar progresso:", progressoError);
+    } else if (progressoData) {
+      progressoMap = progressoData.reduce((acc, p) => {
+        acc[p.treinamento_id] = p;
+        return acc;
+      }, {} as Record<string, any>);
+    }
+  }
+
+  // Combinar dados
+  return (treinamentosData || []).map(t => ({
+    ...t,
+    progresso: progressoMap[t.id] || null,
+    empresa: t.empresa as { nome: string; nome_fantasia: string | null } | null,
+    instrutor: t.instrutor_id ? instrutorMap[t.instrutor_id] || null : null
+  }));
+}
+
 export function useSupabaseTrainings(options: UseSupabaseTrainingsOptions = {}) {
   const { onlyPublished = true, includeProgress = true } = options;
-  const [trainings, setTrainings] = useState<SupabaseTraining[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { empresaSelecionada, isMaster } = useEmpresaFilter();
+  const queryClient = useQueryClient();
 
-  const fetchTrainings = useCallback(async () => {
-    if (!user?.id) {
-      setTrainings([]);
-      setIsLoading(false);
-      return;
-    }
+  const empresaScope = isMaster ? (empresaSelecionada || null) : (user?.empresa_id || null);
 
-    setIsLoading(true);
-    setError(null);
+  const queryKey = ["treinamentos", { userId: user?.id, empresaScope, onlyPublished, includeProgress }] as const;
 
-    try {
-      // Buscar treinamentos com empresa
-      let query = supabase
-        .from("treinamentos")
-        .select(`
-          *,
-          empresa:empresas(nome, nome_fantasia)
-        `)
-        .order("criado_em", { ascending: false });
+  const { data: trainings = [], isLoading, error, refetch } = useQuery({
+    queryKey,
+    queryFn: () => fetchTrainings({ userId: user!.id, empresaScope, onlyPublished, includeProgress }),
+    enabled: !!user?.id,
+  });
 
-      // Filtro de publicação
-      if (onlyPublished) {
-        query = query.eq("publicado", true);
-      }
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["treinamentos"] });
 
-      // Filtro por empresa para master
-      if (isMaster && empresaSelecionada) {
-        query = query.eq("empresa_id", empresaSelecionada);
-      } else if (!isMaster && user.empresa_id) {
-        // Usuários não-master veem apenas da sua empresa
-        query = query.eq("empresa_id", user.empresa_id);
-      }
-
-      const { data: treinamentosData, error: treinamentosError } = await query;
-
-      if (treinamentosError) {
-        console.error("Erro ao buscar treinamentos:", treinamentosError);
-        setError("Erro ao carregar treinamentos");
-        setTrainings([]);
-        return;
-      }
-
-      // Buscar instrutores separadamente
-      const instrutorIds = [...new Set((treinamentosData || []).map(t => t.instrutor_id).filter(Boolean))];
-      let instrutorMap: Record<string, { nome: string }> = {};
-      
-      if (instrutorIds.length > 0) {
-        const { data: instrutoresData } = await supabase
-          .from("perfis")
-          .select("id, nome")
-          .in("id", instrutorIds);
-        
-        if (instrutoresData) {
-          instrutorMap = instrutoresData.reduce((acc, p) => {
-            acc[p.id] = { nome: p.nome };
-            return acc;
-          }, {} as Record<string, { nome: string }>);
-        }
-      }
-
-      // Se precisar do progresso, buscar separadamente
-      let progressoMap: Record<string, any> = {};
-      if (includeProgress && treinamentosData?.length > 0) {
-        const { data: progressoData, error: progressoError } = await supabase
-          .from("progresso_treinamentos")
-          .select("*")
-          .eq("usuario_id", user.id)
-          .in("treinamento_id", treinamentosData.map(t => t.id));
-
-        if (progressoError) {
-          console.error("Erro ao buscar progresso:", progressoError);
-        } else if (progressoData) {
-          progressoMap = progressoData.reduce((acc, p) => {
-            acc[p.treinamento_id] = p;
-            return acc;
-          }, {} as Record<string, any>);
-        }
-      }
-
-      // Combinar dados
-      const treinamentosComProgresso: SupabaseTraining[] = (treinamentosData || []).map(t => ({
-        ...t,
-        progresso: progressoMap[t.id] || null,
-        empresa: t.empresa as { nome: string; nome_fantasia: string | null } | null,
-        instrutor: t.instrutor_id ? instrutorMap[t.instrutor_id] || null : null
-      }));
-
-      setTrainings(treinamentosComProgresso);
-    } catch (err) {
-      console.error("Erro ao buscar treinamentos:", err);
-      setError("Erro ao carregar treinamentos");
-      setTrainings([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.id, user?.empresa_id, empresaSelecionada, isMaster, onlyPublished, includeProgress]);
-
-  useEffect(() => {
-    fetchTrainings();
-  }, [fetchTrainings]);
-
-  const startTraining = async (trainingId: string) => {
-    if (!user?.id) return;
-
-    try {
+  const startTrainingMutation = useMutation({
+    mutationFn: async (trainingId: string) => {
+      if (!user?.id) return;
       const { error } = await supabase
         .from("progresso_treinamentos")
         .upsert({
@@ -169,22 +160,15 @@ export function useSupabaseTrainings(options: UseSupabaseTrainingsOptions = {}) 
         }, {
           onConflict: "usuario_id,treinamento_id"
         });
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (err) => console.error("Erro ao iniciar treinamento:", err),
+  });
 
-      if (error) {
-        console.error("Erro ao iniciar treinamento:", error);
-      }
-
-      // Recarregar dados
-      fetchTrainings();
-    } catch (err) {
-      console.error("Erro ao iniciar treinamento:", err);
-    }
-  };
-
-  const updateProgress = async (trainingId: string, progress: number) => {
-    if (!user?.id) return;
-
-    try {
+  const updateProgressMutation = useMutation({
+    mutationFn: async ({ trainingId, progress }: { trainingId: string; progress: number }) => {
+      if (!user?.id) return;
       const isCompleted = progress >= 100;
       const { error } = await supabase
         .from("progresso_treinamentos")
@@ -198,29 +182,23 @@ export function useSupabaseTrainings(options: UseSupabaseTrainingsOptions = {}) 
         }, {
           onConflict: "usuario_id,treinamento_id"
         });
-
-      if (error) {
-        console.error("Erro ao atualizar progresso:", error);
-      }
-
-      // Recarregar dados
-      fetchTrainings();
-    } catch (err) {
-      console.error("Erro ao atualizar progresso:", err);
-    }
-  };
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (err) => console.error("Erro ao atualizar progresso:", err),
+  });
 
   // Estatísticas calculadas
   const stats = {
     total: trainings.length,
     concluidos: trainings.filter(t => t.progresso?.concluido).length,
-    emProgresso: trainings.filter(t => 
-      t.progresso && 
-      (t.progresso.percentual_concluido || 0) > 0 && 
+    emProgresso: trainings.filter(t =>
+      t.progresso &&
+      (t.progresso.percentual_concluido || 0) > 0 &&
       !t.progresso.concluido
     ).length,
-    naoIniciados: trainings.filter(t => 
-      !t.progresso || 
+    naoIniciados: trainings.filter(t =>
+      !t.progresso ||
       (t.progresso.percentual_concluido || 0) === 0
     ).length
   };
@@ -228,10 +206,10 @@ export function useSupabaseTrainings(options: UseSupabaseTrainingsOptions = {}) 
   return {
     trainings,
     isLoading,
-    error,
+    error: error ? "Erro ao carregar treinamentos" : null,
     stats,
-    startTraining,
-    updateProgress,
-    refetch: fetchTrainings
+    startTraining: (trainingId: string) => startTrainingMutation.mutateAsync(trainingId),
+    updateProgress: (trainingId: string, progress: number) => updateProgressMutation.mutateAsync({ trainingId, progress }),
+    refetch,
   };
 }

@@ -310,13 +310,13 @@ export default function Configuracoes() {
       )}
 
       <Tabs defaultValue="geral" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="geral">Geral</TabsTrigger>
-          <TabsTrigger value="email">Email</TabsTrigger>
-          <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
-          <TabsTrigger value="seguranca">Segurança</TabsTrigger>
-          <TabsTrigger value="auditoria">Auditoria</TabsTrigger>
-          <TabsTrigger value="backup">Backup</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1">
+          <TabsTrigger value="geral" className="text-xs sm:text-sm">Geral</TabsTrigger>
+          <TabsTrigger value="email" className="text-xs sm:text-sm">Email</TabsTrigger>
+          <TabsTrigger value="notificacoes" className="text-xs sm:text-sm">Notificações</TabsTrigger>
+          <TabsTrigger value="seguranca" className="text-xs sm:text-sm">Segurança</TabsTrigger>
+          <TabsTrigger value="auditoria" className="text-xs sm:text-sm">Auditoria</TabsTrigger>
+          <TabsTrigger value="backup" className="text-xs sm:text-sm">Backup</TabsTrigger>
         </TabsList>
 
         {/* Geral */}
@@ -610,7 +610,7 @@ export default function Configuracoes() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="local"><div className="flex items-center gap-2"><HardDrive className="h-4 w-4" /> Local (download)</div></SelectItem>
-                      <SelectItem value="cloud"><div className="flex items-center gap-2"><Cloud className="h-4 w-4" /> Lovable Cloud Storage</div></SelectItem>
+                      <SelectItem value="cloud"><div className="flex items-center gap-2"><Cloud className="h-4 w-4" /> Supabase Storage</div></SelectItem>
                       <SelectItem value="gdrive">Google Drive</SelectItem>
                       <SelectItem value="dropbox">Dropbox</SelectItem>
                       <SelectItem value="s3">Amazon S3 / Compatível</SelectItem>
@@ -697,7 +697,7 @@ export default function Configuracoes() {
           <Card>
             <CardHeader><CardTitle>Status do Sistema</CardTitle></CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="text-center"><CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2" /><p className="font-medium">Online</p><p className="text-sm text-muted-foreground">Funcionando</p></div>
                 <div className="text-center"><Database className="mx-auto h-8 w-8 text-blue-500 mb-2" /><p className="font-medium">Último Backup</p><p className="text-sm text-muted-foreground">Hoje, 03:00</p></div>
                 <div className="text-center"><Server className="mx-auto h-8 w-8 text-purple-500 mb-2" /><p className="font-medium">Versão</p><p className="text-sm text-muted-foreground">v2.1.0</p></div>

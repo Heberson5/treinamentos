@@ -95,26 +95,26 @@ export default function Integracoes() {
 
       {/* Tabs de Integrações */}
       <Tabs defaultValue="calendar" className="space-y-6">
-        <TabsList className={`grid w-full max-w-2xl ${isMaster ? 'grid-cols-5' : 'grid-cols-4'}`}>
-          <TabsTrigger value="calendar" className="flex items-center gap-2">
+        <TabsList className={`grid w-full max-w-2xl h-auto gap-1 grid-cols-3 ${isMaster ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
+          <TabsTrigger value="calendar" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
             <Calendar className="h-4 w-4" />
             Calendário
           </TabsTrigger>
           {isMaster && (
-            <TabsTrigger value="payment" className="flex items-center gap-2">
+            <TabsTrigger value="payment" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <CreditCard className="h-4 w-4" />
               Pagamentos
             </TabsTrigger>
           )}
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger value="notifications" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
             <Bell className="h-4 w-4" />
             Notificações
           </TabsTrigger>
-          <TabsTrigger value="sms" className="flex items-center gap-2">
+          <TabsTrigger value="sms" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
             <MessageSquare className="h-4 w-4" />
             SMS
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
+          <TabsTrigger value="ai" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
             <Sparkles className="h-4 w-4" />
             IA
           </TabsTrigger>

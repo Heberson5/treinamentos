@@ -466,7 +466,7 @@ export default function ArquiteturaSistema() {
       </div>
 
       <Tabs defaultValue="menus" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
           <TabsTrigger value="menus" className="text-xs sm:text-sm"><Menu className="mr-1 h-4 w-4" /> Menus</TabsTrigger>
           <TabsTrigger value="sistema" className="text-xs sm:text-sm"><Globe className="mr-1 h-4 w-4" /> Sistema</TabsTrigger>
           <TabsTrigger value="campos" className="text-xs sm:text-sm"><LayoutGrid className="mr-1 h-4 w-4" /> Campos</TabsTrigger>

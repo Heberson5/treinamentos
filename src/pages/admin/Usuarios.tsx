@@ -42,6 +42,8 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useOnlineUsers } from "@/hooks/use-online-users"
+import { usePagination } from "@/hooks/use-pagination"
+import { ListPagination } from "@/components/shared/list-pagination"
 
 import {
   Building2,
@@ -358,6 +360,13 @@ export default function Usuarios() {
       }),
     [usuariosVisiveis, searchTerm, statusFilter, empresaFilter]
   )
+
+  const {
+    page: usuariosPage,
+    setPage: setUsuariosPage,
+    totalPages: usuariosTotalPages,
+    paginated: usuariosPaginados,
+  } = usePagination(usuariosFiltrados, 20, `${searchTerm}|${statusFilter}|${empresaFilter}`)
 
   const resetForm = () => {
     setNovoNome("")
@@ -814,7 +823,7 @@ export default function Usuarios() {
             </p>
           ) : (
             <div className="space-y-3">
-              {usuariosFiltrados.map((usuario) => {
+              {usuariosPaginados.map((usuario) => {
                 const PapelIcon = getPapelIcon(usuario.papel)
 
                 return (
@@ -932,6 +941,13 @@ export default function Usuarios() {
               })}
             </div>
           )}
+          <ListPagination
+            page={usuariosPage}
+            totalPages={usuariosTotalPages}
+            onPageChange={setUsuariosPage}
+            totalItems={usuariosFiltrados.length}
+            pageSize={20}
+          />
         </CardContent>
       </Card>
 

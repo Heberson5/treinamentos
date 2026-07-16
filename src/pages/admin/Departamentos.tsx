@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,11 +7,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Edit3,
+  Trash2,
   Building2,
   Users,
   Loader2
@@ -28,17 +29,35 @@ interface Departamento {
   ativo: boolean
 }
 
+async function fetchDepartamentosAdmin(): Promise<Departamento[]> {
+  const { data, error } = await supabase
+    .from("departamentos")
+    .select("*")
+    .order("nome")
+
+  if (error) throw error
+  return data || []
+}
+
+async function fetchEmpresasSimples(): Promise<{ id: string; nome: string }[]> {
+  const { data, error } = await supabase
+    .from("empresas")
+    .select("id, nome")
+    .eq("ativo", true)
+    .order("nome")
+
+  if (error) throw error
+  return data || []
+}
+
 export default function Departamentos() {
-  const [departamentos, setDepartamentos] = useState<Departamento[]>([])
-  const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingDepartamento, setEditingDepartamento] = useState<Departamento | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const { toast } = useToast()
   const { isMaster } = useEmpresaFilter()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -46,67 +65,88 @@ export default function Departamentos() {
     empresa_id: ""
   })
 
+  const { data: departamentos = [], isLoading: loading } = useQuery({
+    queryKey: ["departamentos", "admin-all"],
+    queryFn: fetchDepartamentosAdmin,
+  })
+
+  const { data: empresas = [] } = useQuery({
+    queryKey: ["empresas", "simples"],
+    queryFn: fetchEmpresasSimples,
+    enabled: user?.role === "master",
+  })
+
+  const invalidateDepartamentos = () => queryClient.invalidateQueries({ queryKey: ["departamentos"] })
+
   const resetForm = () => {
     setFormData({ nome: "", descricao: "", empresa_id: "" })
     setEditingDepartamento(null)
   }
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from("departamentos")
-        .select("*")
-        .order("nome")
-
-      if (error) {
-        console.error("Erro ao carregar departamentos:", error)
-      } else {
-        setDepartamentos(data || [])
-      }
-
-      if (user?.role === "master") {
-        const { data: empData } = await supabase
-          .from("empresas")
-          .select("id, nome")
-          .eq("ativo", true)
-          .order("nome")
-        setEmpresas(empData || [])
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadData()
-  }, [user?.role])
-
-  const handleCreate = async () => {
-    if (!formData.nome) {
-      toast({ title: "Campo obrigatório", description: "Nome do departamento é obrigatório", variant: "destructive" })
-      return
-    }
-
-    setSaving(true)
-    const { error } = await supabase.from("departamentos").insert({
-      nome: formData.nome,
-      descricao: formData.descricao || null,
-      empresa_id: formData.empresa_id || user?.empresa_id || null,
-    })
-    setSaving(false)
-
-    if (error) {
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("departamentos").insert({
+        nome: formData.nome,
+        descricao: formData.descricao || null,
+        empresa_id: formData.empresa_id || user?.empresa_id || null,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      setIsCreateOpen(false)
+      resetForm()
+      toast({ title: "Departamento criado!", description: "O departamento foi criado com sucesso." })
+      invalidateDepartamentos()
+    },
+    onError: (error) => {
       console.error("Erro ao criar:", error)
       toast({ title: "Erro", description: "Não foi possível criar o departamento.", variant: "destructive" })
-      return
     }
+  })
 
-    setIsCreateOpen(false)
-    resetForm()
-    toast({ title: "Departamento criado!", description: "O departamento foi criado com sucesso." })
-    loadData()
-  }
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingDepartamento) return
+      const { error } = await supabase.from("departamentos").update({
+        nome: formData.nome,
+        descricao: formData.descricao || null,
+        empresa_id: formData.empresa_id || null,
+      }).eq("id", editingDepartamento.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      setIsCreateOpen(false)
+      resetForm()
+      toast({ title: "Departamento atualizado!", description: "O departamento foi atualizado com sucesso." })
+      invalidateDepartamentos()
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar:", error)
+      toast({ title: "Erro", description: "Não foi possível atualizar o departamento.", variant: "destructive" })
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("departamentos").delete().eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({ title: "Departamento excluído", description: "O departamento foi removido com sucesso." })
+      invalidateDepartamentos()
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Não foi possível excluir o departamento.", variant: "destructive" })
+    }
+  })
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async (dep: Departamento) => {
+      const { error } = await supabase.from("departamentos").update({ ativo: !dep.ativo }).eq("id", dep.id)
+      if (error) throw error
+    },
+    onSuccess: invalidateDepartamentos,
+  })
 
   const handleEdit = (dep: Departamento) => {
     setEditingDepartamento(dep)
@@ -118,43 +158,7 @@ export default function Departamentos() {
     setIsCreateOpen(true)
   }
 
-  const handleUpdate = async () => {
-    if (!editingDepartamento) return
-
-    setSaving(true)
-    const { error } = await supabase.from("departamentos").update({
-      nome: formData.nome,
-      descricao: formData.descricao || null,
-      empresa_id: formData.empresa_id || null,
-    }).eq("id", editingDepartamento.id)
-    setSaving(false)
-
-    if (error) {
-      console.error("Erro ao atualizar:", error)
-      toast({ title: "Erro", description: "Não foi possível atualizar o departamento.", variant: "destructive" })
-      return
-    }
-
-    setIsCreateOpen(false)
-    resetForm()
-    toast({ title: "Departamento atualizado!", description: "O departamento foi atualizado com sucesso." })
-    loadData()
-  }
-
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("departamentos").delete().eq("id", id)
-    if (error) {
-      toast({ title: "Erro", description: "Não foi possível excluir o departamento.", variant: "destructive" })
-      return
-    }
-    toast({ title: "Departamento excluído", description: "O departamento foi removido com sucesso." })
-    loadData()
-  }
-
-  const toggleStatus = async (dep: Departamento) => {
-    await supabase.from("departamentos").update({ ativo: !dep.ativo }).eq("id", dep.id)
-    loadData()
-  }
+  const saving = createMutation.isPending || updateMutation.isPending
 
   const filteredDepartamentos = departamentos.filter(d =>
     d.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,7 +180,7 @@ export default function Departamentos() {
           <h1 className="text-3xl font-bold">Gestão de Departamentos</h1>
           <p className="text-muted-foreground mt-2">Gerencie os departamentos da organização</p>
         </div>
-        
+
         <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm() }}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-primary">
@@ -189,13 +193,13 @@ export default function Departamentos() {
               <DialogTitle>{editingDepartamento ? "Editar Departamento" : "Criar Novo Departamento"}</DialogTitle>
               <DialogDescription>{editingDepartamento ? "Atualize as informações do departamento." : "Preencha as informações do novo departamento."}</DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome do Departamento *</Label>
                 <Input id="nome" value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} placeholder="Ex: Recursos Humanos" />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="descricao">Descrição</Label>
                 <Input id="descricao" value={formData.descricao} onChange={(e) => setFormData({...formData, descricao: e.target.value})} placeholder="Descrição do departamento" />
@@ -215,10 +219,14 @@ export default function Departamentos() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
-              <Button onClick={editingDepartamento ? handleUpdate : handleCreate} className="bg-gradient-primary" disabled={saving}>
+              <Button
+                onClick={() => editingDepartamento ? updateMutation.mutate() : createMutation.mutate()}
+                className="bg-gradient-primary"
+                disabled={saving}
+              >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingDepartamento ? "Atualizar" : "Criar Departamento"}
               </Button>
@@ -301,14 +309,14 @@ export default function Departamentos() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => toggleStatus(departamento)}>
+                    <Button variant="outline" size="sm" onClick={() => toggleStatusMutation.mutate(departamento)}>
                       {departamento.ativo ? "Desativar" : "Ativar"}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(departamento)}>
                       <Edit3 className="h-4 w-4" />
                     </Button>
                     {isMaster && (
-                      <Button variant="outline" size="sm" onClick={() => handleDelete(departamento.id)} className="text-destructive hover:text-destructive">
+                      <Button variant="outline" size="sm" onClick={() => deleteMutation.mutate(departamento.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}

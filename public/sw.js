@@ -1,6 +1,6 @@
 // Service Worker mínimo, focado em push notifications.
-// IMPORTANTE: Não fazemos cache agressivo para não atrapalhar o preview do Lovable.
-// Em produção, ele apenas habilita push notifications e respeita as atualizações de rede.
+// IMPORTANTE: Não fazemos cache agressivo, apenas habilita push notifications
+// e respeita as atualizações de rede.
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

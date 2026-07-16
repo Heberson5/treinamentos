@@ -160,12 +160,12 @@ export function NotificationCenter() {
         </DialogHeader>
         
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">Todas</TabsTrigger>
-            <TabsTrigger value="training">Treinamentos</TabsTrigger>
-            <TabsTrigger value="achievement">Conquistas</TabsTrigger>
-            <TabsTrigger value="reminder">Lembretes</TabsTrigger>
-            <TabsTrigger value="system">Sistema</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto gap-1">
+            <TabsTrigger value="all" className="text-xs sm:text-sm">Todas</TabsTrigger>
+            <TabsTrigger value="training" className="text-xs sm:text-sm">Treinamentos</TabsTrigger>
+            <TabsTrigger value="achievement" className="text-xs sm:text-sm">Conquistas</TabsTrigger>
+            <TabsTrigger value="reminder" className="text-xs sm:text-sm">Lembretes</TabsTrigger>
+            <TabsTrigger value="system" className="text-xs sm:text-sm">Sistema</TabsTrigger>
           </TabsList>
           
           {["all", "training", "achievement", "reminder", "system"].map((tabValue) => (
