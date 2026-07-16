@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,33 +29,19 @@ interface AnalyticsData {
 interface DepartmentStats { nome: string; usuarios: number; conclusoes: number; engajamento: number }
 interface TrainingStats { titulo: string; visualizacoes: number; conclusoes: number; taxa: number; tempo: string; avaliacao: number }
 
-export default function Analytics() {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodValue>("30d")
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
-  const { formatDate } = useBrazilianDate()
-  const { user } = useAuth()
-  const { empresaSelecionada, isMaster: isMasterFilter, empresaSelecionadaNome } = useEmpresaFilter()
-  const { toast } = useToast()
-  
-  const [isLoading, setIsLoading] = useState(true)
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
-    totalUsuarios: 0, usuariosAtivos: 0, novosCadastros: 0, totalTreinamentos: 0,
-    treinamentosAtivos: 0, totalConclusoes: 0, taxaConclusao: 0, horasEstudo: 0, certificadosEmitidos: 0
-  })
-  const [departmentStats, setDepartmentStats] = useState<DepartmentStats[]>([])
-  const [trainingStats, setTrainingStats] = useState<TrainingStats[]>([])
-  const [engajamentoDiario, setEngajamentoDiario] = useState<any[]>([])
+interface AnalyticsQueryData {
+  analyticsData: AnalyticsData
+  departmentStats: DepartmentStats[]
+  trainingStats: TrainingStats[]
+  engajamentoDiario: any[]
+}
 
-  const fetchAnalytics = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true)
-    const startDate = selectedPeriod === "custom" && customStartDate
-      ? customStartDate.toISOString()
-      : getStartDateFromPeriod(selectedPeriod).toISOString()
+interface FetchAnalyticsParams {
+  empresaFilter: string | null
+  startDate: string
+}
 
-    try {
-      const empresaFilter = isMasterFilter && empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
-
+async function fetchAnalytics({ empresaFilter, startDate }: FetchAnalyticsParams): Promise<AnalyticsQueryData> {
       let usuariosQuery = supabase.from("perfis").select("*", { count: "exact", head: true })
       if (empresaFilter) usuariosQuery = usuariosQuery.eq("empresa_id", empresaFilter)
       const { count: totalUsuarios } = await usuariosQuery
@@ -87,13 +74,13 @@ export default function Analytics() {
       const taxaConclusao = totalIniciados > 0 ? (totalConclusoes / totalIniciados) * 100 : 0
       const horasEstudo = progressoFiltrado.reduce((acc, p) => acc + (p.tempo_assistido_minutos || 0), 0) / 60
 
-      setAnalyticsData({
+      const analyticsData: AnalyticsData = {
         totalUsuarios: totalUsuarios || 0, usuariosAtivos: usuariosAtivos || 0,
         novosCadastros: novosCadastros || 0, totalTreinamentos: totalTreinamentos || 0,
         treinamentosAtivos: treinamentosAtivos || 0, totalConclusoes,
         taxaConclusao: Math.round(taxaConclusao * 10) / 10,
         horasEstudo: Math.round(horasEstudo), certificadosEmitidos: totalConclusoes
-      })
+      }
 
       let deptQuery = supabase.from("departamentos").select("id, nome")
       if (empresaFilter) deptQuery = deptQuery.eq("empresa_id", empresaFilter)
@@ -121,7 +108,7 @@ export default function Analytics() {
           })
         }
       }
-      setDepartmentStats(deptStats.sort((a, b) => b.engajamento - a.engajamento))
+      const sortedDeptStats = deptStats.sort((a, b) => b.engajamento - a.engajamento)
 
       let topTrainingsQuery = supabase.from("treinamentos").select(`id, titulo, duracao_minutos, empresa_id`).eq("publicado", true).limit(5)
       if (empresaFilter) topTrainingsQuery = topTrainingsQuery.eq("empresa_id", empresaFilter)
@@ -143,7 +130,7 @@ export default function Analytics() {
           })
         }
       }
-      setTrainingStats(trainingStatsData.sort((a, b) => b.conclusoes - a.conclusoes))
+      const sortedTrainingStats = trainingStatsData.sort((a, b) => b.conclusoes - a.conclusoes)
 
       const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
       const engajamento = []
@@ -163,21 +150,54 @@ export default function Analytics() {
           conclusoes: dayProgress.filter(p => p.concluido).length
         })
       }
-      setEngajamentoDiario(engajamento)
-    } catch (error) {
-      console.error("Erro ao buscar analytics:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [selectedPeriod, customStartDate, customEndDate, empresaSelecionada, isMasterFilter])
+      return {
+        analyticsData,
+        departmentStats: sortedDeptStats,
+        trainingStats: sortedTrainingStats,
+        engajamentoDiario: engajamento,
+      }
+}
 
-  useEffect(() => { fetchAnalytics() }, [fetchAnalytics])
+const ANALYTICS_QUERY_KEY = "analytics"
+
+export default function Analytics() {
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodValue>("30d")
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
+  const { formatDate } = useBrazilianDate()
+  const { user } = useAuth()
+  const { empresaSelecionada, isMaster: isMasterFilter, empresaSelecionadaNome } = useEmpresaFilter()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const empresaFilter = isMasterFilter && empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
+  const startDate = selectedPeriod === "custom" && customStartDate
+    ? customStartDate.toISOString()
+    : getStartDateFromPeriod(selectedPeriod).toISOString()
+
+  const queryKey = [ANALYTICS_QUERY_KEY, empresaFilter, selectedPeriod, customStartDate, customEndDate] as const
+
+  const { data, isLoading } = useQuery({
+    queryKey,
+    queryFn: () => fetchAnalytics({ empresaFilter, startDate }),
+  })
+
+  const analyticsData: AnalyticsData = data?.analyticsData ?? {
+    totalUsuarios: 0, usuariosAtivos: 0, novosCadastros: 0, totalTreinamentos: 0,
+    treinamentosAtivos: 0, totalConclusoes: 0, taxaConclusao: 0, horasEstudo: 0, certificadosEmitidos: 0
+  }
+  const departmentStats = data?.departmentStats ?? []
+  const trainingStats = data?.trainingStats ?? []
+  const engajamentoDiario = data?.engajamentoDiario ?? []
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     const scheduleRefresh = () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
-      refreshTimerRef.current = setTimeout(() => fetchAnalytics(true), 2000)
+      refreshTimerRef.current = setTimeout(
+        () => queryClient.invalidateQueries({ queryKey: [ANALYTICS_QUERY_KEY] }),
+        2000
+      )
     }
     const channel = supabase
       .channel('analytics-realtime')
@@ -188,7 +208,7 @@ export default function Analytics() {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
       supabase.removeChannel(channel)
     }
-  }, [fetchAnalytics])
+  }, [queryClient])
 
   const getPeriodLabel = () => {
     if (selectedPeriod === "custom" && customStartDate && customEndDate) {

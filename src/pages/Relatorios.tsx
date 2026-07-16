@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -49,34 +50,18 @@ interface MonthlyData {
   certificados: number
 }
 
-export default function Relatorios() {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodValue>("30d")
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
-  const { formatDate } = useBrazilianDate()
-  const { user } = useAuth()
-  const { empresaSelecionada, isMaster: isMasterFilter, empresaSelecionadaNome } = useEmpresaFilter()
-  const { toast } = useToast()
-  
-  const [isLoading, setIsLoading] = useState(true)
-  const [reportData, setReportData] = useState<ReportData>({
-    totalTreinamentos: 0, totalParticipantes: 0, taxaConclusao: 0,
-    horasTreinamento: 0, certificadosEmitidos: 0
-  })
-  const [departmentReports, setDepartmentReports] = useState<DepartmentReport[]>([])
-  const [trainingReports, setTrainingReports] = useState<TrainingReport[]>([])
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+interface RelatoriosData {
+  reportData: ReportData
+  departmentReports: DepartmentReport[]
+  trainingReports: TrainingReport[]
+  monthlyData: MonthlyData[]
+}
 
-  const fetchReportData = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true)
-    const startDate = selectedPeriod === "custom" && customStartDate
-      ? customStartDate.toISOString()
-      : getStartDateFromPeriod(selectedPeriod).toISOString()
+interface FetchRelatoriosParams {
+  empresaFilter: string | null
+}
 
-    try {
-      const empresaFilter = isMasterFilter && empresaSelecionada && empresaSelecionada !== "todas" 
-        ? empresaSelecionada : null
-
+async function fetchReportData({ empresaFilter }: FetchRelatoriosParams): Promise<RelatoriosData> {
       let treinamentosQuery = supabase.from("treinamentos").select("*")
       if (empresaFilter) treinamentosQuery = treinamentosQuery.eq("empresa_id", empresaFilter)
       const { data: treinamentos } = await treinamentosQuery
@@ -96,13 +81,13 @@ export default function Relatorios() {
       const taxaConclusao = totalIniciados > 0 ? (totalConclusoes / totalIniciados) * 100 : 0
       const horasTreinamento = progressoFiltrado.reduce((acc, p) => acc + (p.tempo_assistido_minutos || 0), 0) / 60
 
-      setReportData({
+      const reportData: ReportData = {
         totalTreinamentos: treinamentos?.length || 0,
         totalParticipantes,
         taxaConclusao: Math.round(taxaConclusao * 10) / 10,
         horasTreinamento: Math.round(horasTreinamento),
         certificadosEmitidos: totalConclusoes
-      })
+      }
 
       let deptQuery = supabase.from("departamentos").select("id, nome")
       if (empresaFilter) deptQuery = deptQuery.eq("empresa_id", empresaFilter)
@@ -123,8 +108,6 @@ export default function Relatorios() {
           })
         }
       }
-      setDepartmentReports(deptReports)
-
       const trainingReportsData: TrainingReport[] = []
       if (treinamentos) {
         for (const training of treinamentos.slice(0, 10)) {
@@ -140,7 +123,7 @@ export default function Relatorios() {
           })
         }
       }
-      setTrainingReports(trainingReportsData.sort((a, b) => b.participantes - a.participantes))
+      const sortedTrainingReports = trainingReportsData.sort((a, b) => b.participantes - a.participantes)
 
       const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
       const monthlyStats: MonthlyData[] = []
@@ -160,21 +143,52 @@ export default function Relatorios() {
           certificados: monthProgress.filter(p => p.concluido).length
         })
       }
-      setMonthlyData(monthlyStats)
-    } catch (error) {
-      console.error("Erro ao buscar relatórios:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [selectedPeriod, customStartDate, customEndDate, empresaSelecionada, isMasterFilter])
+      return {
+        reportData,
+        departmentReports: deptReports,
+        trainingReports: sortedTrainingReports,
+        monthlyData: monthlyStats,
+      }
+}
 
-  useEffect(() => { fetchReportData() }, [fetchReportData])
+const RELATORIOS_QUERY_KEY = "relatorios"
+
+export default function Relatorios() {
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodValue>("30d")
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
+  const { formatDate } = useBrazilianDate()
+  const { user } = useAuth()
+  const { empresaSelecionada, isMaster: isMasterFilter, empresaSelecionadaNome } = useEmpresaFilter()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const empresaFilter = isMasterFilter && empresaSelecionada && empresaSelecionada !== "todas"
+    ? empresaSelecionada : null
+
+  const queryKey = [RELATORIOS_QUERY_KEY, empresaFilter, selectedPeriod, customStartDate, customEndDate] as const
+
+  const { data, isLoading } = useQuery({
+    queryKey,
+    queryFn: () => fetchReportData({ empresaFilter }),
+  })
+
+  const reportData: ReportData = data?.reportData ?? {
+    totalTreinamentos: 0, totalParticipantes: 0, taxaConclusao: 0,
+    horasTreinamento: 0, certificadosEmitidos: 0
+  }
+  const departmentReports = data?.departmentReports ?? []
+  const trainingReports = data?.trainingReports ?? []
+  const monthlyData = data?.monthlyData ?? []
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     const scheduleRefresh = () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
-      refreshTimerRef.current = setTimeout(() => fetchReportData(true), 2000)
+      refreshTimerRef.current = setTimeout(
+        () => queryClient.invalidateQueries({ queryKey: [RELATORIOS_QUERY_KEY] }),
+        2000
+      )
     }
     const channel = supabase
       .channel('relatorios-realtime')
@@ -185,7 +199,7 @@ export default function Relatorios() {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
       supabase.removeChannel(channel)
     }
-  }, [fetchReportData])
+  }, [queryClient])
 
   const getPeriodLabel = () => {
     if (selectedPeriod === "custom" && customStartDate && customEndDate) {
