@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,11 +80,9 @@ export default function Configuracoes() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [testingEmail, setTestingEmail] = useState(false)
-  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([])
   const [auditSearch, setAuditSearch] = useState("")
   const [auditDataInicio, setAuditDataInicio] = useState<string>(todayIso())
   const [auditDataFim, setAuditDataFim] = useState<string>(todayIso())
-  const [auditLoading, setAuditLoading] = useState(false)
 
   const [config, setConfig] = useState<ConfiguracaoSistema>({
     nomeEmpresa: "Portal Treinamentos",
@@ -122,57 +121,56 @@ export default function Configuracoes() {
     logoSidebarUrl: "",
   })
 
-  useEffect(() => {
-    const loadConfig = async () => {
+  const { data: configData } = useQuery({
+    queryKey: ["configuracoes-sistema"],
+    queryFn: async () => {
       const { data } = await supabase
         .from("configuracoes_sistema" as any)
         .select("*")
         .limit(1)
         .single()
-      if (data) {
-        const d = data as any
-        setConfig(prev => ({
-          ...prev,
-          nomeSistema: d.nome_sistema || "Portal Treinamentos",
-          faviconUrl: d.favicon_url || "",
-          logoSidebarUrl: d.logo_sidebar_url || "",
-          sessionTimeoutMin: d.session_timeout_min ?? 30,
-          logoffOnClose: !!d.logoff_on_close,
-          tentativasLoginMax: d.tentativas_login_max ?? 5,
-          bloqueioHoras: d.bloqueio_horas ?? 24,
-          backupDestino: d.backup_destino || "local",
-          backupConfig: d.backup_config || {},
-        }))
-      }
-    }
-    loadConfig()
-  }, [])
+      return data as any
+    },
+  })
 
   useEffect(() => {
-    if (user?.role === "master" || user?.role === "admin") {
-      loadAuditLogs()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, auditDataInicio, auditDataFim])
+    if (!configData) return
+    setConfig(prev => ({
+      ...prev,
+      nomeSistema: configData.nome_sistema || "Portal Treinamentos",
+      faviconUrl: configData.favicon_url || "",
+      logoSidebarUrl: configData.logo_sidebar_url || "",
+      sessionTimeoutMin: configData.session_timeout_min ?? 30,
+      logoffOnClose: !!configData.logoff_on_close,
+      tentativasLoginMax: configData.tentativas_login_max ?? 5,
+      bloqueioHoras: configData.bloqueio_horas ?? 24,
+      backupDestino: configData.backup_destino || "local",
+      backupConfig: configData.backup_config || {},
+    }))
+  }, [configData])
 
-  const loadAuditLogs = async () => {
-    setAuditLoading(true)
-    let query = supabase
-      .from("auditoria" as any)
-      .select("id, usuario_nome, acao, menu, local, descricao, criado_em")
-      .order("criado_em", { ascending: false })
-      .limit(500)
+  const { data: auditLogsData, isFetching: auditLoading, refetch: loadAuditLogs } = useQuery({
+    queryKey: ["auditoria", auditDataInicio, auditDataFim],
+    queryFn: async () => {
+      let query = supabase
+        .from("auditoria" as any)
+        .select("id, usuario_nome, acao, menu, local, descricao, criado_em")
+        .order("criado_em", { ascending: false })
+        .limit(500)
 
-    if (auditDataInicio) {
-      query = query.gte("criado_em", `${auditDataInicio}T00:00:00`)
-    }
-    if (auditDataFim) {
-      query = query.lte("criado_em", `${auditDataFim}T23:59:59`)
-    }
-    const { data } = await query as any
-    setAuditLogs(data || [])
-    setAuditLoading(false)
-  }
+      if (auditDataInicio) {
+        query = query.gte("criado_em", `${auditDataInicio}T00:00:00`)
+      }
+      if (auditDataFim) {
+        query = query.lte("criado_em", `${auditDataFim}T23:59:59`)
+      }
+      const { data } = await query as any
+      return (data || []) as AuditEntry[]
+    },
+    enabled: user?.role === "master" || user?.role === "admin",
+  })
+
+  const auditLogs = auditLogsData ?? []
 
   const persistSeguranca = async () => {
     if (user?.role !== "master") return
