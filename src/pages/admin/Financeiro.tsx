@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -90,13 +91,63 @@ interface Empresa {
 
 const COLORS = ["#22c55e", "#eab308", "#ef4444", "#6b7280"]
 
+interface FinanceiroData {
+  pagamentos: Pagamento[]
+  empresas: Empresa[]
+}
+
+const FINANCEIRO_QUERY_KEY = ["financeiro"]
+
+async function fetchFinanceiroData(): Promise<FinanceiroData> {
+  // Carregar empresas
+  const { data: empresasData } = await supabase
+    .from("empresas")
+    .select("id, nome, nome_fantasia, bloqueada")
+    .eq("ativo", true)
+
+  // Carregar pagamentos
+  const { data: pagamentosData, error } = await supabase
+    .from("pagamentos")
+    .select("*")
+    .order("data_vencimento", { ascending: false })
+
+  if (error) throw error
+
+  // Mapear com nomes das empresas e tipagem correta
+  const pagamentosComEmpresas: Pagamento[] = (pagamentosData || []).map((p) => ({
+    ...p,
+    status: p.status as PagamentoStatus,
+    empresa_nome: empresasData?.find((e) => e.id === p.empresa_id)?.nome_fantasia ||
+      empresasData?.find((e) => e.id === p.empresa_id)?.nome || "N/A",
+  }))
+
+  return { pagamentos: pagamentosComEmpresas, empresas: empresasData || [] }
+}
+
 export default function Financeiro() {
   const { toast } = useToast()
   const { formatDate } = useBrazilianDate()
+  const queryClient = useQueryClient()
 
-  const [pagamentos, setPagamentos] = useState<Pagamento[]>([])
-  const [empresas, setEmpresas] = useState<Empresa[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, isLoading } = useQuery({
+    queryKey: FINANCEIRO_QUERY_KEY,
+    queryFn: fetchFinanceiroData,
+  })
+  const pagamentos = data?.pagamentos ?? []
+  const empresas = data?.empresas ?? []
+
+  const setPagamentos = (updater: (prev: Pagamento[]) => Pagamento[]) => {
+    queryClient.setQueryData<FinanceiroData | undefined>(FINANCEIRO_QUERY_KEY, (prev) =>
+      prev ? { ...prev, pagamentos: updater(prev.pagamentos) } : prev
+    )
+  }
+
+  const setEmpresas = (updater: (prev: Empresa[]) => Empresa[]) => {
+    queryClient.setQueryData<FinanceiroData | undefined>(FINANCEIRO_QUERY_KEY, (prev) =>
+      prev ? { ...prev, empresas: updater(prev.empresas) } : prev
+    )
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("todos")
   const [periodoInicio, setPeriodoInicio] = useState<string>("")
@@ -113,45 +164,6 @@ export default function Financeiro() {
   const [novoMetodo, setNovoMetodo] = useState("")
   const [novaReferencia, setNovaReferencia] = useState("")
   const [novasObservacoes, setNovasObservacoes] = useState("")
-
-  // Carregar dados
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        // Carregar empresas
-        const { data: empresasData } = await supabase
-          .from("empresas")
-          .select("id, nome, nome_fantasia, bloqueada")
-          .eq("ativo", true)
-
-        if (empresasData) setEmpresas(empresasData)
-
-        // Carregar pagamentos
-        const { data: pagamentosData, error } = await supabase
-          .from("pagamentos")
-          .select("*")
-          .order("data_vencimento", { ascending: false })
-
-        if (error) {
-          console.error("Erro ao carregar pagamentos:", error)
-        } else {
-          // Mapear com nomes das empresas e tipagem correta
-          const pagamentosComEmpresas: Pagamento[] = (pagamentosData || []).map((p) => ({
-            ...p,
-            status: p.status as PagamentoStatus,
-            empresa_nome: empresasData?.find((e) => e.id === p.empresa_id)?.nome_fantasia ||
-              empresasData?.find((e) => e.id === p.empresa_id)?.nome || "N/A",
-          }))
-          setPagamentos(pagamentosComEmpresas)
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadData()
-  }, [])
 
   // Métricas
   const totalPago = useMemo(() => 

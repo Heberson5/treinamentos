@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,8 +45,6 @@ export default function Checkout() {
   const planoId = searchParams.get('plano')
   const annual = searchParams.get('annual') === 'true'
   
-  const [plano, setPlano] = useState<Plano | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [step, setStep] = useState<'empresa' | 'pagamento'>('empresa')
   
@@ -64,38 +63,39 @@ export default function Checkout() {
   const [isFetchingCNPJ, setIsFetchingCNPJ] = useState(false)
 
   // Load plan
-  useEffect(() => {
-    const loadPlano = async () => {
-      if (!planoId) {
-        navigate('/')
-        return
-      }
-
+  const { data: plano, isLoading, isError } = useQuery({
+    queryKey: ["plano-checkout", planoId],
+    queryFn: async (): Promise<Plano> => {
       const { data, error } = await supabase
         .from('planos')
         .select('*')
-        .eq('id', planoId)
+        .eq('id', planoId!)
         .single()
 
-      if (error || !data) {
-        toast({
-          title: "Plano não encontrado",
-          description: "O plano selecionado não existe.",
-          variant: "destructive"
-        })
-        navigate('/')
-        return
-      }
+      if (error || !data) throw error || new Error("Plano não encontrado")
 
-      setPlano({
+      return {
         ...data,
         recursos: (data.recursos as Plano['recursos']) || []
-      })
-      setIsLoading(false)
-    }
+      }
+    },
+    enabled: !!planoId,
+  })
 
-    loadPlano()
-  }, [planoId, navigate, toast])
+  useEffect(() => {
+    if (!planoId) {
+      navigate('/')
+      return
+    }
+    if (isError) {
+      toast({
+        title: "Plano não encontrado",
+        description: "O plano selecionado não existe.",
+        variant: "destructive"
+      })
+      navigate('/')
+    }
+  }, [planoId, isError, navigate, toast])
 
   // CNPJ lookup
   const handleCNPJChange = async (value: string) => {
