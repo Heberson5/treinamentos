@@ -55,9 +55,10 @@ export default function Departamentos() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingDepartamento, setEditingDepartamento] = useState<Departamento | null>(null)
   const { toast } = useToast()
-  const { isMaster } = useEmpresaFilter()
+  const { isMaster, empresaSelecionada } = useEmpresaFilter()
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const empresaFiltro = isMaster && empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -160,7 +161,11 @@ export default function Departamentos() {
 
   const saving = createMutation.isPending || updateMutation.isPending
 
-  const filteredDepartamentos = departamentos.filter(d =>
+  const departamentosDaEmpresa = empresaFiltro
+    ? departamentos.filter(d => d.empresa_id === empresaFiltro)
+    : departamentos
+
+  const filteredDepartamentos = departamentosDaEmpresa.filter(d =>
     d.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (d.descricao || "").toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -235,7 +240,7 @@ export default function Departamentos() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -244,7 +249,7 @@ export default function Departamentos() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{departamentos.length}</p>
+                <p className="text-2xl font-bold">{departamentosDaEmpresa.length}</p>
               </div>
             </div>
           </CardContent>
@@ -257,7 +262,7 @@ export default function Departamentos() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Ativos</p>
-                <p className="text-2xl font-bold">{departamentos.filter(d => d.ativo).length}</p>
+                <p className="text-2xl font-bold">{departamentosDaEmpresa.filter(d => d.ativo).length}</p>
               </div>
             </div>
           </CardContent>
@@ -270,63 +275,53 @@ export default function Departamentos() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Inativos</p>
-                <p className="text-2xl font-bold">{departamentos.filter(d => !d.ativo).length}</p>
+                <p className="text-2xl font-bold">{departamentosDaEmpresa.filter(d => !d.ativo).length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="relative">
+      <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Buscar departamentos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Departamentos</CardTitle>
-          <CardDescription>Gerencie todos os departamentos cadastrados no sistema</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredDepartamentos.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Nenhum departamento encontrado. Crie o primeiro!</p>
-          ) : (
-            <div className="space-y-4">
-              {filteredDepartamentos.map((departamento) => (
-                <div key={departamento.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Building2 className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium">{departamento.nome}</h4>
-                        <Badge variant={departamento.ativo ? "default" : "secondary"}>
-                          {departamento.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </div>
-                      {departamento.descricao && <p className="text-sm text-muted-foreground">{departamento.descricao}</p>}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => toggleStatusMutation.mutate(departamento)}>
-                      {departamento.ativo ? "Desativar" : "Ativar"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(departamento)}>
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    {isMaster && (
-                      <Button variant="outline" size="sm" onClick={() => deleteMutation.mutate(departamento.id)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+      {filteredDepartamentos.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">Nenhum departamento encontrado. Crie o primeiro!</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredDepartamentos.map((departamento) => (
+            <Card key={departamento.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2 min-w-0">
+                    <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    <span className="truncate">{departamento.nome}</span>
+                  </CardTitle>
+                  <Badge variant={departamento.ativo ? "default" : "secondary"} className="shrink-0">
+                    {departamento.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {departamento.descricao && <CardDescription>{departamento.descricao}</CardDescription>}
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2 pt-0">
+                <Button variant="outline" size="sm" onClick={() => toggleStatusMutation.mutate(departamento)}>
+                  {departamento.ativo ? "Desativar" : "Ativar"}
+                </Button>
+                <Button variant="outline" size="icon-sm" onClick={() => handleEdit(departamento)}>
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+                {isMaster && (
+                  <Button variant="outline" size="icon-sm" onClick={() => deleteMutation.mutate(departamento.id)} className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

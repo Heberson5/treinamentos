@@ -101,6 +101,8 @@ async function fetchReportData({ empresaFilter }: FetchRelatoriosParams): Promis
             .eq("departamento_id", dept.id)
           const deptConclusoes = Math.floor(totalConclusoes / (departamentos.length || 1))
           const deptParticipantes = userCount || 0
+          // Só exibimos departamentos que de fato têm dados (participantes ou conclusões)
+          if (deptParticipantes === 0 && deptConclusoes === 0) continue
           deptReports.push({
             nome: dept.nome, participantes: deptParticipantes,
             conclusoes: deptConclusoes,

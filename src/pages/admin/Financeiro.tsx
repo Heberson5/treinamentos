@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useBrazilianDate } from "@/hooks/use-brazilian-date"
+import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import {
   DollarSign,
   TrendingUp,
@@ -96,20 +97,26 @@ interface FinanceiroData {
   empresas: Empresa[]
 }
 
-const FINANCEIRO_QUERY_KEY = ["financeiro"]
+const FINANCEIRO_QUERY_KEY = "financeiro"
 
-async function fetchFinanceiroData(): Promise<FinanceiroData> {
+async function fetchFinanceiroData(empresaFiltro: string | null): Promise<FinanceiroData> {
   // Carregar empresas
   const { data: empresasData } = await supabase
     .from("empresas")
     .select("id, nome, nome_fantasia, bloqueada")
     .eq("ativo", true)
 
-  // Carregar pagamentos
-  const { data: pagamentosData, error } = await supabase
+  // Carregar pagamentos (restrito à empresa selecionada pelo master no filtro do topo, quando houver)
+  let pagamentosQuery = supabase
     .from("pagamentos")
     .select("*")
     .order("data_vencimento", { ascending: false })
+
+  if (empresaFiltro) {
+    pagamentosQuery = pagamentosQuery.eq("empresa_id", empresaFiltro)
+  }
+
+  const { data: pagamentosData, error } = await pagamentosQuery
 
   if (error) throw error
 
@@ -128,22 +135,25 @@ export default function Financeiro() {
   const { toast } = useToast()
   const { formatDate } = useBrazilianDate()
   const queryClient = useQueryClient()
+  const { empresaSelecionada, isMaster } = useEmpresaFilter()
+  const empresaFiltro = isMaster && empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
+  const queryKey = [FINANCEIRO_QUERY_KEY, empresaFiltro]
 
   const { data, isLoading } = useQuery({
-    queryKey: FINANCEIRO_QUERY_KEY,
-    queryFn: fetchFinanceiroData,
+    queryKey,
+    queryFn: () => fetchFinanceiroData(empresaFiltro),
   })
   const pagamentos = data?.pagamentos ?? []
   const empresas = data?.empresas ?? []
 
   const setPagamentos = (updater: (prev: Pagamento[]) => Pagamento[]) => {
-    queryClient.setQueryData<FinanceiroData | undefined>(FINANCEIRO_QUERY_KEY, (prev) =>
+    queryClient.setQueryData<FinanceiroData | undefined>(queryKey, (prev) =>
       prev ? { ...prev, pagamentos: updater(prev.pagamentos) } : prev
     )
   }
 
   const setEmpresas = (updater: (prev: Empresa[]) => Empresa[]) => {
-    queryClient.setQueryData<FinanceiroData | undefined>(FINANCEIRO_QUERY_KEY, (prev) =>
+    queryClient.setQueryData<FinanceiroData | undefined>(queryKey, (prev) =>
       prev ? { ...prev, empresas: updater(prev.empresas) } : prev
     )
   }
@@ -181,7 +191,8 @@ export default function Financeiro() {
     [pagamentos]
   )
 
-  const empresasBloqueadas = empresas.filter(e => e.bloqueada).length
+  const empresasBloqueadas = (empresaFiltro ? empresas.filter(e => e.id === empresaFiltro) : empresas)
+    .filter(e => e.bloqueada).length
 
   // Dados para gráficos
   const statusData = useMemo(() => [

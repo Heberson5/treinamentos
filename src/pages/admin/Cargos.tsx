@@ -65,8 +65,9 @@ async function fetchCargosData(): Promise<CargosData> {
 export default function Cargos() {
   const { toast } = useToast()
   const { user } = useAuth()
-  const { isMaster } = useEmpresaFilter()
+  const { isMaster, empresaSelecionada } = useEmpresaFilter()
   const queryClient = useQueryClient()
+  const empresaFiltro = isMaster && empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
 
   const { data, isLoading } = useQuery({
     queryKey: ["cargos", "admin-all"],
@@ -217,7 +218,11 @@ export default function Cargos() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending
 
-  const filteredCargos = cargos.filter(cargo =>
+  const cargosDaEmpresa = empresaFiltro
+    ? cargos.filter(c => c.empresa_id === empresaFiltro || !c.empresa_id)
+    : cargos
+
+  const filteredCargos = cargosDaEmpresa.filter(cargo =>
     cargo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (cargo.descricao?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
     (cargo.empresa_nome?.toLowerCase() || "").includes(searchTerm.toLowerCase())
@@ -342,7 +347,7 @@ export default function Cargos() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -351,7 +356,7 @@ export default function Cargos() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{cargos.length}</p>
+                <p className="text-2xl font-bold">{cargosDaEmpresa.length}</p>
               </div>
             </div>
           </CardContent>
@@ -364,7 +369,7 @@ export default function Cargos() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Ativos</p>
-                <p className="text-2xl font-bold">{cargos.filter(c => c.ativo).length}</p>
+                <p className="text-2xl font-bold">{cargosDaEmpresa.filter(c => c.ativo).length}</p>
               </div>
             </div>
           </CardContent>
@@ -377,7 +382,7 @@ export default function Cargos() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Globais</p>
-                <p className="text-2xl font-bold">{cargos.filter(c => !c.empresa_id).length}</p>
+                <p className="text-2xl font-bold">{cargosDaEmpresa.filter(c => !c.empresa_id).length}</p>
               </div>
             </div>
           </CardContent>
@@ -385,7 +390,7 @@ export default function Cargos() {
       </div>
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar cargos..."
@@ -396,80 +401,51 @@ export default function Cargos() {
       </div>
 
       {/* Cargos List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Cargos</CardTitle>
-          <CardDescription>
-            Gerencie todos os cargos cadastrados no sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredCargos.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhum cargo encontrado.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {filteredCargos.map((cargo) => (
-                <div key={cargo.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Briefcase className="h-5 w-5 text-primary" />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium">{cargo.nome}</h4>
-                        <Badge variant={cargo.ativo ? "default" : "secondary"}>
-                          {cargo.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                        {!cargo.empresa_id && (
-                          <Badge variant="outline" className="border-purple-500 text-purple-600">
-                            Global
-                          </Badge>
-                        )}
-                      </div>
-                      {cargo.descricao && (
-                        <p className="text-sm text-muted-foreground">{cargo.descricao}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {cargo.empresa_nome}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => toggleStatusMutation.mutate(cargo)}
-                    >
-                      {cargo.ativo ? "Desativar" : "Ativar"}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEdit(cargo)}
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    {isMaster && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => deleteMutation.mutate(cargo.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+      {filteredCargos.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">
+          Nenhum cargo encontrado.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredCargos.map((cargo) => (
+            <Card key={cargo.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2 min-w-0">
+                    <Briefcase className="h-4 w-4 text-primary shrink-0" />
+                    <span className="truncate">{cargo.nome}</span>
+                  </CardTitle>
+                  <div className="flex gap-1 shrink-0">
+                    <Badge variant={cargo.ativo ? "default" : "secondary"}>
+                      {cargo.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                    {!cargo.empresa_id && (
+                      <Badge variant="outline" className="border-purple-500 text-purple-600">
+                        Global
+                      </Badge>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {cargo.descricao && <CardDescription>{cargo.descricao}</CardDescription>}
+                <p className="text-xs text-muted-foreground">{cargo.empresa_nome}</p>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2 pt-0">
+                <Button variant="outline" size="sm" onClick={() => toggleStatusMutation.mutate(cargo)}>
+                  {cargo.ativo ? "Desativar" : "Ativar"}
+                </Button>
+                <Button variant="outline" size="icon-sm" onClick={() => handleEdit(cargo)}>
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+                {isMaster && (
+                  <Button variant="outline" size="icon-sm" onClick={() => deleteMutation.mutate(cargo.id)} className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -78,6 +78,7 @@ const todayIso = () => new Date().toISOString().split("T")[0]
 export default function Configuracoes() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
   const [testingEmail, setTestingEmail] = useState(false)
   const [auditSearch, setAuditSearch] = useState("")
@@ -146,6 +147,26 @@ export default function Configuracoes() {
       bloqueioHoras: configData.bloqueio_horas ?? 24,
       backupDestino: configData.backup_destino || "local",
       backupConfig: configData.backup_config || {},
+      nomeEmpresa: configData.nome_empresa || "Portal Treinamentos",
+      emailContato: configData.email_contato || "",
+      telefoneContato: configData.telefone_contato || "",
+      endereco: configData.endereco || "",
+      timezone: configData.timezone || "America/Sao_Paulo",
+      idioma: configData.idioma || "pt-BR",
+      smtpHost: configData.smtp_host || "",
+      smtpPort: configData.smtp_port ?? 587,
+      smtpUsuario: configData.smtp_usuario || "",
+      smtpSenha: configData.smtp_senha || "",
+      smtpTls: configData.smtp_tls ?? true,
+      emailRemetente: configData.email_remetente || "",
+      notificacoesEmail: configData.notificacoes_email ?? true,
+      notificacoesPush: configData.notificacoes_push ?? true,
+      notificacoesConclusao: configData.notificacoes_conclusao ?? true,
+      notificacoesLembrete: configData.notificacoes_lembrete ?? true,
+      senhaMinLength: configData.senha_min_length ?? 8,
+      senhaRequerMaiuscula: configData.senha_requer_maiuscula ?? true,
+      senhaRequerNumero: configData.senha_requer_numero ?? true,
+      senhaRequerEspecial: configData.senha_requer_especial ?? true,
     }))
   }, [configData])
 
@@ -188,6 +209,7 @@ export default function Configuracoes() {
     setLoading(false)
     if (!error) {
       toast({ title: "Configurações de segurança salvas!" })
+      queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
       await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: "segurança", descricao: "Atualizou políticas de segurança e logoff automático" })
     } else {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
@@ -208,6 +230,7 @@ export default function Configuracoes() {
     setLoading(false)
     if (!error) {
       toast({ title: "Configurações de backup salvas!" })
+      queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
       await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: "backup", descricao: `Atualizou destino de backup para ${config.backupDestino}` })
     } else {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
@@ -219,11 +242,63 @@ export default function Configuracoes() {
       toast({ title: "Permissão negada", description: "Apenas Masters podem alterar configurações", variant: "destructive" })
       return
     }
+
+    let updateData: Record<string, unknown> | null = null
+    switch (categoria) {
+      case "gerais":
+        updateData = {
+          nome_empresa: config.nomeEmpresa,
+          email_contato: config.emailContato,
+          telefone_contato: config.telefoneContato,
+          endereco: config.endereco,
+          timezone: config.timezone,
+          idioma: config.idioma,
+        }
+        break
+      case "email":
+        updateData = {
+          smtp_host: config.smtpHost,
+          smtp_port: config.smtpPort,
+          smtp_usuario: config.smtpUsuario,
+          smtp_senha: config.smtpSenha,
+          smtp_tls: config.smtpTls,
+          email_remetente: config.emailRemetente,
+        }
+        break
+      case "notificações":
+        updateData = {
+          notificacoes_email: config.notificacoesEmail,
+          notificacoes_push: config.notificacoesPush,
+          notificacoes_conclusao: config.notificacoesConclusao,
+          notificacoes_lembrete: config.notificacoesLembrete,
+        }
+        break
+      case "senhas":
+        updateData = {
+          senha_min_length: config.senhaMinLength,
+          senha_requer_maiuscula: config.senhaRequerMaiuscula,
+          senha_requer_numero: config.senhaRequerNumero,
+          senha_requer_especial: config.senhaRequerEspecial,
+        }
+        break
+    }
+
+    if (!updateData) return
+
     setLoading(true)
-    await new Promise(r => setTimeout(r, 600))
+    const { error } = await supabase
+      .from("configuracoes_sistema" as any)
+      .update({ ...updateData, atualizado_em: new Date().toISOString() } as any)
+      .not("id", "is", null)
     setLoading(false)
-    toast({ title: "Configurações salvas!", description: `Configurações de ${categoria} foram atualizadas.` })
-    await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: categoria, descricao: `Atualizou configurações de ${categoria}` })
+
+    if (!error) {
+      toast({ title: "Configurações salvas!", description: `Configurações de ${categoria} foram atualizadas.` })
+      queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
+      await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: categoria, descricao: `Atualizou configurações de ${categoria}` })
+    } else {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+    }
   }
 
   const handleTestEmail = async () => {

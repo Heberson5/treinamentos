@@ -87,9 +87,11 @@ export default function GestaoTreinamentos() {
           .select("*")
           .order("criado_em", { ascending: false })
 
-        // Se não for master e tiver empresa selecionada, filtrar por empresa
-        if (!isMaster && empresaSelecionada && empresaSelecionada !== "todas") {
-          query = query.or(`empresa_id.eq.${empresaSelecionada},empresa_id.is.null`)
+        // Master: filtra pela empresa selecionada no topo (ou traz todas, se nenhuma selecionada)
+        // Demais usuários: sempre restritos à própria empresa (já refletida em empresaSelecionada)
+        const empresaFiltro = isMaster ? empresaSelecionada : (empresaSelecionada || user?.empresa_id)
+        if (empresaFiltro && empresaFiltro !== "todas") {
+          query = query.or(`empresa_id.eq.${empresaFiltro},empresa_id.is.null`)
         }
 
         const { data, error } = await query

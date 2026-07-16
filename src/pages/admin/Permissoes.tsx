@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { supabase } from "@/integrations/supabase/client"
 import { invalidatePermissionsCache } from "@/hooks/use-permissions"
 
@@ -113,7 +114,16 @@ const permissoesDisponiveis: Permission[] = [
 const PERMISSOES_ROLES_QUERY_KEY = "permissoes-roles"
 
 async function fetchRolesData(empresaId: string | null): Promise<Role[]> {
-  // Fetch all roles with user counts
+  // Fetch all roles with user counts, restritos à empresa filtrada (quando houver)
+  let usuarioIdsDaEmpresa: Set<string> | null = null
+  if (empresaId) {
+    const { data: perfisEmpresa } = await supabase
+      .from("perfis")
+      .select("id")
+      .eq("empresa_id", empresaId)
+    usuarioIdsDaEmpresa = new Set((perfisEmpresa || []).map((p) => p.id))
+  }
+
   const { data: rolesData } = await supabase
     .from("usuario_roles")
     .select("role, usuario_id")
@@ -121,6 +131,7 @@ async function fetchRolesData(empresaId: string | null): Promise<Role[]> {
   const roleCounts: Record<string, number> = {}
   if (rolesData) {
     for (const r of rolesData) {
+      if (usuarioIdsDaEmpresa && !usuarioIdsDaEmpresa.has(r.usuario_id)) continue
       roleCounts[r.role] = (roleCounts[r.role] || 0) + 1
     }
   }
@@ -210,7 +221,8 @@ export default function Permissoes() {
   const { user } = useAuth()
   const isMaster = user?.role === "master"
   const queryClient = useQueryClient()
-  const empresaId = (user as any)?.empresa_id ?? null
+  const { empresaSelecionada } = useEmpresaFilter()
+  const empresaId = isMaster ? empresaSelecionada : ((user as any)?.empresa_id ?? null)
 
   const { data: roles = [], isLoading } = useQuery({
     queryKey: [PERMISSOES_ROLES_QUERY_KEY, empresaId],
@@ -294,7 +306,6 @@ export default function Permissoes() {
       return
     }
     try {
-      const empresaId = (user as any)?.empresa_id ?? null
       // Apaga registros anteriores deste papel/empresa e reinsere o conjunto atual
       const del = supabase.from("permissoes_role").delete().eq("role", roleDb)
       const delScoped = empresaId
@@ -326,10 +337,12 @@ export default function Permissoes() {
   }
 
 
+  const isOwnRole = (role: Role) => nomeParaRole(role.nome) === user?.role
+
   const handleDeleteRole = (id: number) => {
     const role = roles.find(r => r.id === id)
-    if (role?.isMasterRole) {
-      toast({ title: "Não permitido", description: "O papel Master não pode ser excluído", variant: "destructive" })
+    if (role?.isMasterRole || (role && isOwnRole(role))) {
+      toast({ title: "Não permitido", description: "Você não pode excluir o seu próprio papel", variant: "destructive" })
       return
     }
     if (role && role.usuariosCount > 0) {
@@ -648,7 +661,8 @@ export default function Permissoes() {
                   size="sm"
                   onClick={() => handleDeleteRole(role.id)}
                   className="text-destructive hover:text-destructive"
-                  disabled={role.usuariosCount > 0 || role.isMasterRole}
+                  disabled={role.usuariosCount > 0 || role.isMasterRole || isOwnRole(role)}
+                  title={isOwnRole(role) ? "Você não pode excluir o seu próprio papel" : undefined}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
