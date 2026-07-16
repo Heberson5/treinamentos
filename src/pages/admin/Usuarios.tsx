@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useMemo, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Card,
   CardContent,
@@ -178,18 +179,120 @@ const validatePassword = (password: string): { valid: boolean; errors: string[] 
   return { valid: errors.length === 0, errors }
 }
 
+interface UsuariosPageData {
+  usuarios: Usuario[]
+  departamentos: Departamento[]
+  cargos: Cargo[]
+  empresas: Empresa[]
+}
+
+const USUARIOS_QUERY_KEY = "usuarios-admin"
+
+async function fetchUsuariosPageData(isMaster: boolean, userEmpresaId: string | undefined): Promise<UsuariosPageData> {
+  // Carregar usuários por RPC segura no banco.
+  // Para admins de empresa, a própria função já exclui Masters e outras empresas.
+  const { data: perfisData, error: perfisError } = await supabase.rpc("listar_usuarios_visiveis_admin")
+
+  if (perfisError) {
+    console.error("Erro ao carregar perfis:", perfisError)
+    throw perfisError
+  }
+
+  // Carregar empresas
+  let empresasQuery = supabase
+    .from("empresas")
+    .select("id, nome, nome_fantasia")
+    .eq("ativo", true)
+
+  if (!isMaster && userEmpresaId) {
+    empresasQuery = empresasQuery.eq("id", userEmpresaId)
+  }
+
+  const { data: empresasData } = await empresasQuery
+
+  // Carregar departamentos
+  let departamentosQuery = supabase
+    .from("departamentos")
+    .select("id, nome, empresa_id")
+    .eq("ativo", true)
+
+  if (!isMaster && userEmpresaId) {
+    departamentosQuery = departamentosQuery.eq("empresa_id", userEmpresaId)
+  }
+
+  const { data: departamentosData } = await departamentosQuery
+
+  // Carregar cargos
+  let cargosQuery = supabase
+    .from("cargos")
+    .select("id, nome, empresa_id")
+    .eq("ativo", true)
+
+  if (!isMaster && userEmpresaId) {
+    cargosQuery = cargosQuery.eq("empresa_id", userEmpresaId)
+  }
+
+  const { data: cargosData } = await cargosQuery
+
+  // Montar usuários com a base já filtrada pelo banco
+  const usuariosList: Usuario[] = (perfisData || []).map((perfil) => {
+    const empresa = empresasData?.find((e) => e.id === perfil.empresa_id)
+    const departamento = departamentosData?.find((d) => d.id === perfil.departamento_id)
+
+    return {
+      id: perfil.id,
+      nome: perfil.nome,
+      email: perfil.email,
+      empresa_id: perfil.empresa_id,
+      empresa_nome: empresa?.nome_fantasia || empresa?.nome || "Sem empresa",
+      departamento_id: perfil.departamento_id,
+      departamento_nome: departamento?.nome,
+      cargo: perfil.cargo || null,
+      status: (perfil.ativo ? "ativo" : "inativo") as StatusUsuario,
+      papel: (perfil.papel as PapelUsuario) || "usuario",
+      ultimoAcesso: "N/A",
+      trocar_senha_primeiro_login: perfil.trocar_senha_primeiro_login || false,
+      dias_para_trocar_senha: perfil.dias_para_trocar_senha || null,
+    }
+  })
+
+  return {
+    usuarios: usuariosList,
+    departamentos: departamentosData || [],
+    cargos: cargosData || [],
+    empresas: empresasData || [],
+  }
+}
+
 export default function Usuarios() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { isMaster, empresaSelecionada } = useEmpresaFilter()
   const onlineIds = useOnlineUsers()
+  const queryClient = useQueryClient()
 
+  const usuariosQueryKey = [USUARIOS_QUERY_KEY, user?.id, isMaster] as const
 
-  const [usuarios, setUsuarios] = useState<Usuario[]>([])
-  const [departamentos, setDepartamentos] = useState<Departamento[]>([])
-  const [cargos, setCargos] = useState<Cargo[]>([])
-  const [empresas, setEmpresas] = useState<Empresa[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, isLoading } = useQuery({
+    queryKey: usuariosQueryKey,
+    queryFn: () => fetchUsuariosPageData(isMaster, user?.empresa_id),
+    enabled: !!user,
+    meta: {
+      errorToast: { title: "Erro ao carregar usuários" }
+    }
+  })
+
+  const usuarios = data?.usuarios ?? []
+  const departamentos = data?.departamentos ?? []
+  const cargos = data?.cargos ?? []
+  const empresas = data?.empresas ?? []
+
+  const setUsuarios = (updater: (prev: Usuario[]) => Usuario[]) => {
+    queryClient.setQueryData<UsuariosPageData | undefined>(usuariosQueryKey, (prev) =>
+      prev ? { ...prev, usuarios: updater(prev.usuarios) } : prev
+    )
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusUsuario | "todos">("todos")
   const [empresaFilter, setEmpresaFilter] = useState<string>("todas")
@@ -212,100 +315,6 @@ export default function Usuarios() {
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [trocarSenhaPrimeiroLogin, setTrocarSenhaPrimeiroLogin] = useState(false)
   const [diasParaTrocarSenha, setDiasParaTrocarSenha] = useState<string>("")
-
-  // Carregar dados
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user) {
-        setIsLoading(false)
-        return
-      }
-
-      setIsLoading(true)
-      try {
-        // Carregar usuários por RPC segura no banco.
-        // Para admins de empresa, a própria função já exclui Masters e outras empresas.
-        const { data: perfisData, error: perfisError } = await supabase.rpc("listar_usuarios_visiveis_admin")
-
-        if (perfisError) {
-          console.error("Erro ao carregar perfis:", perfisError)
-          toast({
-            title: "Erro ao carregar usuários",
-            description: perfisError.message,
-            variant: "destructive",
-          })
-        }
-
-        // Carregar empresas
-        let empresasQuery = supabase
-          .from("empresas")
-          .select("id, nome, nome_fantasia")
-          .eq("ativo", true)
-
-        if (!isMaster && user.empresa_id) {
-          empresasQuery = empresasQuery.eq("id", user.empresa_id)
-        }
-
-        const { data: empresasData } = await empresasQuery
-
-        // Carregar departamentos
-        let departamentosQuery = supabase
-          .from("departamentos")
-          .select("id, nome, empresa_id")
-          .eq("ativo", true)
-
-        if (!isMaster && user.empresa_id) {
-          departamentosQuery = departamentosQuery.eq("empresa_id", user.empresa_id)
-        }
-
-        const { data: departamentosData } = await departamentosQuery
-
-        // Carregar cargos
-        let cargosQuery = supabase
-          .from("cargos")
-          .select("id, nome, empresa_id")
-          .eq("ativo", true)
-
-        if (!isMaster && user.empresa_id) {
-          cargosQuery = cargosQuery.eq("empresa_id", user.empresa_id)
-        }
-
-        const { data: cargosData } = await cargosQuery
-
-        if (empresasData) setEmpresas(empresasData)
-        if (departamentosData) setDepartamentos(departamentosData)
-        if (cargosData) setCargos(cargosData)
-
-        // Montar usuários com a base já filtrada pelo banco
-        const usuariosList: Usuario[] = (perfisData || []).map((perfil) => {
-          const empresa = empresasData?.find((e) => e.id === perfil.empresa_id)
-          const departamento = departamentosData?.find((d) => d.id === perfil.departamento_id)
-
-          return {
-            id: perfil.id,
-            nome: perfil.nome,
-            email: perfil.email,
-            empresa_id: perfil.empresa_id,
-            empresa_nome: empresa?.nome_fantasia || empresa?.nome || "Sem empresa",
-            departamento_id: perfil.departamento_id,
-            departamento_nome: departamento?.nome,
-            cargo: perfil.cargo || null,
-            status: (perfil.ativo ? "ativo" : "inativo") as StatusUsuario,
-            papel: (perfil.papel as PapelUsuario) || "usuario",
-            ultimoAcesso: "N/A",
-            trocar_senha_primeiro_login: perfil.trocar_senha_primeiro_login || false,
-            dias_para_trocar_senha: perfil.dias_para_trocar_senha || null,
-          }
-        })
-
-        setUsuarios(usuariosList)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadData()
-  }, [user, isMaster])
 
   // Filtrar departamentos e cargos pela empresa selecionada no form
   const departamentosFiltrados = useMemo(() => {
@@ -485,7 +494,7 @@ export default function Usuarios() {
       setIsCreateOpen(false)
 
       // Recarregar lista
-      window.location.reload()
+      queryClient.invalidateQueries({ queryKey: [USUARIOS_QUERY_KEY] })
     } catch (error) {
       console.error("Erro:", error)
       toast({

@@ -1,5 +1,6 @@
 // Página de Gestão de Empresas integrada com Supabase
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -92,9 +93,30 @@ interface Empresa {
 
 type FilterType = "todas" | "ativas" | "demo" | "expiradas";
 
+const EMPRESAS_ADMIN_QUERY_KEY = ["empresas", "admin-all"];
+
+async function fetchEmpresasAdmin(): Promise<Empresa[]> {
+  const { data, error } = await supabase
+    .from("empresas")
+    .select("*")
+    .order("criado_em", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
 export default function EmpresasSupabase() {
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: empresas = [], isLoading } = useQuery({
+    queryKey: EMPRESAS_ADMIN_QUERY_KEY,
+    queryFn: fetchEmpresasAdmin,
+    meta: { errorToast: { title: "Erro ao carregar empresas", description: "Não foi possível carregar a lista de empresas" } }
+  });
+
+  const setEmpresas = (updater: (prev: Empresa[]) => Empresa[]) => {
+    queryClient.setQueryData<Empresa[]>(EMPRESAS_ADMIN_QUERY_KEY, (prev) => updater(prev || []));
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("todas");
   const [activeTab, setActiveTab] = useState<"clientes" | "demo">("clientes");
@@ -126,31 +148,7 @@ export default function EmpresasSupabase() {
 
   const { toast } = useToast();
 
-  // Carregar empresas
-  const fetchEmpresas = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("empresas")
-        .select("*")
-        .order("criado_em", { ascending: false });
-
-      if (error) throw error;
-      setEmpresas(data || []);
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar empresas",
-        description: "Não foi possível carregar a lista de empresas",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEmpresas();
-  }, []);
+  const fetchEmpresas = () => queryClient.invalidateQueries({ queryKey: EMPRESAS_ADMIN_QUERY_KEY });
 
   // Filtrar empresas
   const empresasFiltradas = useMemo(() => {

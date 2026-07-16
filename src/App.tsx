@@ -2,8 +2,9 @@ import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MainLayout } from "@/components/layout/main-layout";
 import { LoginForm } from "@/components/auth/login-form";
@@ -45,7 +46,20 @@ const Financeiro = lazy(() => import("./pages/admin/Financeiro"));
 const Categorias = lazy(() => import("./pages/admin/Categorias"));
 const ArquiteturaSistema = lazy(() => import("./pages/admin/ArquiteturaSistema"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      const errorToast = (query.meta as { errorToast?: { title: string; description?: string } } | undefined)?.errorToast;
+      if (errorToast) {
+        toast({
+          title: errorToast.title,
+          description: errorToast.description || (error as Error).message,
+          variant: "destructive",
+        });
+      }
+    },
+  }),
+});
 
 // Loading screen component
 function LoadingScreen() {
