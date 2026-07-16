@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -50,8 +51,36 @@ const getColorClass = (cor: string) => {
   return EVENT_COLORS.find(c => c.value === cor)?.class || "bg-blue-500"
 }
 
+const EVENTOS_QUERY_KEY = ["calendario-eventos"]
+
+async function fetchEventos(): Promise<CalendarEvent[]> {
+  const { data } = await supabase
+    .from("lembretes")
+    .select("*")
+    .order("data_lembrete", { ascending: true })
+
+  if (!data) return []
+
+  return data.map((l: any) => {
+    const dt = new Date(l.data_lembrete)
+    return {
+      id: l.id,
+      title: l.titulo,
+      description: l.descricao || "",
+      date: dt.toISOString().split("T")[0],
+      time: dt.toTimeString().slice(0, 5),
+      duration: "1h",
+      type: (l.tipo || "evento") as CalendarEvent["type"],
+      status: "agendado" as const,
+      cor: l.cor || "blue",
+      usuario_id: l.usuario_id,
+      criado_por_role: l.criado_por_role || "usuario",
+    }
+  })
+}
+
 export default function Calendario() {
-  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const queryClient = useQueryClient()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isReminderOpen, setIsReminderOpen] = useState(false)
@@ -62,6 +91,13 @@ export default function Calendario() {
   const { toast } = useToast()
   const { formatDate } = useBrazilianDate()
   const { user } = useAuth()
+
+  const { data: events = [] } = useQuery({
+    queryKey: EVENTOS_QUERY_KEY,
+    queryFn: fetchEventos,
+    enabled: !!user,
+  })
+  const loadEvents = () => queryClient.invalidateQueries({ queryKey: EVENTOS_QUERY_KEY })
 
   const canEditEvents = user?.role === "master" || user?.role === "admin" || user?.role === "instrutor"
 
@@ -78,37 +114,6 @@ export default function Calendario() {
     setNewEvent({ title: "", description: "", date: "", time: "", duration: "", type: "treinamento", participants: 0, instructor: "", location: "", cor: "blue" })
     setEditingEvent(null)
   }
-
-  // Load events from lembretes table
-  const loadEvents = async () => {
-    if (!user) return
-    const { data } = await supabase
-      .from("lembretes")
-      .select("*")
-      .order("data_lembrete", { ascending: true })
-
-    if (data) {
-      const mapped: CalendarEvent[] = data.map((l: any) => {
-        const dt = new Date(l.data_lembrete)
-        return {
-          id: l.id,
-          title: l.titulo,
-          description: l.descricao || "",
-          date: dt.toISOString().split("T")[0],
-          time: dt.toTimeString().slice(0, 5),
-          duration: "1h",
-          type: (l.tipo || "evento") as CalendarEvent["type"],
-          status: "agendado" as const,
-          cor: l.cor || "blue",
-          usuario_id: l.usuario_id,
-          criado_por_role: l.criado_por_role || "usuario",
-        }
-      })
-      setEvents(mapped)
-    }
-  }
-
-  useEffect(() => { loadEvents() }, [user])
 
   const canEditEvent = (event: CalendarEvent) => {
     if (canEditEvents) return true
