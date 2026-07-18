@@ -20,6 +20,7 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  Upload,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
@@ -173,6 +174,7 @@ export default function LandingPageEditor() {
   const [sections, setSections] = useState<LandingSection[]>([])
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("visual")
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
 
   useEffect(() => {
     if (user && user.role !== "master") {
@@ -315,6 +317,34 @@ export default function LandingPageEditor() {
       images.splice(nextIndex, 0, item)
       return { ...prev, carousel_images: images }
     })
+  }
+
+  const handleCarouselFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ""
+    if (files.length === 0) return
+
+    setIsUploadingImages(true)
+    try {
+      const uploadedUrls: string[] = []
+      for (const file of files) {
+        const ext = file.name.split(".").pop()
+        const path = `carousel/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+        const { error: uploadError } = await supabase.storage.from("landing").upload(path, file)
+        if (uploadError) {
+          toast({ title: "Erro ao enviar imagem", description: uploadError.message, variant: "destructive" })
+          continue
+        }
+        const { data: { publicUrl } } = supabase.storage.from("landing").getPublicUrl(path)
+        uploadedUrls.push(publicUrl)
+      }
+      if (uploadedUrls.length > 0) {
+        setConfig((prev) => (prev ? { ...prev, carousel_images: [...prev.carousel_images, ...uploadedUrls] } : null))
+        toast({ title: "Imagens enviadas!", description: `${uploadedUrls.length} imagem(ns) adicionada(s) ao carrossel.` })
+      }
+    } finally {
+      setIsUploadingImages(false)
+    }
   }
 
   if (isLoading) {
@@ -534,7 +564,7 @@ export default function LandingPageEditor() {
                 Carrossel de Imagens (Divulgação)
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Imagens exibidas em um carrossel na página pública, logo abaixo do topo. Cole a URL de cada imagem (ex: prints do sistema).
+                Imagens exibidas em um carrossel na página pública, logo abaixo do topo (ex: prints do sistema, com o menu lateral minimizado).
               </p>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -543,6 +573,13 @@ export default function LandingPageEditor() {
               )}
               {config.carousel_images.map((url, index) => (
                 <div key={index} className="flex items-center gap-2">
+                  {url && (
+                    <img
+                      src={url}
+                      alt={`Imagem ${index + 1} do carrossel`}
+                      className="h-10 w-16 object-cover rounded border shrink-0"
+                    />
+                  )}
                   <input
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={url}
@@ -560,10 +597,30 @@ export default function LandingPageEditor() {
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={addCarouselImage}>
-                <Plus className="h-4 w-4 mr-1.5" />
-                Adicionar imagem
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="default" size="sm" disabled={isUploadingImages} asChild>
+                  <label className="cursor-pointer">
+                    {isUploadingImages ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-1.5" />
+                    )}
+                    {isUploadingImages ? "Enviando..." : "Enviar Imagem(ns)"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      disabled={isUploadingImages}
+                      onChange={handleCarouselFileUpload}
+                    />
+                  </label>
+                </Button>
+                <Button variant="outline" size="sm" onClick={addCarouselImage}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Adicionar URL manualmente
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
