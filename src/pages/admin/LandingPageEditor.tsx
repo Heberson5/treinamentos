@@ -219,42 +219,55 @@ export default function LandingPageEditor() {
     loadConfig()
   }, [toast])
 
+  const buildEffectiveUpdates = useCallback(() => {
+    if (!config) return null
+    const serializedSections = sections.map((section) => ({
+      id: section.id,
+      type: section.type,
+      visible: section.visible,
+      data: JSON.parse(JSON.stringify(section.data || {})),
+    })) as Json
+    const serializedAlignment = Object.fromEntries(
+      sections.map((section) => [
+        section.id,
+        {
+          canvasAlign: section.data.canvasAlign || section.data.textAlign || "center",
+          canvasVAlign: section.data.canvasVAlign || "center",
+          canvasOffsetX: section.data.canvasOffsetX || 0,
+          canvasOffsetY: section.data.canvasOffsetY || 0,
+        },
+      ])
+    ) as Json
+    return {
+      ...sectionsToConfig(sections, config),
+      sections_order: serializedSections,
+      sections_alignment: serializedAlignment,
+      company_name: config.company_name,
+      company_description: config.company_description,
+      logo_url: config.logo_url,
+      custom_css: config.custom_css,
+      termos_de_uso: config.termos_de_uso,
+      sobre_nos: config.sobre_nos,
+      carousel_images: config.carousel_images,
+      carousel_autoplay: config.carousel_autoplay,
+      carousel_autoplay_speed: config.carousel_autoplay_speed,
+      carousel_transition: config.carousel_transition,
+    }
+  }, [config, sections])
+
+  const handlePreview = () => {
+    const updates = buildEffectiveUpdates()
+    if (!config || !updates) return
+    localStorage.setItem("landing_preview_draft", JSON.stringify({ ...config, ...updates }))
+    window.open("/preview-landing", "_blank")
+  }
+
   const handleSave = async () => {
     if (!config) return
     setIsSaving(true)
     try {
-      const serializedSections = sections.map((section) => ({
-        id: section.id,
-        type: section.type,
-        visible: section.visible,
-        data: JSON.parse(JSON.stringify(section.data || {})),
-      })) as Json
-      const serializedAlignment = Object.fromEntries(
-        sections.map((section) => [
-          section.id,
-          {
-            canvasAlign: section.data.canvasAlign || section.data.textAlign || "center",
-            canvasVAlign: section.data.canvasVAlign || "center",
-            canvasOffsetX: section.data.canvasOffsetX || 0,
-            canvasOffsetY: section.data.canvasOffsetY || 0,
-          },
-        ])
-      ) as Json
-      const updates = {
-        ...sectionsToConfig(sections, config),
-        sections_order: serializedSections,
-        sections_alignment: serializedAlignment,
-        company_name: config.company_name,
-        company_description: config.company_description,
-        logo_url: config.logo_url,
-        custom_css: config.custom_css,
-        termos_de_uso: config.termos_de_uso,
-        sobre_nos: config.sobre_nos,
-        carousel_images: config.carousel_images,
-        carousel_autoplay: config.carousel_autoplay,
-        carousel_autoplay_speed: config.carousel_autoplay_speed,
-        carousel_transition: config.carousel_transition,
-      }
+      const updates = buildEffectiveUpdates()
+      if (!updates) return
 
       const { error } = await supabase
         .from("landing_page_config")
@@ -395,9 +408,9 @@ export default function LandingPageEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.open("/", "_blank")}>
+          <Button variant="outline" size="sm" onClick={handlePreview}>
             <Eye className="mr-1.5 h-4 w-4" />
-            Preview
+            Pré-visualizar
           </Button>
           <Button size="sm" onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}

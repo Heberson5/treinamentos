@@ -60,7 +60,7 @@ export default function Index() {
   const [trainingModels, setTrainingModels] = useState<TrainingModel[]>([])
   const [loadingTrainings, setLoadingTrainings] = useState(true)
   const { planosAtivos, descontoAnual, calcularPrecoAnual } = usePlans()
-  const { config, isLoading } = useLandingConfig()
+  const { config, isLoading, isPreview } = useLandingConfig()
 
   // Fetch training models (global templates without empresa_id)
   useEffect(() => {
@@ -121,6 +121,12 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      {isPreview && (
+        <div className="sticky top-0 z-50 bg-yellow-400 text-yellow-950 text-center text-sm font-medium py-2 px-4">
+          Modo de pré-visualização — estas alterações ainda não foram salvas
+        </div>
+      )}
+
       {/* Inject custom CSS */}
       {config.custom_css && (
         <style dangerouslySetInnerHTML={{ __html: config.custom_css }} />

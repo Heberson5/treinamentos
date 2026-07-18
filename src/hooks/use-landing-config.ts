@@ -75,8 +75,22 @@ const defaultConfig: LandingPageConfig = {
 export function useLandingConfig() {
   const [config, setConfig] = useState<LandingPageConfig>(defaultConfig)
   const [isLoading, setIsLoading] = useState(true)
+  const isPreview = typeof window !== "undefined" && window.location.pathname === "/preview-landing"
 
   useEffect(() => {
+    if (isPreview) {
+      try {
+        const draft = localStorage.getItem("landing_preview_draft")
+        if (draft) {
+          setConfig({ ...defaultConfig, ...JSON.parse(draft) })
+          setIsLoading(false)
+          return
+        }
+      } catch (error) {
+        console.error("Erro ao carregar rascunho de pré-visualização:", error)
+      }
+    }
+
     const loadConfig = async () => {
       try {
         const { data, error } = await supabase
@@ -122,5 +136,5 @@ export function useLandingConfig() {
     loadConfig()
   }, [])
 
-  return { config, isLoading }
+  return { config, isLoading, isPreview }
 }

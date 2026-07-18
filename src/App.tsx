@@ -88,6 +88,16 @@ function AppContent() {
   // Default redirect based on role
   const defaultRoute = isAdminOrHigher ? "/dashboard" : "/meus-treinamentos";
 
+  // Pré-visualização da landing page: renderizada fora do layout administrativo
+  // (sem sidebar/header) para refletir fielmente como o visitante verá a página.
+  if (window.location.pathname === "/preview-landing" && isAuthenticated && isMaster) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <Index />
+      </Suspense>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <Suspense fallback={<LoadingScreen />}>
