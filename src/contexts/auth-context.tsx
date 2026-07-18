@@ -96,11 +96,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               descricao: "Usuário realizou login no sistema",
               metadata: {}
             }).then(() => {})
+
+            // No login, mantemos a tela de carregamento até o papel/perfil
+            // completo estar disponível — evita mostrar o menu incompleto
+            // (só os itens padrão de usuário) por um instante antes dos
+            // itens de admin/master aparecerem.
+            setIsLoading(true);
           }
           // Usar setTimeout para evitar deadlock
           setTimeout(() => {
             if (isMounted) {
-              fetchUserData(session.user);
+              fetchUserData(session.user).finally(() => {
+                if (isMounted && event === 'SIGNED_IN') {
+                  setIsLoading(false);
+                }
+              });
             }
           }, 0);
         } else {

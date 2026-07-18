@@ -134,8 +134,8 @@ async function fetchDashboardData({
           .from("progresso_treinamentos")
           .select("*")
           .in("treinamento_id", treinamentosData.map(t => t.id))
-          .gte("updated_at", startDate.toISOString())
-          .lte("updated_at", endDate.toISOString());
+          .gte("atualizado_em", startDate.toISOString())
+          .lte("atualizado_em", endDate.toISOString());
         progressoData = data || [];
       }
 

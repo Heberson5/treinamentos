@@ -231,12 +231,20 @@ export function AppSidebar() {
       className={cn(open ? "w-64" : "w-16")}
     >
       <SidebarContent className="bg-sidebar">
-        <div className="p-3 border-b border-sidebar-border flex items-center gap-1">
+        <div
+          className={cn(
+            "p-3 border-b border-sidebar-border flex items-center",
+            open ? "gap-1" : "flex-col gap-2"
+          )}
+        >
           <button
             type="button"
             onClick={handleLogoClick}
             title="Ir para o início"
-            className="flex items-center gap-3 flex-1 min-w-0 rounded-md p-1 -m-1 hover:bg-sidebar-accent transition-colors text-left"
+            className={cn(
+              "flex items-center gap-3 rounded-md p-1 hover:bg-sidebar-accent transition-colors text-left",
+              open ? "flex-1 min-w-0 -m-1" : "shrink-0"
+            )}
           >
             <img src={sidebarLogo || logoImage} alt="Logo" className="h-8 w-8 object-contain shrink-0" />
             {open && (
