@@ -194,6 +194,21 @@ export function AppSidebar() {
   const adminMenuItems = getMenuItems("admin")
   const masterMenuItems = getMenuItems("master")
 
+  const isItemActive = (url: string) => location.pathname === url || location.pathname.startsWith(url + "/")
+
+  // Abre a seção automaticamente ao navegar para uma página que pertence a ela,
+  // sem travar o usuário impedido de recolher manualmente depois (por isso não
+  // usamos isso como condição direta de "expanded" — só como gatilho pontual).
+  useEffect(() => {
+    if (adminMenuItems.some(item => isItemActive(item.url))) setAdminOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (masterMenuItems.some(item => isItemActive(item.url))) setMasterOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
     isActive
       ? "bg-primary text-primary-foreground font-semibold shadow-sm"
@@ -202,8 +217,6 @@ export function AppSidebar() {
   const handleLogoClick = () => {
     navigate(isAdminOrHigher ? "/dashboard" : "/meus-treinamentos")
   }
-
-  const isItemActive = (url: string) => location.pathname === url || location.pathname.startsWith(url + "/")
 
   const renderMenuItems = (items: MenuItem[]) => (
     <SidebarMenu>
@@ -239,8 +252,7 @@ export function AppSidebar() {
     isOpen: boolean,
     setIsOpen: (v: boolean) => void
   ) => {
-    const hasActiveItem = items.some(item => isItemActive(item.url))
-    const expanded = !open ? true : (isOpen || hasActiveItem)
+    const expanded = !open ? true : isOpen
 
     // Sidebar recolhida (modo ícone): mostra os itens direto, sem o colapsável interno
     if (!open) {
