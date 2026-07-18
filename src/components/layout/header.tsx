@@ -179,7 +179,7 @@ export function Header({ onLogout }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b bg-card text-card-foreground flex items-center justify-between gap-2 px-2 sm:px-6 shadow-sm">
+    <header className="h-16 border-b bg-background text-foreground flex items-center justify-between gap-2 px-2 sm:px-6">
       <div className="flex items-center gap-2 min-w-0 flex-shrink">
         <SidebarTrigger className="md:hidden" />
       </div>
