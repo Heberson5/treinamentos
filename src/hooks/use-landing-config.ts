@@ -31,6 +31,7 @@ interface LandingPageConfig {
   custom_css: string | null
   termos_de_uso: string | null
   sobre_nos: string | null
+  carousel_images: string[]
 }
 
 const defaultConfig: LandingPageConfig = {
@@ -61,7 +62,8 @@ const defaultConfig: LandingPageConfig = {
   featured_trainings_enabled: true,
   custom_css: null,
   termos_de_uso: null,
-  sobre_nos: null
+  sobre_nos: null,
+  carousel_images: []
 }
 
 export function useLandingConfig() {
@@ -99,7 +101,8 @@ export function useLandingConfig() {
             featured_trainings_enabled: data.featured_trainings_enabled ?? defaultConfig.featured_trainings_enabled,
             custom_css: data.custom_css,
             termos_de_uso: data.termos_de_uso,
-            sobre_nos: data.sobre_nos
+            sobre_nos: data.sobre_nos,
+            carousel_images: Array.isArray(data.carousel_images) ? (data.carousel_images as unknown as string[]) : []
           })
         }
       } finally {

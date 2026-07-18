@@ -15,6 +15,11 @@ import {
   Info,
   Layers,
   PanelLeft,
+  Images,
+  Plus,
+  X,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
@@ -48,6 +53,7 @@ interface LandingPageConfig {
   custom_css: string | null
   termos_de_uso: string | null
   sobre_nos: string | null
+  carousel_images: string[]
   footer_section?: any
   sections_order?: Json | null
   sections_alignment?: Json | null
@@ -188,7 +194,10 @@ export default function LandingPageEditor() {
           console.error("Erro ao carregar:", error)
           toast({ title: "Erro", description: "Não foi possível carregar.", variant: "destructive" })
         } else if (data) {
-          const c = data as LandingPageConfig
+          const c = {
+            ...(data as LandingPageConfig),
+            carousel_images: Array.isArray((data as any).carousel_images) ? (data as any).carousel_images : [],
+          }
           setConfig(c)
           setSections(configToSections(c))
         }
@@ -230,6 +239,7 @@ export default function LandingPageEditor() {
         custom_css: config.custom_css,
         termos_de_uso: config.termos_de_uso,
         sobre_nos: config.sobre_nos,
+        carousel_images: config.carousel_images,
       }
 
       const { error } = await supabase
@@ -274,6 +284,38 @@ export default function LandingPageEditor() {
   }, [])
 
   const selectedSection = sections.find((s) => s.id === selectedSectionId)
+
+  const addCarouselImage = () => {
+    setConfig((prev) => (prev ? { ...prev, carousel_images: [...prev.carousel_images, ""] } : null))
+  }
+
+  const updateCarouselImage = (index: number, value: string) => {
+    setConfig((prev) => {
+      if (!prev) return null
+      const images = [...prev.carousel_images]
+      images[index] = value
+      return { ...prev, carousel_images: images }
+    })
+  }
+
+  const removeCarouselImage = (index: number) => {
+    setConfig((prev) => {
+      if (!prev) return null
+      return { ...prev, carousel_images: prev.carousel_images.filter((_, i) => i !== index) }
+    })
+  }
+
+  const moveCarouselImage = (index: number, direction: "up" | "down") => {
+    setConfig((prev) => {
+      if (!prev) return null
+      const nextIndex = direction === "up" ? index - 1 : index + 1
+      if (nextIndex < 0 || nextIndex >= prev.carousel_images.length) return prev
+      const images = [...prev.carousel_images]
+      const [item] = images.splice(index, 1)
+      images.splice(nextIndex, 0, item)
+      return { ...prev, carousel_images: images }
+    })
+  }
 
   if (isLoading) {
     return (
@@ -482,6 +524,46 @@ export default function LandingPageEditor() {
                 onChange={(e) => setConfig((prev) => (prev ? { ...prev, custom_css: e.target.value } : null))}
                 placeholder="/* CSS personalizado */"
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Images className="h-5 w-5" />
+                Carrossel de Imagens (Divulgação)
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Imagens exibidas em um carrossel na página pública, logo abaixo do topo. Cole a URL de cada imagem (ex: prints do sistema).
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {config.carousel_images.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhuma imagem adicionada ainda.</p>
+              )}
+              {config.carousel_images.map((url, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={url}
+                    onChange={(e) => updateCarouselImage(index, e.target.value)}
+                    placeholder="https://.../screenshot.png"
+                  />
+                  <Button variant="ghost" size="icon" onClick={() => moveCarouselImage(index, "up")} disabled={index === 0}>
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => moveCarouselImage(index, "down")} disabled={index === config.carousel_images.length - 1}>
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => removeCarouselImage(index)} className="text-destructive hover:text-destructive">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addCarouselImage}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Adicionar imagem
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

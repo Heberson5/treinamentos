@@ -26,6 +26,7 @@ import { usePlans, ICONES_PLANOS } from "@/contexts/plans-context"
 import { useLandingConfig } from "@/hooks/use-landing-config"
 import { supabase } from "@/integrations/supabase/client"
 import { DemoRequestDialog } from "@/components/landing/demo-request-dialog"
+import { ScreenshotCarousel } from "@/components/landing/screenshot-carousel"
 
 // Mapeamento de ícones por nome
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -204,6 +205,8 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      <ScreenshotCarousel images={config.carousel_images} />
 
       {/* Stats Section */}
       <section className="py-16 bg-accent/30">

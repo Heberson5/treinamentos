@@ -147,6 +147,7 @@ export default function EmpresasSupabase() {
     responsavel: "",
     is_demo: false,
     dias_demo: 7,
+    data_inicio_demo: format(new Date(), "yyyy-MM-dd"),
     tema_cor: "purple",
   });
 
@@ -304,6 +305,9 @@ export default function EmpresasSupabase() {
     try {
       const cnpjLimpo = createForm.cnpj ? limparCNPJ(createForm.cnpj) : null;
       const agora = new Date();
+      const inicioDemo = createForm.is_demo
+        ? new Date(`${createForm.data_inicio_demo}T00:00:00`)
+        : agora;
 
       const novaEmpresa = {
         nome: createForm.nome.trim(),
@@ -317,8 +321,8 @@ export default function EmpresasSupabase() {
         ativo: true,
         is_demo: createForm.is_demo,
         dias_degustacao: createForm.is_demo ? createForm.dias_demo : 7,
-        demo_created_at: createForm.is_demo ? agora.toISOString() : null,
-        demo_expires_at: createForm.is_demo ? addDays(agora, createForm.dias_demo).toISOString() : null,
+        demo_created_at: createForm.is_demo ? inicioDemo.toISOString() : null,
+        demo_expires_at: createForm.is_demo ? addDays(inicioDemo, createForm.dias_demo).toISOString() : null,
         data_contratacao: agora.toISOString(),
         tema_cor: createForm.tema_cor,
       };
@@ -359,6 +363,7 @@ export default function EmpresasSupabase() {
         responsavel: "",
         is_demo: false,
         dias_demo: 7,
+        data_inicio_demo: format(new Date(), "yyyy-MM-dd"),
         tema_cor: "purple",
       });
       setCnpjValid(null);
@@ -901,20 +906,33 @@ export default function EmpresasSupabase() {
             </div>
 
             {createForm.is_demo && (
-              <div className="space-y-2">
-                <Label htmlFor="dias_demo">Dias de degustação</Label>
-                <Input
-                  id="dias_demo"
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={createForm.dias_demo}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, dias_demo: Math.max(1, parseInt(e.target.value) || 1) }))}
-                  className="max-w-[140px]"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Ao final deste período, a empresa e todos os usuários vinculados serão suspensos automaticamente.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="data_inicio_demo">Data de início da degustação</Label>
+                  <Input
+                    id="data_inicio_demo"
+                    type="date"
+                    value={createForm.data_inicio_demo}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, data_inicio_demo: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Data em que o acesso é liberado e a partir da qual os dias de degustação são contados.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dias_demo">Dias de degustação</Label>
+                  <Input
+                    id="dias_demo"
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={createForm.dias_demo}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, dias_demo: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ao final deste período, a empresa e os usuários vinculados serão suspensos automaticamente.
+                  </p>
+                </div>
               </div>
             )}
 
