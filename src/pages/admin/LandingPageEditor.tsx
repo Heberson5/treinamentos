@@ -98,7 +98,7 @@ function configToSections(config: LandingPageConfig): LandingSection[] {
       data: {
         title: config.cta_title,
         subtitle: config.cta_subtitle,
-        buttonText: "Começar Gratuitamente",
+        buttonText: "Agendar Demonstração",
       },
     },
   ]

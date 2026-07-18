@@ -22,6 +22,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
+  blockedMessage: string | null;
   canCreateMaster: () => boolean;
   canCreateAdmin: () => boolean;
   canCreateUser: () => boolean;
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
   // Buscar dados do perfil e role do usuário
   const fetchUserData = async (supabaseUser: SupabaseUser) => {
@@ -71,6 +73,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar_url: perfil?.avatar_url
       };
 
+      // Master não é bloqueado por status de empresa (gerencia todas as empresas)
+      if (userData.role !== "master" && userData.empresa_id) {
+        const { data: empresa } = await supabase
+          .from("empresas")
+          .select("bloqueada, motivo_bloqueio, is_demo, demo_expires_at")
+          .eq("id", userData.empresa_id)
+          .single();
+
+        if (empresa) {
+          let bloqueada = !!empresa.bloqueada;
+          let motivo = empresa.motivo_bloqueio;
+
+          // Suspensão automática ao expirar o período de degustação
+          if (!bloqueada && empresa.is_demo && empresa.demo_expires_at && new Date(empresa.demo_expires_at) < new Date()) {
+            motivo = "Período de degustação expirado";
+            await supabase
+              .from("empresas")
+              .update({ bloqueada: true, motivo_bloqueio: motivo, data_bloqueio: new Date().toISOString() })
+              .eq("id", userData.empresa_id);
+            bloqueada = true;
+          }
+
+          if (bloqueada) {
+            setBlockedMessage(motivo || "O acesso da sua empresa está suspenso. Entre em contato com o suporte.");
+            await supabase.auth.signOut();
+            setUser(null);
+            return;
+          }
+        }
+      }
+
+      setBlockedMessage(null);
       setUser(userData);
     } catch (error) {
       console.error("Erro ao buscar dados do usuário:", error);
@@ -225,6 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       isAuthenticated: !!session,
       isLoading,
+      blockedMessage,
       canCreateMaster,
       canCreateAdmin,
       canCreateUser,

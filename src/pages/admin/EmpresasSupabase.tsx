@@ -84,6 +84,9 @@ interface Empresa {
   responsavel: string | null;
   ativo: boolean | null;
   is_demo: boolean | null;
+  dias_degustacao: number | null;
+  bloqueada: boolean | null;
+  motivo_bloqueio: string | null;
   demo_expires_at: string | null;
   demo_created_at: string | null;
   data_contratacao: string | null;
@@ -143,6 +146,7 @@ export default function EmpresasSupabase() {
     endereco: "",
     responsavel: "",
     is_demo: false,
+    dias_demo: 7,
     tema_cor: "purple",
   });
 
@@ -312,8 +316,9 @@ export default function EmpresasSupabase() {
         responsavel: createForm.responsavel.trim() || null,
         ativo: true,
         is_demo: createForm.is_demo,
+        dias_degustacao: createForm.is_demo ? createForm.dias_demo : 7,
         demo_created_at: createForm.is_demo ? agora.toISOString() : null,
-        demo_expires_at: createForm.is_demo ? addDays(agora, 7).toISOString() : null,
+        demo_expires_at: createForm.is_demo ? addDays(agora, createForm.dias_demo).toISOString() : null,
         data_contratacao: agora.toISOString(),
         tema_cor: createForm.tema_cor,
       };
@@ -338,7 +343,7 @@ export default function EmpresasSupabase() {
       toast({
         title: createForm.is_demo ? "Demonstração criada" : "Empresa cadastrada",
         description: createForm.is_demo
-          ? "A empresa foi cadastrada com 7 dias de demonstração"
+          ? `A empresa foi cadastrada com ${createForm.dias_demo} dias de degustação`
           : "A empresa foi cadastrada com sucesso",
       });
 
@@ -353,6 +358,7 @@ export default function EmpresasSupabase() {
         endereco: "",
         responsavel: "",
         is_demo: false,
+        dias_demo: 7,
         tema_cor: "purple",
       });
       setCnpjValid(null);
@@ -889,10 +895,28 @@ export default function EmpresasSupabase() {
                     <TestTube className="h-4 w-4" />
                     Demonstração
                   </span>
-                  <p className="text-xs text-muted-foreground">Acesso por 7 dias</p>
+                  <p className="text-xs text-muted-foreground">Acesso por tempo limitado (degustação)</p>
                 </Label>
               </div>
             </div>
+
+            {createForm.is_demo && (
+              <div className="space-y-2">
+                <Label htmlFor="dias_demo">Dias de degustação</Label>
+                <Input
+                  id="dias_demo"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={createForm.dias_demo}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, dias_demo: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  className="max-w-[140px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ao final deste período, a empresa e todos os usuários vinculados serão suspensos automaticamente.
+                </p>
+              </div>
+            )}
 
             {/* CNPJ */}
             <div className="space-y-2">

@@ -9,12 +9,13 @@
  * As funções abaixo são mock até a ativação do Cloud.
  */
 
-import { 
-  CourseEmailData, 
+import {
+  CourseEmailData,
   CertificateEmailData,
   generateNewCourseEmailHTML,
-  generateCertificateEmailHTML 
+  generateCertificateEmailHTML
 } from '@/lib/calendar-utils'
+import { supabase } from '@/integrations/supabase/client'
 
 export interface EmailRecipient {
   email: string
@@ -169,6 +170,61 @@ export async function scheduleEmail(
     success: true, 
     scheduledId: `scheduled-${Date.now()}` 
   }
+}
+
+export interface CredentialsEmailData {
+  nome: string
+  email: string
+  senha: string
+  empresaNome: string
+}
+
+/**
+ * Preenche o modelo de e-mail (HTML) configurado em Configurações com o corpo e as tags fornecidas.
+ */
+export function renderEmailFromTemplate(templateHtml: string, corpo: string, empresaNome: string): string {
+  const ano = new Date().getFullYear().toString()
+  return templateHtml
+    .split('{corpo}').join(corpo)
+    .split('{NOME_SISTEMA}').join('Portal de Treinamentos')
+    .split('{NOME_EMPRESA}').join(empresaNome)
+    .split('{ANO}').join(ano)
+    .split('{LINK_WHATSAPP}').join('#')
+    .split('{LINK_INSTAGRAM}').join('#')
+    .split('{LINK_FACEBOOK}').join('#')
+    .split('{LINK_YOUTUBE}').join('#')
+    .split('{LINK_LINKEDIN}').join('#')
+    .split('{LINK_SITE}').join('#')
+}
+
+/**
+ * Envia (mock) o e-mail de boas-vindas com login e senha cadastrada após a confirmação do pagamento.
+ * Usa o modelo de e-mail configurado em Configurações > Email.
+ */
+export async function sendCredentialsEmail(data: CredentialsEmailData): Promise<{ success: boolean; error?: string }> {
+  const { data: config } = await supabase
+    .from('configuracoes_sistema' as any)
+    .select('email_template_html')
+    .limit(1)
+    .maybeSingle()
+
+  const templateHtml = (config as any)?.email_template_html || ''
+  const corpo = `
+    <p>Olá, ${data.nome}!</p>
+    <p>Seu pagamento foi confirmado e o acesso à plataforma <strong>${data.empresaNome}</strong> já está liberado.</p>
+    <p>Use os dados abaixo para fazer login:</p>
+    <p><strong>Login:</strong> ${data.email}<br><strong>Senha:</strong> ${data.senha}</p>
+    <p>Recomendamos alterar sua senha no primeiro acesso.</p>
+  `
+  const html = templateHtml
+    ? renderEmailFromTemplate(templateHtml, corpo, data.empresaNome)
+    : corpo
+
+  return sendEmail({
+    to: [{ email: data.email, name: data.nome }],
+    subject: `Acesso liberado - ${data.empresaNome}`,
+    html
+  })
 }
 
 /**

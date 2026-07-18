@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,8 +19,14 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>("login")
   const [bloqueio, setBloqueio] = useState<string | null>(null)
-  const { login } = useAuth()
+  const { login, blockedMessage } = useAuth()
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (blockedMessage) {
+      toast({ title: "Acesso suspenso", description: blockedMessage, variant: "destructive" })
+    }
+  }, [blockedMessage, toast])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -156,6 +162,13 @@ export function LoginForm() {
               <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>{bloqueio}</span>
+              </div>
+            )}
+
+            {blockedMessage && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{blockedMessage}</span>
               </div>
             )}
             

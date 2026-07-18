@@ -36,6 +36,7 @@ interface ConfiguracaoSistema {
   smtpSenha: string
   smtpTls: boolean
   emailRemetente: string
+  emailTemplateHtml: string
   notificacoesEmail: boolean
   notificacoesPush: boolean
   notificacoesConclusao: boolean
@@ -62,6 +63,92 @@ interface ConfiguracaoSistema {
   faviconUrl: string
   logoSidebarUrl: string
 }
+
+// Modelo padrão de e-mail (HTML) usado nas comunicações automáticas do sistema.
+// A tag {corpo} é substituída pelo conteúdo específico de cada e-mail (ex: credenciais de acesso).
+export const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Portal de Treinamentos</title>
+<style>
+:root{color-scheme:light dark;--bg:#eef3f8;--card:#fff;--text:#1f2937;--text2:#6b7280;--border:#e5e7eb}
+@media(prefers-color-scheme:dark){:root{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--text2:#cbd5e1;--border:#334155}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);font-family:Segoe UI,Arial,Helvetica,sans-serif;color:var(--text);padding:20px}
+.wrapper{max-width:700px;margin:auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.header{background:#2563eb;background-image:linear-gradient(135deg,#2563eb,#1d4ed8);padding:36px 28px;text-align:center}
+.logo{font-size:30px;font-weight:700;color:#fff!important}
+.subtitle{margin-top:8px;color:#fff!important;font-size:15px}
+.content{padding:32px;font-size:15px;line-height:1.8;color:var(--text)}
+.separator{height:1px;background:var(--border)}
+.social{text-align:center;padding:24px}
+.social-title{margin-bottom:16px;color:var(--text2);font-size:14px}
+.social a{display:inline-block;margin:5px}
+.social img{width:36px;height:36px;border:0}
+.footer{padding:24px;text-align:center;color:var(--text2);font-size:12px;line-height:1.8;border-top:1px solid var(--border)}
+.footer strong{color:var(--text)}
+@media(max-width:600px){
+body{padding:10px}
+.header{padding:28px 18px}
+.logo{font-size:24px}
+.subtitle{font-size:14px}
+.content{padding:22px}
+.footer{padding:20px}
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+<div class="card">
+<div class="header">
+
+<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:auto;">
+<tr>
+<td valign="middle" style="padding-right:8px;">
+<img src="https://img.icons8.com/?size=100&id=45Xlab1qZY10&format=png&color=FFFFFF" width="40" height="40" style="display:block;border:0;margin-right:-4px;" alt="Portal de Treinamentos">
+</td>
+<td valign="middle">
+<span style="font-size:30px;font-weight:700;color:#ffffff;font-family:Segoe UI,Arial,sans-serif;white-space:nowrap;">
+{NOME_SISTEMA}
+</span>
+</td>
+</tr>
+</table>
+
+<div style="margin-top:10px;font-size:15px;color:#ffffff;">
+Comunicação automática do sistema
+</div>
+
+</div>
+<div class="content">
+{corpo}
+</div>
+<div class="separator"></div>
+<div class="social">
+<div class="social-title">Siga-nos nas redes sociais</div>
+<a href="{LINK_WHATSAPP}"><img src="https://img.icons8.com/?size=100&id=QkXeKixybttw&format=png&color=000000" alt="WhatsApp"></a>
+<a href="{LINK_INSTAGRAM}"><img src="https://img.icons8.com/?size=100&id=ZRiAFreol5mE&format=png&color=000000" alt="Instagram"></a>
+<a href="{LINK_FACEBOOK}"><img src="https://img.icons8.com/?size=100&id=uLWV5A9vXIPu&format=png&color=000000" alt="Facebook"></a>
+<a href="{LINK_YOUTUBE}"><img src="https://img.icons8.com/?size=100&id=omVNNE6wkyP7&format=png&color=000000" alt="YouTube"></a>
+<a href="{LINK_LINKEDIN}"><img src="https://img.icons8.com/?size=100&id=xuvGCOXi8Wyg&format=png&color=000000" alt="LinkedIn"></a>
+<a href="{LINK_SITE}"><img src="https://img.icons8.com/?size=100&id=c84A8yTomT5p&format=png&color=000000" alt="Site"></a>
+</div>
+<div class="footer">
+<strong>{NOME_SISTEMA}</strong><br><br>
+Esta é uma mensagem automática enviada pelo sistema.<br>
+Por favor, não responda este e-mail.<br><br>
+© {ANO} | {NOME_EMPRESA}<br>
+Todos os direitos reservados.
+</div>
+</div>
+</div>
+</body>
+</html>`
 
 interface AuditEntry {
   id: string
@@ -159,6 +246,7 @@ export default function Configuracoes() {
       smtpSenha: configData.smtp_senha || "",
       smtpTls: configData.smtp_tls ?? true,
       emailRemetente: configData.email_remetente || "",
+      emailTemplateHtml: configData.email_template_html || DEFAULT_EMAIL_TEMPLATE,
       notificacoesEmail: configData.notificacoes_email ?? true,
       notificacoesPush: configData.notificacoes_push ?? true,
       notificacoesConclusao: configData.notificacoes_conclusao ?? true,
@@ -263,6 +351,7 @@ export default function Configuracoes() {
           smtp_senha: config.smtpSenha,
           smtp_tls: config.smtpTls,
           email_remetente: config.emailRemetente,
+          email_template_html: config.emailTemplateHtml,
         }
         break
       case "notificações":
@@ -469,6 +558,40 @@ export default function Configuracoes() {
               <div className="flex justify-between">
                 <Button variant="outline" onClick={handleTestEmail} disabled={testingEmail || user?.role !== "master"}>
                   <Mail className="mr-2 h-4 w-4" /> {testingEmail ? "Enviando..." : "Testar Email"}
+                </Button>
+                <Button onClick={() => handleSave("email")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
+                  <Save className="mr-2 h-4 w-4" /> Salvar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Modelo de E-mail (HTML)</CardTitle>
+              <CardDescription>
+                Modelo usado nas comunicações automáticas do sistema (ex: e-mail de credenciais de acesso após pagamento).
+                Use a tag <code>{"{corpo}"}</code> para o conteúdo específico de cada e-mail, e as tags{" "}
+                <code>{"{NOME_SISTEMA}"}</code>, <code>{"{NOME_EMPRESA}"}</code>, <code>{"{ANO}"}</code>,{" "}
+                <code>{"{LINK_WHATSAPP}"}</code>, <code>{"{LINK_INSTAGRAM}"}</code>, <code>{"{LINK_FACEBOOK}"}</code>,{" "}
+                <code>{"{LINK_YOUTUBE}"}</code>, <code>{"{LINK_LINKEDIN}"}</code> e <code>{"{LINK_SITE}"}</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={config.emailTemplateHtml}
+                onChange={(e) => setConfig({ ...config, emailTemplateHtml: e.target.value })}
+                disabled={user?.role !== "master"}
+                rows={16}
+                className="font-mono text-xs"
+              />
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={() => setConfig({ ...config, emailTemplateHtml: DEFAULT_EMAIL_TEMPLATE })}
+                  disabled={user?.role !== "master"}
+                >
+                  Restaurar modelo padrão
                 </Button>
                 <Button onClick={() => handleSave("email")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
                   <Save className="mr-2 h-4 w-4" /> Salvar

@@ -38,7 +38,7 @@ const defaultConfig: LandingPageConfig = {
   hero_title: 'A Plataforma de Treinamentos do Futuro',
   hero_subtitle: 'Capacite sua equipe com treinamentos interativos, gamificados e com certificação. Resultados mensuráveis em semanas, não meses.',
   hero_badge: '🚀 Transforme sua equipe hoje mesmo',
-  hero_cta_primary: 'Comece Agora Grátis',
+  hero_cta_primary: 'Agendar Demonstração',
   hero_cta_secondary: 'Ver Demonstração',
   hero_background_color: 'from-primary via-primary-glow to-primary-darker',
   stats_section: [

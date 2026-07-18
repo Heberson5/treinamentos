@@ -245,13 +245,22 @@ export default function Checkout() {
 
       // Proceed to payment
       setStep('pagamento')
-      
-      // Create payment preference
+
+      // Guarda as credenciais temporariamente para enviar o e-mail de acesso
+      // após a confirmação do pagamento (nunca persistido no servidor).
+      sessionStorage.setItem('pending_credentials_email', JSON.stringify({
+        nome: responsavel,
+        email,
+        senha,
+        empresaNome: nomeFantasia || razaoSocial,
+      }))
+
+      // Plano anual: cobrança única no cartão. Plano mensal: assinatura recorrente (cobrança automática todo mês).
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         'mercadopago-checkout',
         {
           body: {
-            action: 'create-payment',
+            action: annual ? 'create-payment' : 'create-subscription',
             data: {
               plano_id: planoId,
               empresa_id: empresa.id,
@@ -264,6 +273,7 @@ export default function Checkout() {
       )
 
       if (checkoutError || !checkoutData?.success) {
+        sessionStorage.removeItem('pending_credentials_email')
         toast({
           title: "Aviso",
           description: "Empresa criada com sucesso! Configure o pagamento mais tarde em Integrações.",
@@ -276,6 +286,7 @@ export default function Checkout() {
       if (checkoutData.init_point) {
         window.location.href = checkoutData.init_point
       } else {
+        sessionStorage.removeItem('pending_credentials_email')
         toast({
           title: "Empresa criada!",
           description: "Você está no período de demonstração de 7 dias.",

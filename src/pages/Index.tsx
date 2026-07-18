@@ -25,6 +25,7 @@ import {
 import { usePlans, ICONES_PLANOS } from "@/contexts/plans-context"
 import { useLandingConfig } from "@/hooks/use-landing-config"
 import { supabase } from "@/integrations/supabase/client"
+import { DemoRequestDialog } from "@/components/landing/demo-request-dialog"
 
 // Mapeamento de ícones por nome
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -54,6 +55,7 @@ interface TrainingModel {
 export default function Index() {
   const [email, setEmail] = useState("")
   const [pagamentoAnual, setPagamentoAnual] = useState(false)
+  const [demoDialogOpen, setDemoDialogOpen] = useState(false)
   const [trainingModels, setTrainingModels] = useState<TrainingModel[]>([])
   const [loadingTrainings, setLoadingTrainings] = useState(true)
   const { planosAtivos, descontoAnual, calcularPrecoAnual } = usePlans()
@@ -146,12 +148,14 @@ export default function Index() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/login">
-                  <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-lg">
-                    <Play className="mr-2 h-5 w-5" />
-                    {config.hero_cta_primary}
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="bg-white text-primary hover:bg-white/90 shadow-lg"
+                  onClick={() => setDemoDialogOpen(true)}
+                >
+                  <Play className="mr-2 h-5 w-5" />
+                  {config.hero_cta_primary}
+                </Button>
               </div>
               
               <div className="flex items-center gap-6 text-white/80">
@@ -171,7 +175,7 @@ export default function Index() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-4">
-                      Comece sua jornada de aprendizado
+                      Agende uma demonstração gratuita
                     </h3>
                     <div className="space-y-4">
                       <Input
@@ -181,12 +185,13 @@ export default function Index() {
                         onChange={(e) => setEmail(e.target.value)}
                         className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                       />
-                      <Link to="/login">
-                        <Button className="w-full bg-white text-primary hover:bg-white/90">
-                          Criar Conta Gratuita
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
+                      <Button
+                        className="w-full bg-white text-primary hover:bg-white/90"
+                        onClick={() => setDemoDialogOpen(true)}
+                      >
+                        Agendar Demonstração
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                   
@@ -510,14 +515,18 @@ export default function Index() {
             {config.cta_subtitle}
           </p>
           
-          <Link to="/login">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-lg">
-              <TrendingUp className="mr-2 h-5 w-5" />
-              Começar Gratuitamente
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            className="bg-white text-primary hover:bg-white/90 shadow-lg"
+            onClick={() => setDemoDialogOpen(true)}
+          >
+            <TrendingUp className="mr-2 h-5 w-5" />
+            Agendar Demonstração
+          </Button>
         </div>
       </section>
+
+      <DemoRequestDialog open={demoDialogOpen} onOpenChange={setDemoDialogOpen} defaultEmail={email} />
 
       {/* Footer - Updated with links to Termos and Sobre */}
       <footer className="bg-background border-t py-12">

@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { sendCredentialsEmail } from "@/services/email-service";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO, subDays } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -243,11 +246,42 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { empresaSelecionada, isMaster } = useEmpresaFilter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [filters, setFilters] = useState<DashboardFiltersState>({
     period: "30d",
     departmentId: "",
   });
+
+  // Após confirmação do pagamento, envia (mock) o e-mail com as credenciais de acesso
+  // cadastradas durante o checkout. Nunca é reenviado a partir do servidor.
+  useEffect(() => {
+    if (searchParams.get("payment") !== "success") return;
+
+    const pending = sessionStorage.getItem("pending_credentials_email");
+    if (pending) {
+      try {
+        const credentials = JSON.parse(pending);
+        sendCredentialsEmail(credentials).then(() => {
+          toast({
+            title: "Pagamento confirmado!",
+            description: `Um e-mail com os dados de acesso foi enviado para ${credentials.email}.`,
+          });
+        });
+      } catch (error) {
+        console.error("Erro ao processar credenciais pendentes:", error);
+      } finally {
+        sessionStorage.removeItem("pending_credentials_email");
+      }
+    } else {
+      toast({ title: "Pagamento confirmado!", description: "Seu acesso está liberado." });
+    }
+
+    searchParams.delete("payment");
+    setSearchParams(searchParams, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const empresaScope = isMaster ? (empresaSelecionada || null) : (user?.empresa_id || null);
   const now = new Date();
