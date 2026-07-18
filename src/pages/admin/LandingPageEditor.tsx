@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Save,
   Eye,
@@ -55,6 +58,9 @@ interface LandingPageConfig {
   termos_de_uso: string | null
   sobre_nos: string | null
   carousel_images: string[]
+  carousel_autoplay: boolean
+  carousel_autoplay_speed: number
+  carousel_transition: 'slide' | 'fade'
   footer_section?: any
   sections_order?: Json | null
   sections_alignment?: Json | null
@@ -199,6 +205,9 @@ export default function LandingPageEditor() {
           const c = {
             ...(data as LandingPageConfig),
             carousel_images: Array.isArray((data as any).carousel_images) ? (data as any).carousel_images : [],
+            carousel_autoplay: (data as any).carousel_autoplay ?? true,
+            carousel_autoplay_speed: (data as any).carousel_autoplay_speed ?? 5,
+            carousel_transition: ((data as any).carousel_transition as 'slide' | 'fade') || 'slide',
           }
           setConfig(c)
           setSections(configToSections(c))
@@ -242,6 +251,9 @@ export default function LandingPageEditor() {
         termos_de_uso: config.termos_de_uso,
         sobre_nos: config.sobre_nos,
         carousel_images: config.carousel_images,
+        carousel_autoplay: config.carousel_autoplay,
+        carousel_autoplay_speed: config.carousel_autoplay_speed,
+        carousel_transition: config.carousel_transition,
       }
 
       const { error } = await supabase
@@ -564,10 +576,52 @@ export default function LandingPageEditor() {
                 Carrossel de Imagens (Divulgação)
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Imagens exibidas em um carrossel na página pública, logo abaixo do topo (ex: prints do sistema, com o menu lateral minimizado).
+                Imagens exibidas em um carrossel 3D (efeito coverflow) na página pública, logo abaixo do topo (ex: prints do sistema, com o menu lateral minimizado).
               </p>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-lg border bg-muted/30">
+                <div className="space-y-2">
+                  <Label htmlFor="carousel-autoplay">Troca automática</Label>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="carousel-autoplay"
+                      checked={config.carousel_autoplay}
+                      onCheckedChange={(v) => setConfig((prev) => (prev ? { ...prev, carousel_autoplay: v } : null))}
+                    />
+                    <span className="text-sm text-muted-foreground">{config.carousel_autoplay ? "Ativada" : "Desativada"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="carousel-speed">Velocidade (segundos)</Label>
+                  <input
+                    id="carousel-speed"
+                    type="number"
+                    min={1}
+                    max={30}
+                    disabled={!config.carousel_autoplay}
+                    value={config.carousel_autoplay_speed}
+                    onChange={(e) => setConfig((prev) => (prev ? { ...prev, carousel_autoplay_speed: Math.max(1, parseInt(e.target.value) || 1) } : null))}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de transição</Label>
+                  <Select
+                    value={config.carousel_transition}
+                    onValueChange={(v) => setConfig((prev) => (prev ? { ...prev, carousel_transition: v as 'slide' | 'fade' } : null))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="slide">Deslizar (slide)</SelectItem>
+                      <SelectItem value="fade">Esmaecer (fade)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {config.carousel_images.length === 0 && (
                 <p className="text-sm text-muted-foreground">Nenhuma imagem adicionada ainda.</p>
               )}

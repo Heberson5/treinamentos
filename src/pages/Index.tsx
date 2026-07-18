@@ -206,7 +206,12 @@ export default function Index() {
         </div>
       </section>
 
-      <ScreenshotCarousel images={config.carousel_images} />
+      <ScreenshotCarousel
+        images={config.carousel_images}
+        autoplay={config.carousel_autoplay}
+        autoplaySpeed={config.carousel_autoplay_speed}
+        transition={config.carousel_transition}
+      />
 
       {/* Stats Section */}
       <section className="py-16 bg-accent/30">

@@ -32,6 +32,9 @@ interface LandingPageConfig {
   termos_de_uso: string | null
   sobre_nos: string | null
   carousel_images: string[]
+  carousel_autoplay: boolean
+  carousel_autoplay_speed: number
+  carousel_transition: 'slide' | 'fade'
 }
 
 const defaultConfig: LandingPageConfig = {
@@ -63,7 +66,10 @@ const defaultConfig: LandingPageConfig = {
   custom_css: null,
   termos_de_uso: null,
   sobre_nos: null,
-  carousel_images: []
+  carousel_images: [],
+  carousel_autoplay: true,
+  carousel_autoplay_speed: 5,
+  carousel_transition: 'slide'
 }
 
 export function useLandingConfig() {
@@ -102,7 +108,10 @@ export function useLandingConfig() {
             custom_css: data.custom_css,
             termos_de_uso: data.termos_de_uso,
             sobre_nos: data.sobre_nos,
-            carousel_images: Array.isArray(data.carousel_images) ? (data.carousel_images as unknown as string[]) : []
+            carousel_images: Array.isArray(data.carousel_images) ? (data.carousel_images as unknown as string[]) : [],
+            carousel_autoplay: (data as any).carousel_autoplay ?? defaultConfig.carousel_autoplay,
+            carousel_autoplay_speed: (data as any).carousel_autoplay_speed ?? defaultConfig.carousel_autoplay_speed,
+            carousel_transition: ((data as any).carousel_transition as 'slide' | 'fade') || defaultConfig.carousel_transition
           })
         }
       } finally {
