@@ -6,10 +6,11 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, ChevronLeft, ChevronRight,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, ChevronLeft, ChevronRight, ChevronDown,
 } from "lucide-react"
 import logoImage from "@/assets/logo.png"
 import { useAuth } from "@/contexts/auth-context"
@@ -68,6 +69,8 @@ const defaultMasterItems = [
 
 export function AppSidebar() {
   const { open, isMobile, setOpenMobile, toggleSidebar } = useSidebar()
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [masterOpen, setMasterOpen] = useState(false)
   const handleNavClick = () => {
     if (isMobile) setOpenMobile(false)
   }
@@ -200,29 +203,69 @@ export function AppSidebar() {
     navigate(isAdminOrHigher ? "/dashboard" : "/meus-treinamentos")
   }
 
+  const isItemActive = (url: string) => location.pathname === url || location.pathname.startsWith(url + "/")
+
+  const renderMenuItems = (items: MenuItem[]) => (
+    <SidebarMenu>
+      {items.map(item => (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton
+            asChild
+            tooltip={item.title}
+            isActive={isItemActive(item.url)}
+          >
+            <NavLink to={item.url} className={getNavClass} onClick={handleNavClick}>
+              <item.icon className="mr-2 h-4 w-4" />
+              {open && <span>{item.title}</span>}
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  )
+
   const renderMenuGroup = (label: string, items: MenuItem[]) => (
     <SidebarGroup>
       <SidebarGroupLabel className="text-muted-foreground font-medium">{label}</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map(item => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                tooltip={item.title}
-                isActive={location.pathname === item.url || location.pathname.startsWith(item.url + "/")}
-              >
-                <NavLink to={item.url} className={getNavClass} onClick={handleNavClick}>
-                  <item.icon className="mr-2 h-4 w-4" />
-                  {open && <span>{item.title}</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
+      <SidebarGroupContent>{renderMenuItems(items)}</SidebarGroupContent>
     </SidebarGroup>
   )
+
+  // Grupos Administração/Master começam minimizados; o usuário expande ao clicar,
+  // e abrem automaticamente se a página atual pertencer à seção.
+  const renderCollapsibleMenuGroup = (
+    label: string,
+    items: MenuItem[],
+    isOpen: boolean,
+    setIsOpen: (v: boolean) => void
+  ) => {
+    const hasActiveItem = items.some(item => isItemActive(item.url))
+    const expanded = !open ? true : (isOpen || hasActiveItem)
+
+    // Sidebar recolhida (modo ícone): mostra os itens direto, sem o colapsável interno
+    if (!open) {
+      return (
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-muted-foreground font-medium">{label}</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenuItems(items)}</SidebarGroupContent>
+        </SidebarGroup>
+      )
+    }
+
+    return (
+      <Collapsible open={expanded} onOpenChange={setIsOpen}>
+        <SidebarGroup>
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+            <span>{label}</span>
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <SidebarGroupContent>{renderMenuItems(items)}</SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+    )
+  }
 
   return (
     <Sidebar
@@ -269,9 +312,11 @@ export function AppSidebar() {
 
         {renderMenuGroup("Menu Principal", mainMenuItems)}
 
-        {isAdminOrHigher && adminMenuItems.length > 0 && renderMenuGroup("Administração", adminMenuItems)}
+        {isAdminOrHigher && adminMenuItems.length > 0 &&
+          renderCollapsibleMenuGroup("Administração", adminMenuItems, adminOpen, setAdminOpen)}
 
-        {isMaster && masterMenuItems.length > 0 && renderMenuGroup("Master", masterMenuItems)}
+        {isMaster && masterMenuItems.length > 0 &&
+          renderCollapsibleMenuGroup("Master", masterMenuItems, masterOpen, setMasterOpen)}
       </SidebarContent>
     </Sidebar>
   )
