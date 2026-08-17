@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar"
 import { Header } from "@/components/layout/header"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
 import { PWAInstallPrompt } from "@/components/layout/pwa-install-prompt"
+import { PopupDisplay } from "@/components/popups/popup-display"
 import { useCompanyTheme } from "@/hooks/use-company-theme"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useIdleLogout } from "@/hooks/use-idle-logout"
@@ -42,6 +43,8 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
         <MobileBottomNav />
         {/* Prompt de instalação como PWA */}
         <PWAInstallPrompt />
+        {/* Pop-up de avisos/notícias internas */}
+        <PopupDisplay />
       </div>
     </SidebarProvider>
   )

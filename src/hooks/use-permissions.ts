@@ -45,6 +45,7 @@ const PERMISSOES_PADRAO: Record<TipoRole, string[]> = {
     "integrations.ai",
     "system.settings",
     "system.notifications",
+    "popups.manage",
     // upload de vídeo NÃO incluído por padrão — Master concede
   ],
   instrutor: [

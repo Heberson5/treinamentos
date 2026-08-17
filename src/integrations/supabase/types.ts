@@ -130,6 +130,146 @@ export type Database = {
           },
         ]
       }
+      avisos_popup: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string
+          departamento_id: string | null
+          eh_aniversario: boolean
+          empresa_id: string | null
+          id: string
+          midia_url: string | null
+          publico_tipo: string
+          recorrencia: string
+          texto_conteudo: string | null
+          tipo_conteudo: string
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          departamento_id?: string | null
+          eh_aniversario?: boolean
+          empresa_id?: string | null
+          id?: string
+          midia_url?: string | null
+          publico_tipo?: string
+          recorrencia: string
+          texto_conteudo?: string | null
+          tipo_conteudo: string
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          departamento_id?: string | null
+          eh_aniversario?: boolean
+          empresa_id?: string | null
+          id?: string
+          midia_url?: string | null
+          publico_tipo?: string
+          recorrencia?: string
+          texto_conteudo?: string | null
+          tipo_conteudo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avisos_popup_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "departamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avisos_popup_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avisos_popup_usuarios: {
+        Row: {
+          aviso_id: string
+          criado_em: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          aviso_id: string
+          criado_em?: string
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          aviso_id?: string
+          criado_em?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avisos_popup_usuarios_aviso_id_fkey"
+            columns: ["aviso_id"]
+            isOneToOne: false
+            referencedRelation: "avisos_popup"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avisos_popup_usuarios_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avisos_popup_visualizacoes: {
+        Row: {
+          aviso_id: string
+          data_visualizacao: string
+          id: string
+          usuario_id: string
+          visualizado_em: string
+        }
+        Insert: {
+          aviso_id: string
+          data_visualizacao?: string
+          id?: string
+          usuario_id: string
+          visualizado_em?: string
+        }
+        Update: {
+          aviso_id?: string
+          data_visualizacao?: string
+          id?: string
+          usuario_id?: string
+          visualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avisos_popup_visualizacoes_aviso_id_fkey"
+            columns: ["aviso_id"]
+            isOneToOne: false
+            referencedRelation: "avisos_popup"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargos: {
         Row: {
           ativo: boolean | null
@@ -701,6 +841,7 @@ export type Database = {
           avatar_url: string | null
           cargo: string | null
           criado_em: string | null
+          data_nascimento: string | null
           data_proxima_troca_senha: string | null
           data_ultima_troca_senha: string | null
           departamento_id: string | null
@@ -719,6 +860,7 @@ export type Database = {
           avatar_url?: string | null
           cargo?: string | null
           criado_em?: string | null
+          data_nascimento?: string | null
           data_proxima_troca_senha?: string | null
           data_ultima_troca_senha?: string | null
           departamento_id?: string | null
@@ -737,6 +879,7 @@ export type Database = {
           avatar_url?: string | null
           cargo?: string | null
           criado_em?: string | null
+          data_nascimento?: string | null
           data_proxima_troca_senha?: string | null
           data_ultima_troca_senha?: string | null
           departamento_id?: string | null
@@ -1502,6 +1645,7 @@ export type Database = {
         Returns: {
           ativo: boolean
           cargo: string
+          data_nascimento: string
           departamento_id: string
           dias_para_trocar_senha: number
           email: string
@@ -1515,6 +1659,27 @@ export type Database = {
       mesma_empresa_que_usuario: {
         Args: { p_usuario_alvo: string }
         Returns: boolean
+      }
+      obter_avisos_popup_pendentes: {
+        Args: never
+        Returns: {
+          eh_aniversario: boolean
+          id: string
+          midia_url: string
+          texto_conteudo: string
+          tipo_conteudo: string
+          titulo: string
+        }[]
+      }
+      obter_config_sistema_publica: {
+        Args: never
+        Returns: {
+          favicon_url: string
+          logo_sidebar_url: string
+          logoff_on_close: boolean
+          nome_sistema: string
+          session_timeout_min: number
+        }[]
       }
       obter_questoes_avaliacao: {
         Args: { p_treinamento_id: string }

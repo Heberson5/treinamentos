@@ -86,6 +86,7 @@ interface Usuario {
   ultimoAcesso: string
   trocar_senha_primeiro_login: boolean
   dias_para_trocar_senha: number | null
+  data_nascimento: string | null
 }
 
 interface Departamento {
@@ -253,6 +254,7 @@ async function fetchUsuariosPageData(isMaster: boolean, userEmpresaId: string | 
       ultimoAcesso: "N/A",
       trocar_senha_primeiro_login: perfil.trocar_senha_primeiro_login || false,
       dias_para_trocar_senha: perfil.dias_para_trocar_senha || null,
+      data_nascimento: perfil.data_nascimento || null,
     }
   })
 
@@ -315,6 +317,7 @@ export default function Usuarios() {
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [trocarSenhaPrimeiroLogin, setTrocarSenhaPrimeiroLogin] = useState(false)
   const [diasParaTrocarSenha, setDiasParaTrocarSenha] = useState<string>("")
+  const [novaDataNascimento, setNovaDataNascimento] = useState("")
 
   // Filtrar departamentos e cargos pela empresa selecionada no form
   const departamentosFiltrados = useMemo(() => {
@@ -388,6 +391,7 @@ export default function Usuarios() {
     setMostrarSenha(false)
     setTrocarSenhaPrimeiroLogin(false)
     setDiasParaTrocarSenha("")
+    setNovaDataNascimento("")
     setEditingUser(null)
   }
 
@@ -411,6 +415,7 @@ export default function Usuarios() {
     setNovaSenha("")
     setTrocarSenhaPrimeiroLogin(usuario.trocar_senha_primeiro_login)
     setDiasParaTrocarSenha(usuario.dias_para_trocar_senha?.toString() || "")
+    setNovaDataNascimento(usuario.data_nascimento || "")
     setIsEditOpen(true)
   }
 
@@ -472,6 +477,7 @@ export default function Usuarios() {
             papel: novoPapel,
             trocar_senha_primeiro_login: trocarSenhaPrimeiroLogin,
             dias_para_trocar_senha: diasParaTrocarSenha,
+            data_nascimento: novaDataNascimento || null,
           },
         }
       )
@@ -592,6 +598,7 @@ export default function Usuarios() {
           trocar_senha_primeiro_login: trocarSenhaPrimeiroLogin,
           dias_para_trocar_senha: diasTroca,
           data_proxima_troca_senha: dataProximaTroca,
+          data_nascimento: novaDataNascimento || null,
         })
         .eq("id", editingUser.id)
 
@@ -633,6 +640,7 @@ export default function Usuarios() {
                 papel: novoPapel,
                 trocar_senha_primeiro_login: trocarSenhaPrimeiroLogin,
                 dias_para_trocar_senha: diasTroca,
+                data_nascimento: novaDataNascimento || null,
               }
             : u
         )
@@ -1075,6 +1083,19 @@ export default function Usuarios() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="dataNascimento">Data de nascimento</Label>
+              <Input
+                id="dataNascimento"
+                type="date"
+                value={novaDataNascimento}
+                onChange={(e) => setNovaDataNascimento(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Usada para mensagens de aniversário nos avisos internos.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="papel">Papel no sistema</Label>
               <Select
                 value={novoPapel}
@@ -1252,6 +1273,19 @@ export default function Usuarios() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editDataNascimento">Data de nascimento</Label>
+              <Input
+                id="editDataNascimento"
+                type="date"
+                value={novaDataNascimento}
+                onChange={(e) => setNovaDataNascimento(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Usada para mensagens de aniversário nos avisos internos.
+              </p>
             </div>
 
             <div className="space-y-2">

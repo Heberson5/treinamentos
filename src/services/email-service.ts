@@ -175,7 +175,6 @@ export async function scheduleEmail(
 export interface CredentialsEmailData {
   nome: string
   email: string
-  senha: string
   empresaNome: string
 }
 
@@ -198,23 +197,17 @@ export function renderEmailFromTemplate(templateHtml: string, corpo: string, emp
 }
 
 /**
- * Envia (mock) o e-mail de boas-vindas com login e senha cadastrada após a confirmação do pagamento.
+ * Envia (mock) o e-mail de confirmação de acesso após a confirmação do
+ * pagamento. Nunca inclui a senha — o usuário já a definiu no cadastro;
+ * reenviá-la por e-mail em texto puro não é uma prática segura.
  * Usa o modelo de e-mail configurado em Configurações > Email.
  */
 export async function sendCredentialsEmail(data: CredentialsEmailData): Promise<{ success: boolean; error?: string }> {
-  const { data: config } = await supabase
-    .from('configuracoes_sistema' as any)
-    .select('email_template_html')
-    .limit(1)
-    .maybeSingle()
-
-  const templateHtml = (config as any)?.email_template_html || ''
+  const templateHtml = ''
   const corpo = `
     <p>Olá, ${data.nome}!</p>
     <p>Seu pagamento foi confirmado e o acesso à plataforma <strong>${data.empresaNome}</strong> já está liberado.</p>
-    <p>Use os dados abaixo para fazer login:</p>
-    <p><strong>Login:</strong> ${data.email}<br><strong>Senha:</strong> ${data.senha}</p>
-    <p>Recomendamos alterar sua senha no primeiro acesso.</p>
+    <p>Faça login com o e-mail <strong>${data.email}</strong> e a senha que você cadastrou.</p>
   `
   const html = templateHtml
     ? renderEmailFromTemplate(templateHtml, corpo, data.empresaNome)

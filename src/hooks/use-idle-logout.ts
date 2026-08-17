@@ -22,11 +22,10 @@ export function useIdleLogout() {
     let mounted = true;
 
     const loadConfig = async () => {
-      const { data } = await supabase
-        .from("configuracoes_sistema" as any)
-        .select("session_timeout_min, logoff_on_close")
-        .limit(1)
-        .maybeSingle();
+      // RPC (não a tabela direto): configuracoes_sistema guarda também a
+      // senha do SMTP, que não deve trafegar para todo usuário autenticado.
+      const { data: rows } = await supabase.rpc("obter_config_sistema_publica" as any);
+      const data = Array.isArray(rows) ? rows[0] : rows;
       if (mounted && data) {
         const d = data as any;
         configRef.current = {

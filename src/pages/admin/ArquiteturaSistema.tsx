@@ -58,12 +58,13 @@ const defaultMenuItems: MenuItemConfig[] = [
   { id: "cargos", title: "Cargos", url: "/admin/cargos", icon: "Briefcase", visible: true, order: 4, section: "admin" },
   { id: "departamentos", title: "Departamentos", url: "/admin/departamentos", icon: "Building2", visible: true, order: 5, section: "admin" },
   { id: "categorias", title: "Categorias", url: "/admin/categorias", icon: "Tag", visible: true, order: 6, section: "admin" },
-  { id: "empresas", title: "Empresas", url: "/admin/empresas", icon: "Building2", visible: true, order: 7, section: "admin" },
-  { id: "planos", title: "Planos", url: "/admin/planos", icon: "CreditCard", visible: true, order: 8, section: "admin" },
-  { id: "integracoes", title: "Integrações", url: "/admin/integracoes", icon: "Zap", visible: true, order: 9, section: "admin" },
-  { id: "analytics", title: "Analytics", url: "/admin/analytics", icon: "BarChart3", visible: true, order: 10, section: "admin" },
-  { id: "permissoes", title: "Permissões", url: "/admin/permissoes", icon: "Shield", visible: true, order: 11, section: "admin" },
-  { id: "configuracoes", title: "Configurações", url: "/admin/configuracoes", icon: "Settings", visible: true, order: 12, section: "admin" },
+  { id: "avisos-popup", title: "Avisos & Pop-ups", url: "/admin/avisos-popup", icon: "Megaphone", visible: true, order: 7, section: "admin" },
+  { id: "empresas", title: "Empresas", url: "/admin/empresas", icon: "Building2", visible: true, order: 8, section: "admin" },
+  { id: "planos", title: "Planos", url: "/admin/planos", icon: "CreditCard", visible: true, order: 9, section: "admin" },
+  { id: "integracoes", title: "Integrações", url: "/admin/integracoes", icon: "Zap", visible: true, order: 10, section: "admin" },
+  { id: "analytics", title: "Analytics", url: "/admin/analytics", icon: "BarChart3", visible: true, order: 11, section: "admin" },
+  { id: "permissoes", title: "Permissões", url: "/admin/permissoes", icon: "Shield", visible: true, order: 12, section: "admin" },
+  { id: "configuracoes", title: "Configurações", url: "/admin/configuracoes", icon: "Settings", visible: true, order: 13, section: "admin" },
   { id: "landing-page", title: "Editor Landing Page", url: "/admin/landing-page", icon: "Palette", visible: true, order: 1, section: "master" },
   { id: "financeiro", title: "Financeiro", url: "/admin/financeiro", icon: "DollarSign", visible: true, order: 2, section: "master" },
   { id: "arquitetura", title: "Arquitetura do Sistema", url: "/admin/arquitetura", icon: "Settings2", visible: true, order: 3, section: "master" },
@@ -162,7 +163,12 @@ export default function ArquiteturaSistema() {
       if (data) {
         const d = data as any
         if (d.menu_config && Array.isArray(d.menu_config) && d.menu_config.length > 0) {
-          setMenuItems(d.menu_config)
+          // Itens de menu novos adicionados ao código (ex: uma feature nova)
+          // ainda não existem na configuração salva anteriormente — sem isso
+          // eles ficariam faltando aqui até alguém adicioná-los manualmente.
+          const idsSalvos = new Set(d.menu_config.map((m: MenuItemConfig) => m.id))
+          const itensNaoSalvos = defaultMenuItems.filter(item => !idsSalvos.has(item.id))
+          setMenuItems([...d.menu_config, ...itensNaoSalvos])
         }
         if (d.field_config && Array.isArray(d.field_config) && d.field_config.length > 0) {
           setFieldConfigs(d.field_config)

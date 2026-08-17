@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
     const papel = body.papel || "usuario";
     const trocar_senha_primeiro_login = Boolean(body.trocar_senha_primeiro_login);
     const dias_para_trocar_senha = body.dias_para_trocar_senha ?? null;
+    const data_nascimento = body.data_nascimento || null;
 
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return new Response(JSON.stringify({ error: "E-mail inválido." }), {
@@ -122,6 +123,7 @@ Deno.serve(async (req) => {
       trocar_senha_primeiro_login,
       dias_para_trocar_senha: diasTroca,
       data_proxima_troca_senha: dataProximaTroca,
+      data_nascimento,
     }).eq("id", userId);
 
     if (papel && papel !== "usuario") {

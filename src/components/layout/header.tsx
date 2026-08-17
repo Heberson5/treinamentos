@@ -35,6 +35,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { validarArquivoImagem } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 
 interface HeaderProps {
@@ -118,7 +119,14 @@ export function Header({ onLogout }: HeaderProps) {
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ""
     if (!file || !user) return
+
+    const erroValidacao = validarArquivoImagem(file, 3)
+    if (erroValidacao) {
+      toast({ title: "Arquivo inválido", description: erroValidacao, variant: "destructive" })
+      return
+    }
 
     setUploading(true)
     const ext = file.name.split('.').pop()

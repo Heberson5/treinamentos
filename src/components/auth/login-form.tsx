@@ -9,6 +9,8 @@ import { Eye, EyeOff, Mail, Lock, AlertTriangle } from "lucide-react"
 import { RegistrationForm } from "./registration-form"
 import { PasswordRecoveryForm } from "./password-recovery-form"
 import { podeTeentarLogin, registrarTentativaLogin, formatarDesbloqueio } from "@/lib/login-attempts"
+import { useSystemBranding } from "@/hooks/use-system-branding"
+import logoImage from "@/assets/logo.png"
 
 type AuthMode = "login" | "register" | "recovery"
 
@@ -21,6 +23,7 @@ export function LoginForm() {
   const [bloqueio, setBloqueio] = useState<string | null>(null)
   const { login, blockedMessage } = useAuth()
   const { toast } = useToast()
+  const { systemNameFull, logoUrl } = useSystemBranding()
 
   useEffect(() => {
     if (blockedMessage) {
@@ -92,7 +95,12 @@ export function LoginForm() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/20 to-secondary/20">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Portal Treinamentos</CardTitle>
+          <img
+            src={logoUrl || logoImage}
+            alt={systemNameFull}
+            className="h-14 w-14 mx-auto mb-2 object-contain rounded"
+          />
+          <CardTitle className="text-2xl">{systemNameFull}</CardTitle>
           <CardDescription>
             Faça login para acessar sua conta
           </CardDescription>

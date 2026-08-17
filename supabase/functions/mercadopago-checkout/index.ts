@@ -51,6 +51,7 @@ serve(async (req) => {
       .in('role', ['admin', 'master'])
       .limit(1)
     const isPrivileged = !!(roleData && roleData.length > 0)
+    const isMaster = !!(roleData && roleData.some((r) => r.role === 'master'))
 
     const { action, data } = await req.json()
     if (!isPrivileged && action !== 'test-connection' /* keep test disabled below */) {
@@ -61,6 +62,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Forbidden' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
+
+    // Admin (não-master) só pode criar assinatura/pagamento para a própria
+    // empresa — sem isso, qualquer admin poderia ativar/desbloquear o plano
+    // de outra empresa só informando o empresa_id dela no body.
+    if (!isMaster && (action === 'create-subscription' || action === 'create-payment')) {
+      const { data: callerPerfil } = await supabase
+        .from('perfis')
+        .select('empresa_id')
+        .eq('id', userData.user.id)
+        .single()
+      if (!callerPerfil?.empresa_id || data?.empresa_id !== callerPerfil.empresa_id) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+    }
+
     console.log(`Processing action: ${action}`)
 
     switch (action) {

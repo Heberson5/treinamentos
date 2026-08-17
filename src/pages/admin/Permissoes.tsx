@@ -37,6 +37,7 @@ interface Permission {
   categoria: string
   ativo: boolean
   masterOnly?: boolean
+  allowedRoles?: TipoRoleDb[]
 }
 
 interface Role {
@@ -103,6 +104,7 @@ const permissoesDisponiveis: Permission[] = [
   { id: "system.logs", nome: "Visualizar Logs", descricao: "Acesso aos logs de auditoria", categoria: "Sistema", ativo: true },
   { id: "system.security", nome: "Configurações de Segurança", descricao: "Permite alterar configurações de segurança", categoria: "Sistema", ativo: true, masterOnly: true },
   { id: "system.notifications", nome: "Gerenciar Notificações", descricao: "Configurar notificações automáticas", categoria: "Sistema", ativo: true },
+  { id: "popups.manage", nome: "Gerenciar Avisos/Pop-ups", descricao: "Permite criar, editar e excluir avisos e pop-ups internos exibidos aos usuários. Só pode ser concedida a Administrador e Master.", categoria: "Avisos", ativo: true, allowedRoles: ["master", "admin"] },
   { id: "system.architecture", nome: "Arquitetura do Sistema", descricao: "Acesso exclusivo Master para personalizar menus, campos e estrutura do sistema", categoria: "Sistema", ativo: true, masterOnly: true },
   { id: "system.permissions", nome: "Permissões", descricao: "Gerenciar papéis e permissões do sistema - não pode ser desativado para Master", categoria: "Sistema", ativo: true, masterOnly: true },
   { id: "financial.view", nome: "Visualizar Financeiro", descricao: "Acesso para visualizar dados financeiros", categoria: "Financeiro", ativo: true, masterOnly: true },
@@ -165,6 +167,7 @@ async function fetchRolesData(empresaId: string | null): Promise<Role[]> {
     "departments.view","departments.create","departments.edit","departments.delete",
     "integrations.view","integrations.configure","integrations.ai",
     "system.settings","system.notifications",
+    "popups.manage",
   ]
   const padraoInstrutor = [
     "trainings.view","trainings.create","trainings.edit","trainings.assign","trainings.certificates",
@@ -269,7 +272,15 @@ export default function Permissoes() {
     ? permissoesDisponiveis
     : permissoesDisponiveis.filter(p => !p.masterOnly)
 
-  const categorias = [...new Set(visiblePermissions.map(p => p.categoria))]
+  // Algumas permissões (ex: Avisos/Pop-ups) só podem ser concedidas a
+  // determinados papéis — filtra pelo papel-alvo do diálogo aberto
+  // (edição de um papel existente ou nome digitado ao criar um novo).
+  const targetRoleDb = nomeParaRole(editingRole ? editingRole.nome : newRole.nome)
+  const permissoesDoDialogo = visiblePermissions.filter(p =>
+    !p.allowedRoles || !targetRoleDb || p.allowedRoles.includes(targetRoleDb)
+  )
+
+  const categorias = [...new Set(permissoesDoDialogo.map(p => p.categoria))]
 
   const resetForm = () => {
     setNewRole({ nome: "", descricao: "", cor: "bg-blue-500", permissoes: [] })
@@ -485,7 +496,7 @@ export default function Permissoes() {
                   
                   {categorias.map((categoria) => (
                     <TabsContent key={categoria} value={categoria} className="space-y-2">
-                      {visiblePermissions
+                      {permissoesDoDialogo
                         .filter(p => p.categoria === categoria)
                         .map((permission) => {
                           const isLocked = editingRole?.isMasterRole && permission.id === "system.permissions"

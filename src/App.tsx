@@ -14,6 +14,7 @@ import { PlansProvider } from "@/contexts/plans-context";
 import { IntegrationProvider } from "@/contexts/integration-context";
 import { DepartmentProvider } from "@/contexts/department-context";
 import { EmpresaFilterProvider } from "@/contexts/empresa-filter-context";
+import { useSystemBranding } from "@/hooks/use-system-branding";
 
 // Rotas carregadas sob demanda (code-splitting) para reduzir o bundle inicial em dispositivos móveis
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -45,6 +46,7 @@ const LandingPageEditor = lazy(() => import("./pages/admin/LandingPageEditor"));
 const Financeiro = lazy(() => import("./pages/admin/Financeiro"));
 const Categorias = lazy(() => import("./pages/admin/Categorias"));
 const ArquiteturaSistema = lazy(() => import("./pages/admin/ArquiteturaSistema"));
+const AvisosPopup = lazy(() => import("./pages/admin/AvisosPopup"));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -79,6 +81,10 @@ function AppContent() {
   const isAdminOrHigher = ['master', 'admin', 'instrutor'].includes(userRole);
   const isMaster = userRole === 'master';
   const isAdminOrMaster = ['master', 'admin'].includes(userRole);
+
+  // Aplica nome/logo/favicon configurados em qualquer tela, inclusive
+  // antes do login (landing pública, tela de login).
+  useSystemBranding();
 
   // CRITICAL: Show loading screen while checking authentication
   if (isLoading) {
@@ -140,6 +146,7 @@ function AppContent() {
         <Route path="/admin/cargos" element={isAdminOrMaster ? <Cargos /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/departamentos" element={isAdminOrMaster ? <Departamentos /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/categorias" element={isAdminOrMaster ? <Categorias /> : <Navigate to="/meus-treinamentos" replace />} />
+        <Route path="/admin/avisos-popup" element={isAdminOrMaster ? <AvisosPopup /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/integracoes" element={isAdminOrMaster ? <Integracoes /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/analytics" element={isAdminOrMaster ? <Analytics /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/executivo" element={isAdminOrMaster ? <DashboardExecutivo /> : <Navigate to="/meus-treinamentos" replace />} />

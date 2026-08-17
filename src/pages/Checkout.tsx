@@ -246,12 +246,11 @@ export default function Checkout() {
       // Proceed to payment
       setStep('pagamento')
 
-      // Guarda as credenciais temporariamente para enviar o e-mail de acesso
-      // após a confirmação do pagamento (nunca persistido no servidor).
+      // Guarda os dados (sem a senha) temporariamente para confirmar o
+      // acesso por e-mail após o pagamento (nunca persistido no servidor).
       sessionStorage.setItem('pending_credentials_email', JSON.stringify({
         nome: responsavel,
         email,
-        senha,
         empresaNome: nomeFantasia || razaoSocial,
       }))
 

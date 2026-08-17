@@ -11,15 +11,17 @@ import {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
   Zap, Sparkles, Palette, DollarSign, Tag, Settings2, ChevronLeft, ChevronRight, ChevronDown,
+  Megaphone,
 } from "lucide-react"
 import logoImage from "@/assets/logo.png"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
+import { useSystemBranding } from "@/hooks/use-system-branding"
 
 const iconMap: Record<string, any> = {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone,
 }
 
 interface MenuItemConfig {
@@ -53,6 +55,7 @@ const defaultAdminItems = [
   { id: "cargos", title: "Cargos", url: "/admin/cargos", icon: "Briefcase", roles: ["master", "admin"] },
   { id: "departamentos", title: "Departamentos", url: "/admin/departamentos", icon: "Building2", roles: ["master", "admin"] },
   { id: "categorias", title: "Categorias", url: "/admin/categorias", icon: "Tag", roles: ["master", "admin"] },
+  { id: "avisos-popup", title: "Avisos & Pop-ups", url: "/admin/avisos-popup", icon: "Megaphone", roles: ["master", "admin"] },
   { id: "empresas", title: "Empresas", url: "/admin/empresas", icon: "Building2", roles: ["master"] },
   { id: "planos", title: "Planos", url: "/admin/planos", icon: "CreditCard", roles: ["master"] },
   { id: "integracoes", title: "Integrações", url: "/admin/integracoes", icon: "Zap", roles: ["master", "admin"] },
@@ -82,35 +85,11 @@ export function AppSidebar() {
   const isMaster = userRole === 'master'
   const isAdminOrHigher = ['master', 'admin', 'instrutor'].includes(userRole)
 
-  const [systemName, setSystemName] = useState("Portal")
+  // Nome/logo/favicon já são carregados e aplicados globalmente por
+  // useSystemBranding() em App.tsx (cobre também telas antes do login).
+  const { systemName, logoUrl: sidebarLogo } = useSystemBranding()
   const [systemSubtitle] = useState("Treinamentos")
-  const [sidebarLogo, setSidebarLogo] = useState<string | null>(null)
   const [menuConfig, setMenuConfig] = useState<MenuItemConfig[] | null>(null)
-
-  useEffect(() => {
-    const loadSystemConfig = async () => {
-      const { data } = await supabase
-        .from("configuracoes_sistema" as any)
-        .select("nome_sistema, logo_sidebar_url, favicon_url")
-        .limit(1)
-        .single()
-
-      if (data) {
-        const d = data as any
-        if (d.nome_sistema) {
-          const parts = d.nome_sistema.split(" ")
-          setSystemName(parts[0] || "Portal")
-        }
-        if (d.logo_sidebar_url) setSidebarLogo(d.logo_sidebar_url)
-        if (d.favicon_url) {
-          const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement
-          if (link) link.href = d.favicon_url
-        }
-        if (d.nome_sistema) document.title = d.nome_sistema
-      }
-    }
-    loadSystemConfig()
-  }, [])
 
   // Load architecture menu config from database
   useEffect(() => {
@@ -146,8 +125,16 @@ export function AppSidebar() {
         .filter(m => m.section === section && m.visible !== false)
         .sort((a, b) => a.order - b.order)
 
+      // Itens de menu novos adicionados ao código (ex: uma feature nova)
+      // ainda não existem no menu_config salvo em Arquitetura do Sistema —
+      // sem isso eles ficariam escondidos até alguém reabrir e resalvar
+      // aquela tela. Aparecem no fim da lista por padrão até o admin
+      // reordenar/ocultar manualmente.
+      const idsSalvos = new Set(menuConfig.map(m => m.id))
+
       if (section === "main") {
-        return sectionItems.filter(item => {
+        const itensNaoSalvos = defaultMainItems.filter(d => !idsSalvos.has(d.id))
+        return [...sectionItems, ...itensNaoSalvos].filter(item => {
           const defaultItem = defaultMainItems.find(d => d.id === item.id)
           return defaultItem ? defaultItem.roles.includes(userRole) : true
         }).map(item => ({
@@ -157,7 +144,8 @@ export function AppSidebar() {
         }))
       }
       if (section === "admin") {
-        return sectionItems.filter(item => {
+        const itensNaoSalvos = defaultAdminItems.filter(d => !idsSalvos.has(d.id))
+        return [...sectionItems, ...itensNaoSalvos].filter(item => {
           const defaultItem = defaultAdminItems.find(d => d.id === item.id)
           return defaultItem ? defaultItem.roles.includes(userRole) : true
         }).map(item => ({
@@ -167,7 +155,8 @@ export function AppSidebar() {
         }))
       }
       // master
-      return sectionItems.map(item => ({
+      const itensNaoSalvos = defaultMasterItems.filter(d => !idsSalvos.has(d.id))
+      return [...sectionItems, ...itensNaoSalvos].map(item => ({
         title: item.title,
         url: item.url,
         icon: iconMap[item.icon] || Settings,

@@ -26,6 +26,7 @@ import {
   Upload,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { validarArquivoImagem } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import type { Json } from "@/integrations/supabase/types"
@@ -353,6 +354,11 @@ export default function LandingPageEditor() {
     try {
       const uploadedUrls: string[] = []
       for (const file of files) {
+        const erroValidacao = validarArquivoImagem(file, 5)
+        if (erroValidacao) {
+          toast({ title: `Arquivo "${file.name}" inválido`, description: erroValidacao, variant: "destructive" })
+          continue
+        }
         const ext = file.name.split(".").pop()
         const path = `carousel/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
         const { error: uploadError } = await supabase.storage.from("landing").upload(path, file)
