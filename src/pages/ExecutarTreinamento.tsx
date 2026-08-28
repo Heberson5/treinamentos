@@ -340,18 +340,13 @@ export default function ExecutarTreinamento() {
         toast.error("Erro ao salvar avaliação");
       }
 
-      // Concluir treinamento
-      const { error } = await supabase
-        .from("progresso_treinamentos")
-        .update({
-          concluido: true,
-          percentual_concluido: 100,
-          tempo_assistido_minutos: Math.floor(timer.activeTime / 60),
-          data_conclusao: new Date().toISOString(),
-          atualizado_em: new Date().toISOString(),
-          nota_avaliacao: selectedRating
-        })
-        .eq("id", progressData.id);
+      // Concluir treinamento (validado no servidor: exige avaliação aprovada
+      // quando o treinamento a torna obrigatória — não pode ser forjado pelo cliente)
+      const { error } = await supabase.rpc("concluir_treinamento", {
+        p_treinamento_id: id,
+        p_tempo_assistido_minutos: Math.floor(timer.activeTime / 60),
+        p_nota_avaliacao: selectedRating
+      });
 
       if (error) {
         console.error("Erro ao concluir:", error);

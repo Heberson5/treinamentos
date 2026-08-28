@@ -1617,6 +1617,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      concluir_treinamento: {
+        Args: {
+          p_nota_avaliacao?: number
+          p_tempo_assistido_minutos?: number
+          p_treinamento_id: string
+        }
+        Returns: {
+          atualizado_em: string | null
+          concluido: boolean | null
+          criado_em: string | null
+          data_conclusao: string | null
+          data_inicio: string | null
+          id: string
+          nota_avaliacao: number | null
+          numero: number | null
+          percentual_concluido: number | null
+          tempo_assistido_minutos: number | null
+          treinamento_id: string
+          usuario_id: string
+        }
+      }
       copiar_modelos_para_empresa: {
         Args: { p_empresa_id: string }
         Returns: undefined
