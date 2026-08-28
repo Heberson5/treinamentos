@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { getVideoInfo } from "@/lib/video-utils";
 import { QuizViewer } from "@/components/training/quiz-viewer";
 import {
   Dialog,
@@ -1888,21 +1889,24 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
           </Button>
           <h1 className="text-xl md:text-2xl font-bold">{training.titulo}</h1>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <Badge 
-            variant={timer.isPageVisible ? "default" : "secondary"}
-            className="gap-2"
-          >
-            {timer.isPageVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-            {timer.isPageVisible ? "Ativo" : "Pausado"}
-          </Badge>
-          
-          <Badge variant="outline" className="gap-2 text-sm">
-            <Clock className="h-3 w-3" />
-            {timer.formattedActiveTime} / {timer.formattedTargetTime}
-          </Badge>
-        </div>
+
+        {/* Cronômetro: exibido apenas na tela de treinamento, não na avaliação */}
+        {!examMode && (
+          <div className="flex items-center gap-3">
+            <Badge
+              variant={timer.isPageVisible ? "default" : "secondary"}
+              className="gap-2"
+            >
+              {timer.isPageVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+              {timer.isPageVisible ? "Ativo" : "Pausado"}
+            </Badge>
+
+            <Badge variant="outline" className="gap-2 text-sm">
+              <Clock className="h-3 w-3" />
+              {timer.formattedActiveTime} / {timer.formattedTargetTime}
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Modo Avaliação: mostra somente o quiz */}
@@ -2328,6 +2332,30 @@ function renderTextSection(text: string) {
             />
           </div>
         );
+      }
+      return;
+    }
+
+    // Vídeo [Vídeo: URL]
+    if (trimmedLine.startsWith('[Vídeo:') || trimmedLine.startsWith('[Video:')) {
+      flushList();
+      const urlMatch = trimmedLine.match(/\[V[íi]deo:\s*(.+?)\]/);
+      if (urlMatch) {
+        const videoInfo = getVideoInfo(urlMatch[1]);
+        if (videoInfo.embedUrl) {
+          elements.push(
+            <div key={`video-${index}`} className="my-6 rounded-lg overflow-hidden aspect-video shadow-md">
+              <iframe
+                src={videoInfo.embedUrl}
+                title="Vídeo do treinamento"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+          );
+        }
       }
       return;
     }
