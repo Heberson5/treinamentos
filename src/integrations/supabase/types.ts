@@ -1642,6 +1642,10 @@ export type Database = {
         Args: { p_empresa_id: string }
         Returns: undefined
       }
+      promover_primeiro_admin_empresa: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
       corrigir_avaliacao: {
         Args: {
           p_duracao_segundos: number

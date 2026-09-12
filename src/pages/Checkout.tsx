@@ -22,7 +22,8 @@ import {
   Check,
   Loader2,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from "lucide-react"
 import { validarCNPJ, formatarCNPJ, limparCNPJ } from "@/lib/cnpj-utils"
 
@@ -39,6 +40,20 @@ function translateAuthError(message: string): string {
   ]
   const found = map.find(([pattern]) => pattern.test(message))
   return found ? found[1] : message
+}
+
+// Critérios recomendados de senha, exibidos como checklist ao usuário.
+// O servidor (Supabase Auth) exige no mínimo 6 caracteres e recusa senhas
+// conhecidas por terem vazado — os demais critérios são boas práticas para
+// reduzir a chance de a senha cair nesse segundo caso.
+function getPasswordChecks(senha: string) {
+  return [
+    { label: "Pelo menos 8 caracteres", met: senha.length >= 8 },
+    { label: "Uma letra maiúscula", met: /[A-Z]/.test(senha) },
+    { label: "Uma letra minúscula", met: /[a-z]/.test(senha) },
+    { label: "Um número", met: /[0-9]/.test(senha) },
+    { label: "Um caractere especial (ex: ! @ # $)", met: /[^A-Za-z0-9]/.test(senha) },
+  ]
 }
 
 interface Plano {
@@ -240,17 +255,22 @@ export default function Checkout() {
         throw new Error(empresaError.message)
       }
 
-      // Update profile with empresa_id
+      // Update profile with empresa_id and phone (mesmo telefone informado no cadastro da empresa)
       await supabase
         .from('perfis')
-        .update({ empresa_id: empresa.id })
+        .update({ empresa_id: empresa.id, telefone })
         .eq('id', authData.user.id)
 
-      // Set user as admin (first user of company)
-      await supabase
-        .from('usuario_roles')
-        .update({ role: 'admin' })
-        .eq('usuario_id', authData.user.id)
+      // Promove o primeiro usuário da empresa a admin. Feito via função no
+      // servidor (não um UPDATE direto) porque a policy de segurança impede
+      // qualquer usuário de alterar a própria role — a função só permite essa
+      // promoção quando é de fato o primeiro usuário de uma empresa recém-criada.
+      const { error: promoError } = await supabase.rpc('promover_primeiro_admin_empresa', {
+        p_empresa_id: empresa.id
+      })
+      if (promoError) {
+        console.error('Erro ao promover admin:', promoError)
+      }
 
       // Register CNPJ as used for demo
       await supabase.rpc('registrar_cnpj_demo', {
@@ -497,6 +517,22 @@ export default function Checkout() {
                     onChange={(e) => setSenha(e.target.value)}
                     placeholder="Mínimo 6 caracteres"
                   />
+                  {senha.length > 0 && (
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pt-1">
+                      {getPasswordChecks(senha).map((check) => (
+                        <li
+                          key={check.label}
+                          className={`flex items-center gap-1.5 text-xs ${check.met ? 'text-green-600 dark:text-green-500' : 'text-muted-foreground'}`}
+                        >
+                          {check.met ? <Check className="h-3 w-3 shrink-0" /> : <X className="h-3 w-3 shrink-0" />}
+                          {check.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Evite senhas óbvias ou muito usadas — elas podem ser recusadas automaticamente.
+                  </p>
                 </div>
 
                 {/* Confirmar Senha */}
