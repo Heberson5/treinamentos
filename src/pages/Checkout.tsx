@@ -23,7 +23,8 @@ import {
   Loader2,
   Shield,
   AlertTriangle,
-  X
+  X,
+  Briefcase
 } from "lucide-react"
 import { validarCNPJ, formatarCNPJ, limparCNPJ } from "@/lib/cnpj-utils"
 
@@ -86,6 +87,8 @@ export default function Checkout() {
   const [telefone, setTelefone] = useState("")
   const [endereco, setEndereco] = useState("")
   const [responsavel, setResponsavel] = useState("")
+  const [departamento, setDepartamento] = useState("")
+  const [cargo, setCargo] = useState("")
   const [senha, setSenha] = useState("")
   const [confirmSenha, setConfirmSenha] = useState("")
   
@@ -175,7 +178,7 @@ export default function Checkout() {
 
   const handleEmpresaSubmit = async () => {
     // Validate
-    if (!cnpj || !razaoSocial || !email || !responsavel || !senha) {
+    if (!cnpj || !razaoSocial || !email || !responsavel || !cargo || !senha) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios.",
@@ -231,52 +234,31 @@ export default function Checkout() {
         throw new Error("Erro ao criar usuário")
       }
 
-      // Create company
+      // Cria a empresa (sempre demo de 7 dias), o departamento informado,
+      // vincula o responsável (empresa, departamento, cargo, telefone) e já
+      // promove esse usuário a admin — tudo em uma única operação atômica no
+      // servidor. Isso substitui os passos separados que existiam antes
+      // (insert direto em empresas, update em perfis, rpc de promoção): um
+      // INSERT direto em "empresas" pelo cliente é bloqueado pela policy de
+      // segurança (só "master" pode inserir), então o cadastro público
+      // precisa passar por essa função para funcionar de ponta a ponta.
       const cleanCnpj = limparCNPJ(cnpj)
-      const { data: empresa, error: empresaError } = await supabase
-        .from('empresas')
-        .insert({
-          nome: nomeFantasia || razaoSocial,
-          razao_social: razaoSocial,
-          nome_fantasia: nomeFantasia,
-          cnpj: cleanCnpj,
-          email,
-          telefone,
-          endereco,
-          responsavel,
-          is_demo: true,
-          demo_created_at: new Date().toISOString(),
-          demo_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        })
-        .select()
-        .single()
-
-      if (empresaError) {
-        throw new Error(empresaError.message)
-      }
-
-      // Update profile with empresa_id and phone (mesmo telefone informado no cadastro da empresa)
-      await supabase
-        .from('perfis')
-        .update({ empresa_id: empresa.id, telefone })
-        .eq('id', authData.user.id)
-
-      // Promove o primeiro usuário da empresa a admin. Feito via função no
-      // servidor (não um UPDATE direto) porque a policy de segurança impede
-      // qualquer usuário de alterar a própria role — a função só permite essa
-      // promoção quando é de fato o primeiro usuário de uma empresa recém-criada.
-      const { error: promoError } = await supabase.rpc('promover_primeiro_admin_empresa', {
-        p_empresa_id: empresa.id
-      })
-      if (promoError) {
-        console.error('Erro ao promover admin:', promoError)
-      }
-
-      // Register CNPJ as used for demo
-      await supabase.rpc('registrar_cnpj_demo', {
+      const { data: empresa, error: empresaError } = await supabase.rpc('criar_empresa_demo', {
+        p_nome: nomeFantasia || razaoSocial,
+        p_razao_social: razaoSocial,
+        p_nome_fantasia: nomeFantasia,
         p_cnpj: cleanCnpj,
-        p_empresa_id: empresa.id
+        p_email: email,
+        p_telefone: telefone,
+        p_endereco: endereco,
+        p_responsavel: responsavel,
+        p_departamento_nome: departamento || null,
+        p_cargo: cargo,
       })
+
+      if (empresaError || !empresa) {
+        throw new Error(empresaError?.message || "Erro ao criar empresa")
+      }
 
       // Proceed to payment
       setStep('pagamento')
@@ -460,6 +442,34 @@ export default function Checkout() {
                     onChange={(e) => setResponsavel(e.target.value)}
                     placeholder="Seu nome completo"
                   />
+                </div>
+
+                {/* Departamento e Cargo do responsável */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="departamento" className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Departamento
+                    </Label>
+                    <Input
+                      id="departamento"
+                      value={departamento}
+                      onChange={(e) => setDepartamento(e.target.value)}
+                      placeholder="Ex: Diretoria, TI, RH"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cargo" className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Cargo / Função *
+                    </Label>
+                    <Input
+                      id="cargo"
+                      value={cargo}
+                      onChange={(e) => setCargo(e.target.value)}
+                      placeholder="Ex: Diretor, Gerente, Sócio"
+                    />
+                  </div>
                 </div>
 
                 {/* Email */}

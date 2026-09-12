@@ -1646,6 +1646,45 @@ export type Database = {
         Args: { p_empresa_id: string }
         Returns: undefined
       }
+      criar_empresa_demo: {
+        Args: {
+          p_cargo: string
+          p_cnpj: string
+          p_departamento_nome: string | null
+          p_email: string
+          p_endereco: string
+          p_nome: string
+          p_nome_fantasia: string
+          p_razao_social: string
+          p_responsavel: string
+          p_telefone: string
+        }
+        Returns: {
+          ativo: boolean | null
+          atualizado_em: string | null
+          bloqueada: boolean | null
+          cnpj: string | null
+          criado_em: string | null
+          data_bloqueio: string | null
+          data_contratacao: string | null
+          demo_created_at: string | null
+          demo_expires_at: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          is_demo: boolean | null
+          logo_url: string | null
+          motivo_bloqueio: string | null
+          nome: string
+          nome_fantasia: string | null
+          numero: number | null
+          plano_id: string | null
+          razao_social: string | null
+          responsavel: string | null
+          telefone: string | null
+          tema_cor: string | null
+        }
+      }
       corrigir_avaliacao: {
         Args: {
           p_duracao_segundos: number
