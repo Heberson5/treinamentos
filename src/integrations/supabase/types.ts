@@ -440,6 +440,42 @@ export type Database = {
           },
         ]
       }
+      configuracoes_pagamento: {
+        Row: {
+          access_token: string | null
+          atualizado_em: string | null
+          criado_em: string | null
+          habilitado: boolean
+          id: string
+          provedor: string
+          public_key: string | null
+          sandbox_mode: boolean
+          webhook_secret: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          habilitado?: boolean
+          id?: string
+          provedor?: string
+          public_key?: string | null
+          sandbox_mode?: boolean
+          webhook_secret?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          habilitado?: boolean
+          id?: string
+          provedor?: string
+          public_key?: string | null
+          sandbox_mode?: boolean
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
       configuracoes_menu: {
         Row: {
           atualizado_em: string | null

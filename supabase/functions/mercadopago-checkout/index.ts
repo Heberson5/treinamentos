@@ -30,18 +30,26 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Credenciais configuradas via admin (tabela configuracoes_pagamento) têm
+    // prioridade; o secret de ambiente fica como fallback de compatibilidade.
+    const { data: pagamentoConfig } = await supabase
+      .from('configuracoes_pagamento')
+      .select('access_token')
+      .eq('provedor', 'mercadopago')
+      .maybeSingle()
+
+    const accessToken = pagamentoConfig?.access_token || Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
     if (!accessToken) {
-      console.error('MERCADOPAGO_ACCESS_TOKEN not configured')
+      console.error('Mercado Pago access token not configured (nem tabela nem env)')
       return new Response(
         JSON.stringify({ error: 'Mercado Pago não configurado' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Only admin/master users may create subscriptions/payments
     const { data: roleData } = await supabase

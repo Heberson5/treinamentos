@@ -22,17 +22,20 @@ import {
   Loader2
 } from "lucide-react"
 import { useIntegrations } from "@/contexts/integration-context"
+import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 
 export function PaymentIntegrationCard() {
-  const { 
-    paymentIntegration, 
-    connectPayment, 
+  const {
+    paymentIntegration,
+    connectPayment,
     disconnectPayment,
     toggleSandboxMode,
-    isLoading 
+    isLoading
   } = useIntegrations()
+  const { verificarRole } = useAuth()
+  const isMaster = verificarRole('master')
   const { toast } = useToast()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [accessToken, setAccessToken] = useState("")
@@ -137,12 +140,21 @@ export function PaymentIntegrationCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Atenção:</strong> Para ativar pagamentos, é necessário configurar o backend e armazenar as credenciais de forma segura como secrets.
-          </AlertDescription>
-        </Alert>
+        {isMaster ? (
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              As credenciais são armazenadas de forma segura no banco de dados, acessíveis apenas por usuários master.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Apenas o usuário master pode configurar os pagamentos.</strong> Fale com o master da sua empresa para conectar ou alterar o Mercado Pago.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Mercado Pago Card */}
         <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -224,9 +236,10 @@ export function PaymentIntegrationCard() {
                             Usar ambiente de testes
                           </p>
                         </div>
-                        <Switch 
+                        <Switch
                           checked={paymentIntegration.sandboxMode}
                           onCheckedChange={toggleSandboxMode}
+                          disabled={!isMaster}
                         />
                       </div>
                       <div className="flex items-center justify-between">
@@ -254,14 +267,18 @@ export function PaymentIntegrationCard() {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleDisconnect}
-                >
-                  <Unlink className="h-4 w-4" />
-                </Button>
+                {isMaster && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDisconnect}
+                  >
+                    <Unlink className="h-4 w-4" />
+                  </Button>
+                )}
               </>
+            ) : !isMaster ? (
+              <Badge variant="secondary">Apenas master pode conectar</Badge>
             ) : (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>

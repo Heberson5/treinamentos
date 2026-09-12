@@ -55,16 +55,24 @@ serve(async (req) => {
   }
 
   try {
-    const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
-    const webhookSecret = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET')
-    if (!accessToken) {
-      console.error('MERCADOPAGO_ACCESS_TOKEN not configured')
-      return new Response('Configuration error', { status: 500 })
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Credenciais configuradas via admin (tabela configuracoes_pagamento) têm
+    // prioridade; o secret de ambiente fica como fallback de compatibilidade.
+    const { data: pagamentoConfig } = await supabase
+      .from('configuracoes_pagamento')
+      .select('access_token, webhook_secret')
+      .eq('provedor', 'mercadopago')
+      .maybeSingle()
+
+    const accessToken = pagamentoConfig?.access_token || Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
+    const webhookSecret = pagamentoConfig?.webhook_secret || Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET')
+    if (!accessToken) {
+      console.error('Mercado Pago access token not configured (nem tabela nem env)')
+      return new Response('Configuration error', { status: 500 })
+    }
 
     const body = await req.json()
     const { type, data } = body || {}
