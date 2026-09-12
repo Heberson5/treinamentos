@@ -126,7 +126,12 @@ function AppContent() {
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
         <Route path="/login" element={<Navigate to={defaultRoute} replace />} />
         <Route path="/auth" element={<Navigate to={defaultRoute} replace />} />
-        
+
+        {/* Assinatura de novo plano: precisa funcionar mesmo com uma sessão
+            já ativa no navegador (ex: admin testando, ou usuário logado que
+            quer contratar/atualizar um plano para uma nova empresa). */}
+        <Route path="/checkout" element={<Checkout />} />
+
         {/* Rotas acessíveis por todos */}
         <Route path="/meus-treinamentos" element={<MeusTreinamentos />} />
         <Route path="/catalogo" element={<Catalogo />} />

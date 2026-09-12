@@ -26,6 +26,21 @@ import {
 } from "lucide-react"
 import { validarCNPJ, formatarCNPJ, limparCNPJ } from "@/lib/cnpj-utils"
 
+// Traduz mensagens de erro do Supabase Auth (vêm sempre em inglês) para
+// um texto claro em português, exibido ao usuário no formulário de checkout.
+function translateAuthError(message: string): string {
+  const map: Array<[RegExp, string]> = [
+    [/already registered/i, "Este e-mail já possui cadastro. Faça login ou use outro e-mail."],
+    [/password.*(weak|easy to guess|pwned|breach)/i, "Essa senha é muito fraca ou já vazou em outros sites. Escolha uma senha mais forte e menos comum."],
+    [/password should be at least/i, "A senha deve ter pelo menos 6 caracteres."],
+    [/unable to validate email/i, "O e-mail informado é inválido."],
+    [/invalid email/i, "O e-mail informado é inválido."],
+    [/rate limit/i, "Muitas tentativas em pouco tempo. Aguarde um instante e tente novamente."],
+  ]
+  const found = map.find(([pattern]) => pattern.test(message))
+  return found ? found[1] : message
+}
+
 interface Plano {
   id: string
   nome: string
@@ -194,7 +209,7 @@ export default function Checkout() {
       })
 
       if (authError) {
-        throw new Error(authError.message)
+        throw new Error(translateAuthError(authError.message))
       }
 
       if (!authData.user) {
