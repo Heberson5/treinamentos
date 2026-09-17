@@ -254,9 +254,13 @@ export default function EditarTreinamentoModerno() {
         return;
       }
 
-      // Primeiro, tentar buscar do contexto local (IDs numéricos)
-      const numericId = parseInt(id);
-      if (!isNaN(numericId)) {
+      // Primeiro, tentar buscar do contexto local (IDs numéricos).
+      // Importante: usar um regex de "é inteiro" em vez de parseInt()+isNaN —
+      // parseInt() lê só os dígitos do início da string e ignora o resto, então
+      // um UUID do banco como "3fcacb8b-..." virava erroneamente o id numérico
+      // 3, abrindo o treinamento legado errado em vez do real.
+      if (/^\d+$/.test(id)) {
+        const numericId = parseInt(id, 10);
         const found = getTrainingById(numericId);
         if (found) {
           setTraining(found);
