@@ -336,6 +336,7 @@ export default function EditarTreinamentoModerno() {
         subtitulo: "",
         descricao: dbTraining.descricao || "",
         categoria: dbTraining.categoria || "Geral",
+        nivel: dbTraining.nivel || "basico",
         duracao: formatDuration(dbTraining.duracao_minutos),
         status: dbTraining.publicado ? "ativo" : "rascunho",
         instrutor: "",
@@ -480,7 +481,7 @@ export default function EditarTreinamentoModerno() {
             empresa_id: user?.empresa_id,
             departamento_id: safeUuid(data.departamento_id),
             instrutor_id: safeUuid(data.instrutor_id),
-            nivel: (data as any).nivel || null,
+            nivel: data.nivel || null,
           });
 
         if (error) {
@@ -511,7 +512,7 @@ export default function EditarTreinamentoModerno() {
             empresa_id: safeUuid(data.empresa_id) || dbTraining.empresa_id,
             departamento_id: safeUuid(data.departamento_id),
             instrutor_id: safeUuid(data.instrutor_id),
-            nivel: (data as any).nivel || null,
+            nivel: data.nivel || null,
             atualizado_em: new Date().toISOString(),
           })
           .eq("id", dbTraining.id);

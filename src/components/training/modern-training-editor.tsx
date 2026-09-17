@@ -128,6 +128,7 @@ export interface TrainingData {
   subtitulo: string;
   descricao: string;
   categoria: string;
+  nivel?: string;
   duracao: string;
   status: "ativo" | "inativo" | "rascunho";
   instrutor: string;
@@ -247,6 +248,7 @@ export function ModernTrainingEditor({
     subtitulo: initialData?.subtitulo || "",
     descricao: initialData?.descricao || "",
     categoria: initialData?.categoria || "",
+    nivel: initialData?.nivel || "basico",
     duracao: initialData?.duracao || "",
     status: initialData?.status || "rascunho",
     instrutor: initialData?.instrutor || "",
@@ -1706,6 +1708,23 @@ export function ModernTrainingEditor({
                           <SelectItem value="Outros">Outros</SelectItem>
                         </>
                       )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Nível</Label>
+                  <Select
+                    value={formData.nivel || "basico"}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, nivel: value }))}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basico">Básico</SelectItem>
+                      <SelectItem value="intermediario">Intermediário</SelectItem>
+                      <SelectItem value="avancado">Avançado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
