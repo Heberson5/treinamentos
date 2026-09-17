@@ -2278,7 +2278,9 @@ function renderTextSection(text: string) {
     }
   };
 
-  lines.forEach((line, index) => {
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index];
     const trimmedLine = line.trim();
 
     if (trimmedLine === '' || trimmedLine === '---') {
@@ -2286,7 +2288,8 @@ function renderTextSection(text: string) {
       if (trimmedLine === '---') {
         elements.push(<hr key={`hr-${index}`} className="my-6 border-border" />);
       }
-      return;
+      index++;
+      continue;
     }
 
     // Seção/Heading ##
@@ -2298,7 +2301,8 @@ function renderTextSection(text: string) {
           {headingText}
         </h2>
       );
-      return;
+      index++;
+      continue;
     }
 
     // Subheading ###
@@ -2309,7 +2313,8 @@ function renderTextSection(text: string) {
           {trimmedLine.replace(/^### /, '')}
         </h3>
       );
-      return;
+      index++;
+      continue;
     }
 
     // Imagem [Imagem: URL]
@@ -2328,7 +2333,8 @@ function renderTextSection(text: string) {
           </div>
         );
       }
-      return;
+      index++;
+      continue;
     }
 
     // Vídeo [Vídeo: URL]
@@ -2352,14 +2358,16 @@ function renderTextSection(text: string) {
           );
         }
       }
-      return;
+      index++;
+      continue;
     }
 
     // Checklist ☑
     if (trimmedLine.startsWith('☑')) {
       flushList();
       currentCheckList.push(trimmedLine.replace(/^☑\s*/, ''));
-      return;
+      index++;
+      continue;
     }
 
     // Lista numerada
@@ -2369,7 +2377,8 @@ function renderTextSection(text: string) {
         listType = 'ol';
       }
       currentList.push(trimmedLine.replace(/^\d+\.\s*/, ''));
-      return;
+      index++;
+      continue;
     }
 
     // Lista com marcador
@@ -2379,7 +2388,8 @@ function renderTextSection(text: string) {
         listType = 'ul';
       }
       currentList.push(trimmedLine.replace(/^[•\-\*]\s*/, ''));
-      return;
+      index++;
+      continue;
     }
 
     // Tabela markdown
@@ -2422,7 +2432,11 @@ function renderTextSection(text: string) {
           </div>
         );
       }
-      return;
+      // Pula direto pra depois da última linha da tabela já consumida —
+      // sem isso, o loop principal reprocessava cada linha da tabela de
+      // novo como início de uma nova tabela, duplicando o conteúdo.
+      index = nextIdx;
+      continue;
     }
 
     // Texto em negrito **texto**
@@ -2432,13 +2446,14 @@ function renderTextSection(text: string) {
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
 
     elements.push(
-      <p 
-        key={`p-${index}`} 
+      <p
+        key={`p-${index}`}
         className="text-base leading-relaxed mb-3"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedText) }}
       />
     );
-  });
+    index++;
+  }
 
   flushList();
   return <>{elements}</>;

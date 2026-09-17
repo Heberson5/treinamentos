@@ -241,7 +241,7 @@ export default function EditarTreinamentoModerno() {
   const navigate = useNavigate();
   const { getTrainingById, updateTraining, createTraining } = useTraining();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, verificarRole } = useAuth();
   const [training, setTraining] = useState<Training | null>(null);
   const [dbTraining, setDbTraining] = useState<TrainingDB | null>(null);
   const [loading, setLoading] = useState(true);
@@ -464,8 +464,11 @@ export default function EditarTreinamentoModerno() {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const safeUuid = (val: string | undefined | null) => val && uuidRegex.test(val) ? val : null;
 
-      const isGlobalModel = !dbTraining.empresa_id;
-      
+      // Master é quem mantém os modelos globais — deve editar o modelo em si,
+      // não criar uma cópia. Só usuários de empresa (sem permissão de editar
+      // o modelo compartilhado) recebem uma cópia própria ao salvar.
+      const isGlobalModel = !dbTraining.empresa_id && !verificarRole("master");
+
       if (isGlobalModel) {
         // Criar uma cópia se for um modelo padrão (empresa_id IS NULL)
         const { error } = await supabase
