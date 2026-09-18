@@ -10,6 +10,8 @@ import { RegistrationForm } from "./registration-form"
 import { PasswordRecoveryForm } from "./password-recovery-form"
 import { podeTeentarLogin, registrarTentativaLogin, formatarDesbloqueio } from "@/lib/login-attempts"
 import { useSystemBranding } from "@/hooks/use-system-branding"
+import { AnimatedMeshBackground } from "@/components/landing/animated-mesh-background"
+import { TiltCard } from "@/components/ui/tilt-card"
 import logoImage from "@/assets/logo.png"
 
 type AuthMode = "login" | "register" | "recovery"
@@ -74,40 +76,51 @@ export function LoginForm() {
 
   if (authMode === "register") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/20 to-secondary/20">
-        <RegistrationForm 
-          onBack={() => setAuthMode("login")}
-          onSuccess={() => setAuthMode("login")}
-        />
+      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-primary via-primary-glow to-primary-darker">
+        <AnimatedMeshBackground />
+        <div className="relative animate-fade-in-up">
+          <RegistrationForm
+            onBack={() => setAuthMode("login")}
+            onSuccess={() => setAuthMode("login")}
+          />
+        </div>
       </div>
     )
   }
 
   if (authMode === "recovery") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/20 to-secondary/20">
-        <PasswordRecoveryForm onBack={() => setAuthMode("login")} />
+      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-primary via-primary-glow to-primary-darker">
+        <AnimatedMeshBackground />
+        <div className="relative animate-fade-in-up">
+          <PasswordRecoveryForm onBack={() => setAuthMode("login")} />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/20 to-secondary/20">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <img
-            src={logoUrl || logoImage}
-            alt={systemNameFull}
-            className="h-14 w-14 mx-auto mb-2 object-contain rounded"
-          />
-          <CardTitle className="text-2xl">{systemNameFull}</CardTitle>
-          <CardDescription>
-            Faça login para acessar sua conta
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden [perspective:1600px] bg-gradient-to-br from-primary via-primary-glow to-primary-darker">
+      <AnimatedMeshBackground />
+
+      <TiltCard maxTilt={4} className="relative w-full max-w-md rounded-2xl animate-fade-in-up">
+        <Card className="w-full border-white/20 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.45)] bg-card/95 backdrop-blur-xl [transform:translateZ(20px)]">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 [transform:translateZ(30px)]">
+              <img
+                src={logoUrl || logoImage}
+                alt={systemNameFull}
+                className="h-14 w-14 mx-auto object-contain rounded-xl shadow-lg"
+              />
+            </div>
+            <CardTitle className="text-2xl">{systemNameFull}</CardTitle>
+            <CardDescription>
+              Faça login para acessar sua conta
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -195,8 +208,9 @@ export function LoginForm() {
               </p>
             </div>
           </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </TiltCard>
     </div>
   )
 }

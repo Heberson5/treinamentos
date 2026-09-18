@@ -27,6 +27,8 @@ import { useLandingConfig } from "@/hooks/use-landing-config"
 import { supabase } from "@/integrations/supabase/client"
 import { DemoRequestDialog } from "@/components/landing/demo-request-dialog"
 import { ScreenshotCarousel } from "@/components/landing/screenshot-carousel"
+import { AnimatedMeshBackground } from "@/components/landing/animated-mesh-background"
+import { TiltCard } from "@/components/ui/tilt-card"
 
 // Mapeamento de ícones por nome
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -133,38 +135,46 @@ export default function Index() {
       )}
 
       {/* Hero Section */}
-      <section className={`relative overflow-hidden bg-gradient-to-r ${config.hero_background_color}`}>
+      <section className={`relative overflow-hidden bg-gradient-to-br ${config.hero_background_color} [perspective:1600px]`}>
+        <AnimatedMeshBackground />
         <div className="absolute inset-0 bg-grid-white/10 bg-grid" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+            <div className="space-y-8 animate-fade-in-up">
               <div>
-                <Badge className="bg-white/20 text-white border-white/30 mb-4">
+                <Badge className="bg-white/15 text-white border-white/30 backdrop-blur-md mb-4 shadow-[0_0_0_1px_rgba(255,255,255,0.1)]">
                   {config.hero_badge}
                 </Badge>
-                <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
+                <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight [text-wrap:balance] drop-shadow-[0_2px_20px_rgba(0,0,0,0.15)]">
                   {config.hero_title.split('\n').map((line, i) => (
-                    <span key={i} className={i > 0 ? "block bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent" : ""}>
+                    <span
+                      key={i}
+                      className={
+                        i > 0
+                          ? "block bg-gradient-to-r from-white via-white/80 to-white bg-[length:200%_auto] bg-clip-text text-transparent animate-gradient-shimmer"
+                          : ""
+                      }
+                    >
                       {line}
                     </span>
                   ))}
                 </h1>
-                <p className="text-xl text-white/90 mt-6 leading-relaxed">
+                <p className="text-xl text-white/90 mt-6 leading-relaxed max-w-xl">
                   {config.hero_subtitle}
                 </p>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="bg-white text-primary hover:bg-white/90 shadow-lg"
+                  className="bg-white text-primary hover:bg-white/90 hover:-translate-y-0.5 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300"
                   onClick={() => setDemoDialogOpen(true)}
                 >
                   <Play className="mr-2 h-5 w-5" />
                   {config.hero_cta_primary}
                 </Button>
               </div>
-              
+
               <div className="flex items-center gap-6 text-white/80">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5" />
@@ -176,37 +186,42 @@ export default function Index() {
                 </div>
               </div>
             </div>
-            
-            <div className="relative">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-semibold text-white mb-4">
-                      Agende uma demonstração gratuita
-                    </h3>
-                    <div className="space-y-4">
-                      <Input
-                        type="email"
-                        placeholder="Seu email profissional"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                      />
-                      <Button
-                        className="w-full bg-white text-primary hover:bg-white/90"
-                        onClick={() => setDemoDialogOpen(true)}
-                      >
-                        Agendar Demonstração
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
+
+            <div className="relative animate-fade-in-up [animation-delay:150ms]">
+              <TiltCard maxTilt={5} className="rounded-2xl">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] [transform:translateZ(30px)]">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-4">
+                        Agende uma demonstração gratuita
+                      </h3>
+                      <div className="space-y-4">
+                        <Input
+                          type="email"
+                          placeholder="Seu email profissional"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                        />
+                        <Button
+                          className="w-full bg-white text-primary hover:bg-white/90 transition-transform hover:scale-[1.02]"
+                          onClick={() => setDemoDialogOpen(true)}
+                        >
+                          Agendar Demonstração
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="text-center text-white/60 text-sm">
+                      Já tem uma conta? <Link to="/login" className="text-white hover:underline">Faça login</Link>
                     </div>
                   </div>
-                  
-                  <div className="text-center text-white/60 text-sm">
-                    Já tem uma conta? <Link to="/login" className="text-white hover:underline">Faça login</Link>
-                  </div>
                 </div>
-              </div>
+              </TiltCard>
+              {/* Elementos decorativos flutuantes, dão profundidade ao cartão */}
+              <div className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 animate-mesh-float [transform:translateZ(50px)]" />
+              <div className="pointer-events-none absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-white/10 backdrop-blur-md border border-white/20 animate-mesh-float-slow [transform:translateZ(20px)]" />
             </div>
           </div>
         </div>
@@ -220,19 +235,22 @@ export default function Index() {
       />
 
       {/* Stats Section */}
-      <section className="py-16 bg-accent/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 bg-accent/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/0.06),transparent_60%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {config.stats_section.map((stat, index) => {
               const IconComponent = getIconComponent(stat.icon)
               return (
-                <div key={index} className="text-center">
-                  <div className={`inline-flex p-3 rounded-full bg-background mb-4`}>
-                    <IconComponent className={`h-6 w-6 ${stat.color}`} />
+                <TiltCard key={index} maxTilt={10} glare={false} className="text-center rounded-2xl">
+                  <div className="p-4 rounded-2xl transition-shadow duration-300 hover:shadow-xl">
+                    <div className="inline-flex p-3 rounded-full bg-background shadow-md mb-4 [transform:translateZ(20px)]">
+                      <IconComponent className={`h-6 w-6 ${stat.color}`} />
+                    </div>
+                    <div className="text-3xl font-bold text-foreground [transform:translateZ(15px)]">{stat.value}</div>
+                    <div className="text-muted-foreground">{stat.label}</div>
                   </div>
-                  <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                  <div className="text-muted-foreground">{stat.label}</div>
-                </div>
+                </TiltCard>
               )
             })}
           </div>
@@ -257,21 +275,23 @@ export default function Index() {
               // Corrigir título "Certificação" para "Certificado"
               const displayTitle = feature.title === "Certificação" ? "Certificado" : feature.title
               return (
-                <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      <div className={`flex items-center justify-center p-4 rounded-full ${feature.color} min-w-[64px]`}>
-                        <IconComponent className="h-8 w-8" />
+                <TiltCard key={index} maxTilt={6} className="rounded-2xl h-full">
+                  <Card className="border-0 shadow-lg hover:shadow-2xl transition-shadow duration-300 h-full bg-card/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className={`flex items-center justify-center p-4 rounded-full ${feature.color} min-w-[64px] shadow-md [transform:translateZ(25px)]`}>
+                          <IconComponent className="h-8 w-8" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl">{displayTitle}</CardTitle>
+                          <CardDescription className="text-base mt-1">
+                            {feature.description}
+                          </CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{displayTitle}</CardTitle>
-                        <CardDescription className="text-base mt-1">
-                          {feature.description}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
+                    </CardHeader>
+                  </Card>
+                </TiltCard>
               )
             })}
           </div>
@@ -325,10 +345,9 @@ export default function Index() {
                 const precoExibido = pagamentoAnual ? precoComDesconto : plano.preco
                 const periodoExibido = pagamentoAnual ? "/ano" : plano.periodo
                 
-                return (
-                  <Card 
-                    key={plano.id} 
-                    className={`relative flex flex-col ${plano.popular ? 'border-primary shadow-xl scale-105' : 'hover:shadow-lg'} transition-all`}
+                const cardContent = (
+                  <Card
+                    className={`relative flex flex-col ${plano.popular ? 'border-primary shadow-2xl scale-105 bg-card/90 backdrop-blur-sm' : 'hover:shadow-lg transition-shadow duration-300'}`}
                   >
                     {plano.popular && (
                       <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
@@ -406,6 +425,14 @@ export default function Index() {
                       </Link>
                     </CardContent>
                   </Card>
+                )
+
+                return plano.popular ? (
+                  <TiltCard key={plano.id} maxTilt={6} className="rounded-2xl">
+                    {cardContent}
+                  </TiltCard>
+                ) : (
+                  <div key={plano.id}>{cardContent}</div>
                 )
               })}
             </div>
@@ -520,18 +547,19 @@ export default function Index() {
       )}
 
       {/* CTA Section - Removed "Falar com Especialista" */}
-      <section className="py-20 bg-gradient-to-r from-primary to-primary-glow">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+      <section className="relative py-20 bg-gradient-to-r from-primary to-primary-glow overflow-hidden">
+        <AnimatedMeshBackground />
+        <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 animate-fade-in-up">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-[0_2px_20px_rgba(0,0,0,0.15)]">
             {config.cta_title}
           </h2>
           <p className="text-xl text-white/90 mb-8">
             {config.cta_subtitle}
           </p>
-          
+
           <Button
             size="lg"
-            className="bg-white text-primary hover:bg-white/90 shadow-lg"
+            className="bg-white text-primary hover:bg-white/90 hover:-translate-y-0.5 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300"
             onClick={() => setDemoDialogOpen(true)}
           >
             <TrendingUp className="mr-2 h-5 w-5" />

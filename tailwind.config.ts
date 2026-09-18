@@ -113,11 +113,36 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'mesh-float': {
+					'0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+					'50%': { transform: 'translate3d(2%, -4%, 0) scale(1.06)' }
+				},
+				'mesh-float-slow': {
+					'0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+					'50%': { transform: 'translate3d(-3%, 3%, 0) scale(1.08)' }
+				},
+				'mesh-float-slower': {
+					'0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+					'50%': { transform: 'translate3d(3%, 2%, 0) scale(1.05)' }
+				},
+				'fade-in-up': {
+					'0%': { opacity: '0', transform: 'translateY(16px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'gradient-shimmer': {
+					'0%, 100%': { backgroundPosition: '0% 50%' },
+					'50%': { backgroundPosition: '100% 50%' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'mesh-float': 'mesh-float 14s ease-in-out infinite',
+				'mesh-float-slow': 'mesh-float-slow 18s ease-in-out infinite',
+				'mesh-float-slower': 'mesh-float-slower 22s ease-in-out infinite',
+				'fade-in-up': 'fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+				'gradient-shimmer': 'gradient-shimmer 6s ease infinite'
 			}
 		}
 	},
