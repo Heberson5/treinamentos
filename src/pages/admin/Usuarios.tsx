@@ -87,6 +87,7 @@ interface Usuario {
   trocar_senha_primeiro_login: boolean
   dias_para_trocar_senha: number | null
   data_nascimento: string | null
+  avatar_url: string | null
 }
 
 interface Departamento {
@@ -255,6 +256,7 @@ async function fetchUsuariosPageData(isMaster: boolean, userEmpresaId: string | 
       trocar_senha_primeiro_login: perfil.trocar_senha_primeiro_login || false,
       dias_para_trocar_senha: perfil.dias_para_trocar_senha || null,
       data_nascimento: perfil.data_nascimento || null,
+      avatar_url: perfil.avatar_url || null,
     }
   })
 
@@ -851,7 +853,7 @@ export default function Usuarios() {
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src="" alt={usuario.nome} />
+                          <AvatarImage src={usuario.avatar_url || ""} alt={usuario.nome} />
                           <AvatarFallback className="bg-primary text-primary-foreground">
                             {getInitials(usuario.nome)}
                           </AvatarFallback>
@@ -1382,10 +1384,14 @@ export default function Usuarios() {
                     variant: "destructive",
                   });
                 } else {
-                  setUsuarios(prev => prev.filter(u => u.id !== deletingUser.id));
+                  // Atualiza o status em vez de remover da lista: remover só do
+                  // cache local dava a falsa impressão de "não salvou", já que
+                  // qualquer nova busca (F5, refetch) trazia o usuário de volta
+                  // — a exclusão é uma desativação, o usuário continua existindo.
+                  setUsuarios(prev => prev.map(u => u.id === deletingUser.id ? { ...u, status: "inativo" } : u));
                   toast({
                     title: "Usuário excluído",
-                    description: "O usuário foi removido com sucesso.",
+                    description: "O usuário foi desativado com sucesso.",
                   });
                 }
                 setDeletingUser(null);
