@@ -1,4 +1,4 @@
-project_id = "ykdakgchrjhtzynrbadx"
+project_id = "sauberlich-selfhosted"
 
 [functions.rewrite-with-ai]
 verify_jwt = false
