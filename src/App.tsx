@@ -49,6 +49,15 @@ const ArquiteturaSistema = lazy(() => import("./pages/admin/ArquiteturaSistema")
 const AvisosPopup = lazy(() => import("./pages/admin/AvisosPopup"));
 
 const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Evita que toda consulta seja refeita automaticamente sempre que a aba
+      // volta a ficar em foco — dava a impressão de "a página atualiza
+      // sozinha" ao trocar de aba, podendo atrapalhar edição/estudo em
+      // andamento.
+      refetchOnWindowFocus: false,
+    },
+  },
   queryCache: new QueryCache({
     onError: (error, query) => {
       const errorToast = (query.meta as { errorToast?: { title: string; description?: string } } | undefined)?.errorToast;
