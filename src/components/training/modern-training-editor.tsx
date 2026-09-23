@@ -74,6 +74,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
   Bold,
   Italic,
   Underline,
@@ -102,7 +103,7 @@ export interface ContentBlock {
   type: "text" | "heading" | "image" | "video" | "divider" | "quote" | "list" | "checklist" | "numbered-list" | "table";
   content: string;
   level?: 1 | 2 | 3;
-  align?: "left" | "center" | "right";
+  align?: "left" | "center" | "right" | "justify";
   mediaUrl?: string;
   caption?: string;
   listItems?: string[];
@@ -555,6 +556,7 @@ export function ModernTrainingEditor({
       left: "text-left",
       center: "text-center",
       right: "text-right",
+      justify: "text-justify",
     }[block.align || "left"];
 
     const textStyles = cn(
@@ -779,6 +781,7 @@ export function ModernTrainingEditor({
       left: "text-left",
       center: "text-center",
       right: "text-right",
+      justify: "text-justify",
     }[block.align || "left"];
 
     const fontSizeClass = {
@@ -816,12 +819,17 @@ export function ModernTrainingEditor({
 
         case "text":
           return (
+            // Was a fixed 120px, non-resizable box — way too little room for
+            // an actual paragraph. Now starts tall (280px) and can be
+            // dragged taller (resize-y) when that's still not enough, so
+            // editing and reviewing real training text doesn't mean
+            // scrolling inside a tiny window.
             <Textarea
               value={block.content}
               onChange={(e) => updateBlock(sectionIndex, block.id, { content: e.target.value })}
               placeholder="Comece a digitar seu conteúdo aqui..."
               className={cn(
-                "min-h-[120px] border-none shadow-none focus-visible:ring-0 resize-none bg-transparent",
+                "min-h-[280px] border-none shadow-none focus-visible:ring-0 resize-y leading-relaxed bg-transparent",
                 fontSizeClass,
                 alignClass,
                 block.textColor,
@@ -1341,6 +1349,21 @@ export function ModernTrainingEditor({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Alinhar à direita</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={block.align === "justify" ? "secondary" : "ghost"}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateBlock(sectionIndex, block.id, { align: "justify" })}
+                          >
+                            <AlignJustify className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Justificar</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
@@ -1977,6 +2000,9 @@ export function ModernTrainingEditor({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addBlock(activeSection, "checklist")}>
                     <CheckSquare className="h-4 w-4 mr-2" /> Checklist
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => addBlock(activeSection, "table")}>
+                    <Table2 className="h-4 w-4 mr-2" /> Tabela
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addBlock(activeSection, "divider")}>
                     <Minus className="h-4 w-4 mr-2" /> Divisor
