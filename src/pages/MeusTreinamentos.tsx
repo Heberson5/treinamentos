@@ -99,7 +99,7 @@ function TrainingCard({
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow flex flex-col">
+    <Card className="flex flex-col">
       <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 rounded-t-lg flex items-center justify-center overflow-hidden relative">
         {training.thumbnail && training.thumbnail !== "/api/placeholder/300/200" ? (
           <img 

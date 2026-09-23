@@ -293,7 +293,7 @@ export default function DashboardExecutivo() {
       {/* KPIs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpis.map((kpi, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow">
+          <Card key={index}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className={`p-2 rounded-lg ${kpi.bgColor}`}>

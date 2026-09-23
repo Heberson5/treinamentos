@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { sendCredentialsEmail } from "@/services/email-service";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO, subDays } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Tilt3D from "@/components/Tilt3D";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -432,26 +433,28 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {statCards.map((stat, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
-              <CardTitle className="text-[10px] sm:text-sm font-medium truncate">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  <div className="text-lg sm:text-2xl font-bold">{stat.value}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                    {stat.subtitle}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <Tilt3D key={index} maxDeg={6}>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-[10px] sm:text-sm font-medium truncate">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
+              </CardHeader>
+              <CardContent className="p-3 sm:p-6 pt-0">
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <div className="text-lg sm:text-2xl font-bold font-mono">{stat.value}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                      {stat.subtitle}
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </Tilt3D>
         ))}
       </div>
 

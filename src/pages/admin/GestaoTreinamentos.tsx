@@ -455,7 +455,7 @@ export default function GestaoTreinamentos() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredTrainings.map((training) => (
-            <Card key={training.id} className="hover:shadow-md transition-shadow overflow-hidden">
+            <Card key={training.id} className="overflow-hidden">
               <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center overflow-hidden relative">
                 <img 
                   src={training.thumbnail_url || DEFAULT_COVER} 

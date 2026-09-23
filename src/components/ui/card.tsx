@@ -9,7 +9,12 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-md",
+      // Frosted glass instead of a flat filled panel, a magenta-tinted
+      // glow + a real lift on hover instead of just a bigger neutral
+      // shadow — the shared primitive every card in the app renders
+      // through, so it cascades everywhere (dashboard, training lists,
+      // settings) from one place.
+      "rounded-xl border bg-card/80 backdrop-blur-xl text-card-foreground shadow-card transition-all duration-300 hover:shadow-glow hover:border-vibrant/30 hover:-translate-y-0.5",
       className
     )}
     {...props}

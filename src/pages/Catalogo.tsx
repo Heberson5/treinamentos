@@ -405,7 +405,7 @@ export default function Catalogo() {
       ) : filteredTrainings.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTrainings.map((training) => (
-            <Card key={training.id} className="hover:shadow-lg transition-shadow group">
+            <Card key={training.id} className="group">
               <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 rounded-t-lg flex items-center justify-center relative overflow-hidden">
                 <img 
                   src={training.thumbnail} 

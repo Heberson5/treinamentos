@@ -6,6 +6,29 @@
 All colors MUST be HSL.
 */
 
+/* Self-hosted (public/fonts/, OFL licensed) instead of the browser's
+   default system-font stack, which is all this app used before — no
+   font-face existed anywhere in the project. Manrope carries headings
+   and body; JetBrains Mono backs the font-mono class already used for
+   certificate/training codes (4 spots), which fell back to the
+   generic monospace font for the same reason. */
+@layer base {
+  @font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('/fonts/manrope-variable.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/jetbrains-mono-variable.woff2') format('woff2');
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -29,8 +52,24 @@ All colors MUST be HSL.
     --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 262 83% 95%;
-    --accent-foreground: 262 83% 58%;
+    /* --accent stays a pale, muted tint — shadcn wires it to
+       hover:bg-accent on every ghost/outline button and every
+       dropdown-item hover across the whole app, so making it a bold
+       saturated color would mean nearly every hover in the product
+       flashes bright, not just the one or two spots meant to feel
+       "alive". Deliberate vibrancy goes through --vibrant below,
+       used only where a highlight is intentional (Card's hover glow,
+       the 3D-tilt cards on the dashboard). */
+    --accent: 220 14% 94%;
+    --accent-foreground: 221 39% 11%;
+
+    /* A real second hue — magenta, the complementary opposite of the
+       262° violet primary — reserved for deliberate highlight moments
+       instead of blending into every hover state. */
+    --vibrant: 322 84% 58%;
+    --vibrant-foreground: 0 0% 100%;
+    --glow-primary: 262 83% 58%;
+    --glow-vibrant: 322 84% 58%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -51,11 +90,15 @@ All colors MUST be HSL.
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(282 83% 58%));
     --gradient-secondary: linear-gradient(135deg, hsl(220 14% 96%), hsl(220 14% 92%));
     --gradient-hero: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(282 83% 58%) 50%, hsl(262 83% 65%) 100%);
-    
+
     /* Shadows */
     --shadow-elegant: 0 10px 25px -5px hsl(262 83% 58% / 0.1), 0 4px 6px -2px hsl(262 83% 58% / 0.05);
     --shadow-card: 0 4px 6px -1px hsl(220 13% 91% / 0.1), 0 2px 4px -1px hsl(220 13% 91% / 0.06);
-    
+    /* A magenta-tinted glow for the one or two elements per screen that
+       should feel "alive" (see Card's hover state) — not another
+       neutral drop-shadow. */
+    --shadow-glow: 0 0 0 1px hsl(var(--glow-vibrant) / 0.14), 0 10px 32px -8px hsl(var(--glow-vibrant) / 0.4);
+
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s ease;
@@ -96,6 +139,11 @@ All colors MUST be HSL.
     --accent: 215 27% 17%;
     --accent-foreground: 262 83% 58%;
 
+    --vibrant: 322 84% 62%;
+    --vibrant-foreground: 0 0% 100%;
+    --glow-primary: 262 83% 58%;
+    --glow-vibrant: 322 84% 62%;
+
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
 
@@ -135,5 +183,18 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* The new depth work (card lift + glow, button press, the 3D tilt on
+   dashboard stat cards) is all decorative on top of state already
+   conveyed in text, so it's safe to collapse for anyone who has asked
+   the OS for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

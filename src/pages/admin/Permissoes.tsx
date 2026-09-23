@@ -614,7 +614,7 @@ export default function Permissoes() {
       {/* Roles List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredRoles.map((role) => (
-          <Card key={role.id} className="hover:shadow-md transition-shadow">
+          <Card key={role.id}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
