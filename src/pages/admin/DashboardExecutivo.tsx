@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { TiltCard } from "@/components/ui/tilt-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -293,23 +294,25 @@ export default function DashboardExecutivo() {
       {/* KPIs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpis.map((kpi, index) => (
-          <Card key={index}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
-                  <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
-                </div>
-                {kpi.change !== 0 && (
-                  <div className={`flex items-center text-xs ${kpi.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {kpi.change > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    <span>{Math.abs(kpi.change)}%</span>
+          <TiltCard key={index} maxTilt={6} className="rounded-xl">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
+                    <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
                   </div>
-                )}
-              </div>
-              <p className="text-2xl font-bold">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
-            </CardContent>
-          </Card>
+                  {kpi.change !== 0 && (
+                    <div className={`flex items-center text-xs ${kpi.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {kpi.change > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                      <span>{Math.abs(kpi.change)}%</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-2xl font-bold font-mono">{kpi.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
+              </CardContent>
+            </Card>
+          </TiltCard>
         ))}
       </div>
 

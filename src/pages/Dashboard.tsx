@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { sendCredentialsEmail } from "@/services/email-service";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO, subDays } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Tilt3D from "@/components/Tilt3D";
+import { TiltCard } from "@/components/ui/tilt-card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -433,7 +433,7 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {statCards.map((stat, index) => (
-          <Tilt3D key={index} maxDeg={6}>
+          <TiltCard key={index} maxTilt={6} className="rounded-xl">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
                 <CardTitle className="text-[10px] sm:text-sm font-medium truncate">
@@ -454,7 +454,7 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-          </Tilt3D>
+          </TiltCard>
         ))}
       </div>
 

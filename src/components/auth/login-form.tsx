@@ -76,7 +76,7 @@ export function LoginForm() {
 
   if (authMode === "register") {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-primary via-primary-glow to-primary-darker">
+      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-primary via-primary-light to-primary-dark">
         <AnimatedMeshBackground />
         <div className="relative animate-fade-in-up">
           <RegistrationForm
@@ -90,7 +90,7 @@ export function LoginForm() {
 
   if (authMode === "recovery") {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-primary via-primary-glow to-primary-darker">
+      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-primary via-primary-light to-primary-dark">
         <AnimatedMeshBackground />
         <div className="relative animate-fade-in-up">
           <PasswordRecoveryForm onBack={() => setAuthMode("login")} />
@@ -100,7 +100,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden [perspective:1600px] bg-gradient-to-br from-primary via-primary-glow to-primary-darker">
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden [perspective:1600px] bg-gradient-to-br from-primary via-primary-light to-primary-dark">
       <AnimatedMeshBackground />
 
       <TiltCard maxTilt={4} className="relative w-full max-w-md rounded-2xl animate-fade-in-up">

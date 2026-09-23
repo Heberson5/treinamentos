@@ -18,8 +18,15 @@ export function TiltCard({ children, className, maxTilt = 8, glare = true }: Til
   const ref = useRef<HTMLDivElement>(null)
   const [style, setStyle] = useState<CSSProperties>({})
   const [glareStyle, setGlareStyle] = useState<CSSProperties>({ opacity: 0 })
+  // Skip the tilt/glare math entirely under reduced motion, rather than
+  // relying on a CSS transition-duration override to hide a transform
+  // that would otherwise still snap to the cursor on every mousemove.
+  const reducedMotion = useRef(
+    typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  )
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (reducedMotion.current) return
     const el = ref.current
     if (!el) return
     const rect = el.getBoundingClientRect()
@@ -42,6 +49,7 @@ export function TiltCard({ children, className, maxTilt = 8, glare = true }: Til
   }
 
   const handleMouseLeave = () => {
+    if (reducedMotion.current) return
     setStyle({
       transform: "perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0)",
       transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",

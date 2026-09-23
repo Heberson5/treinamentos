@@ -105,7 +105,7 @@ export default function Index() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="relative overflow-hidden bg-gradient-to-r from-primary via-primary-glow to-primary-darker">
+        <div className="relative overflow-hidden bg-gradient-to-r from-primary via-primary-light to-primary-dark">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-8">
@@ -276,7 +276,7 @@ export default function Index() {
               const displayTitle = feature.title === "Certificação" ? "Certificado" : feature.title
               return (
                 <TiltCard key={index} maxTilt={6} className="rounded-2xl h-full">
-                  <Card className="border-0 shadow-lg hover:shadow-2xl transition-shadow duration-300 h-full bg-card/80 backdrop-blur-sm">
+                  <Card className="border-0 h-full">
                     <CardHeader>
                       <div className="flex items-center gap-4">
                         <div className={`flex items-center justify-center p-4 rounded-full ${feature.color} min-w-[64px] shadow-md [transform:translateZ(25px)]`}>
@@ -547,7 +547,7 @@ export default function Index() {
       )}
 
       {/* CTA Section - Removed "Falar com Especialista" */}
-      <section className="relative py-20 bg-gradient-to-r from-primary to-primary-glow overflow-hidden">
+      <section className="relative py-20 bg-gradient-to-r from-primary to-primary-light overflow-hidden">
         <AnimatedMeshBackground />
         <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 animate-fade-in-up">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-[0_2px_20px_rgba(0,0,0,0.15)]">
