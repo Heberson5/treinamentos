@@ -232,6 +232,10 @@ export function ModernTrainingEditor({
 
   // Editor state
   const [activeSection, setActiveSection] = useState(0);
+  // Seções agora vivem numa fila (grid de cards) e só abrem no editor
+  // grande — dedicado, tela cheia — quando o usuário clica em
+  // "Adicionar seção" ou "Editar" num card existente.
+  const [sectionEditorOpen, setSectionEditorOpen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [showMediaDialog, setShowMediaDialog] = useState(false);
@@ -343,6 +347,12 @@ export function ModernTrainingEditor({
       sections: [...prev.sections, newSection],
     }));
     setActiveSection(formData.sections.length);
+    setSectionEditorOpen(true);
+  };
+
+  const openSectionEditor = (index: number) => {
+    setActiveSection(index);
+    setSectionEditorOpen(true);
   };
 
   const deleteSection = (index: number) => {
@@ -1551,92 +1561,20 @@ export function ModernTrainingEditor({
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left sidebar - Section navigation */}
+        {/* Left sidebar - now settings-only; section management moved to
+            the main "queue" view below, so it gets a full-width grid
+            instead of squeezing into this 288px column. */}
         {showSidebar && (
           <div className="absolute inset-0 z-30 sm:relative sm:inset-auto w-full sm:w-72 border-r bg-background sm:bg-muted/20 flex flex-col">
-            <div className="p-4 border-b">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Layers className="h-4 w-4" />
-                  Seções
-                </h3>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={addSection}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:hidden" onClick={() => setShowSidebar(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+            <div className="p-4 border-b flex items-center justify-between sm:hidden">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Configurações
+              </h3>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowSidebar(false)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-
-            <ScrollArea className="flex-1">
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="sections" type="section">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="p-2 space-y-1">
-                      {formData.sections.map((section, index) => (
-                        <Draggable key={section.id} draggableId={section.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={cn(
-                                "group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors",
-                                activeSection === index
-                                  ? "bg-primary/10 border border-primary/30"
-                                  : "hover:bg-muted",
-                                snapshot.isDragging && "shadow-lg bg-background"
-                              )}
-                              onClick={() => { setActiveSection(index); if (window.innerWidth < 640) setShowSidebar(false); }}
-                            >
-                              <div {...provided.dragHandleProps} className="cursor-grab">
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{section.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {section.blocks.length} bloco(s)
-                                </p>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <MoreVertical className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => duplicateSection(index)}>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Duplicar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => deleteSection(index)}
-                                    disabled={formData.sections.length === 1}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Excluir
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </ScrollArea>
 
             {/* Settings panel */}
             <Collapsible defaultOpen>
@@ -1843,8 +1781,131 @@ export function ModernTrainingEditor({
           </div>
         )}
 
-        {/* Main editor area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main content: the section "queue" — every section is a card
+            here, full width instead of squeezed into a sidebar list.
+            Editing happens in the large dialog below, opened via
+            "Adicionar seção" or a card's "Editar seção" button, never
+            inline in this view. */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-5xl mx-auto p-4 sm:p-8">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                  <Layers className="h-5 w-5" />
+                  Seções do treinamento
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {formData.sections.length} seção(ões) • clique em "Editar seção" para abrir em tela grande
+                </p>
+              </div>
+              <Button onClick={addSection} className="shrink-0">
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar seção
+              </Button>
+            </div>
+
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="sections" type="section">
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  >
+                    {formData.sections.map((section, index) => {
+                      const previewBlock = section.blocks.find(
+                        (b) => (b.type === "text" || b.type === "heading" || b.type === "quote") && b.content?.trim()
+                      );
+                      return (
+                        <Draggable key={section.id} draggableId={section.id} index={index}>
+                          {(provided, snapshot) => (
+                            <Card
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={cn(
+                                "flex flex-col gap-3 p-4 transition-shadow",
+                                snapshot.isDragging && "shadow-lg"
+                              )}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div {...provided.dragHandleProps} className="cursor-grab pt-1 shrink-0">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">
+                                    {section.title || `Seção ${index + 1}`}
+                                  </p>
+                                  <Badge variant="secondary" className="mt-1 font-normal">
+                                    {section.blocks.length} bloco(s)
+                                  </Badge>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => duplicateSection(index)}>
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Duplicar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => deleteSection(index)}
+                                      disabled={formData.sections.length === 1}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Excluir
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+
+                              <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                                {previewBlock?.content || "Seção sem conteúdo ainda."}
+                              </p>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="self-start"
+                                onClick={() => openSectionEditor(index)}
+                              >
+                                Editar seção
+                              </Button>
+                            </Card>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+
+            {formData.sections.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground border border-dashed rounded-lg">
+                <Layers className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>Nenhuma seção ainda</p>
+                <p className="text-sm">Clique em "Adicionar seção" para começar</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Section editor — large dialog, opened on demand (see the queue
+          above) instead of a permanent split-pane, so it gets real
+          room: prev/next section nav, block toolbar, and the block list
+          itself are unchanged from before, just relocated in here. */}
+      <Dialog open={sectionEditorOpen} onOpenChange={setSectionEditorOpen}>
+        <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0">
+          <DialogTitle className="sr-only">
+            {formData.sections[activeSection]?.title || `Seção ${activeSection + 1}`}
+          </DialogTitle>
           {/* Section header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-6 py-2 sm:py-3 border-b bg-muted/20 gap-2">
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
@@ -1922,6 +1983,10 @@ export function ModernTrainingEditor({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Button size="sm" className="h-8 text-xs sm:text-sm" onClick={() => setSectionEditorOpen(false)}>
+                Concluir seção
+              </Button>
             </div>
           </div>
 
@@ -1989,8 +2054,8 @@ export function ModernTrainingEditor({
               <ChevronRight className="h-4 w-4 sm:ml-2" />
             </Button>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Hidden file input - aceita todos tipos de imagem */}
       <input
