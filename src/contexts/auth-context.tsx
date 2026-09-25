@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
@@ -37,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  // Guarda o id do usuário já carregado para distinguir um SIGNED_IN de
+  // login de verdade de um SIGNED_IN redundante que o supabase-js dispara
+  // ao voltar o foco/visibilidade da aba — sem isso, a tela de loading
+  // piscava de novo (parecia "recarregar sozinho") a cada troca de aba.
+  const currentUserIdRef = useRef<string | null>(null);
 
   // Buscar dados do perfil e role do usuário
   const fetchUserData = async (supabaseUser: SupabaseUser) => {
@@ -98,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (bloqueada) {
             setBlockedMessage(motivo || "O acesso da sua empresa está suspenso. Entre em contato com o suporte.");
             await supabase.auth.signOut();
+            currentUserIdRef.current = null;
             setUser(null);
             return;
           }
@@ -105,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setBlockedMessage(null);
+      currentUserIdRef.current = userData.id;
       setUser(userData);
     } catch (error) {
       console.error("Erro ao buscar dados do usuário:", error);
@@ -122,8 +129,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         
         if (session?.user) {
-          // Log login activity
-          if (event === 'SIGNED_IN') {
+          // O supabase-js dispara SIGNED_IN de novo (não só TOKEN_REFRESHED)
+          // quando a aba volta a ficar visível, mesmo sem ter havido logout —
+          // sem essa checagem, cada troca de aba registrava um login falso
+          // em "atividades" e piscava a tela de carregamento por cima do app.
+          const isRealSignIn = event === 'SIGNED_IN' && currentUserIdRef.current !== session.user.id;
+
+          if (isRealSignIn) {
             supabase.from("atividades").insert({
               usuario_id: session.user.id,
               tipo: "login",
@@ -141,13 +153,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             if (isMounted) {
               fetchUserData(session.user).finally(() => {
-                if (isMounted && event === 'SIGNED_IN') {
+                if (isMounted && isRealSignIn) {
                   setIsLoading(false);
                 }
               });
             }
           }, 0);
         } else {
+          currentUserIdRef.current = null;
           setUser(null);
         }
       }
