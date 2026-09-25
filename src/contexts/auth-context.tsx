@@ -1,8 +1,13 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
 export type TipoRole = "master" | "admin" | "instrutor" | "usuario";
+
+// Chave usada no localStorage pra guardar o id da sessão local — comparado
+// com perfis.sessao_atual_id pra detectar login em outro dispositivo.
+const SESSAO_STORAGE_KEY = "sauberlich_sessao_ativa";
 
 export interface User {
   id: string;
@@ -42,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ao voltar o foco/visibilidade da aba — sem isso, a tela de loading
   // piscava de novo (parecia "recarregar sozinho") a cada troca de aba.
   const currentUserIdRef = useRef<string | null>(null);
+  const { toast } = useToast();
 
   // Buscar dados do perfil e role do usuário
   const fetchUserData = async (supabaseUser: SupabaseUser) => {
@@ -194,6 +200,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Sessão única: assina mudanças na própria linha de perfis e, se o id da
+  // sessão ativa no banco não bater mais com o guardado localmente, é
+  // porque alguém logou nessa mesma conta em outro lugar — desconecta
+  // essa sessão na hora. O polling é só um reforço pra quando a conexão
+  // Realtime cair (aba em segundo plano, rede instável).
+  useEffect(() => {
+    if (!user) return;
+
+    const minhaSessaoId = localStorage.getItem(SESSAO_STORAGE_KEY);
+    // Sessões de antes dessa funcionalidade existir não têm id local
+    // guardado ainda — não força logout até o próximo login de verdade.
+    if (!minhaSessaoId) return;
+
+    let encerrado = false;
+    const encerrarSessaoDuplicada = async () => {
+      if (encerrado) return;
+      encerrado = true;
+      localStorage.removeItem(SESSAO_STORAGE_KEY);
+      await supabase.auth.signOut();
+      toast({
+        title: "Sessão encerrada",
+        description: "Sua conta foi acessada em outro dispositivo ou navegador. Você foi desconectado por segurança.",
+        variant: "destructive",
+      });
+    };
+
+    const verificarSessao = async () => {
+      const { data } = await supabase
+        .from("perfis")
+        .select("sessao_atual_id")
+        .eq("id", user.id)
+        .single();
+      if (data && data.sessao_atual_id && data.sessao_atual_id !== minhaSessaoId) {
+        encerrarSessaoDuplicada();
+      }
+    };
+
+    const channel = supabase
+      .channel(`sessao-unica-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "perfis", filter: `id=eq.${user.id}` },
+        (payload) => {
+          const novaSessaoId = (payload.new as { sessao_atual_id?: string })?.sessao_atual_id;
+          if (novaSessaoId && novaSessaoId !== minhaSessaoId) {
+            encerrarSessaoDuplicada();
+          }
+        }
+      )
+      .subscribe();
+
+    const handleVisibility = () => {
+      if (!document.hidden) verificarSessao();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    const intervalId = setInterval(verificarSessao, 45_000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(intervalId);
+    };
+  }, [user, toast]);
+
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -203,6 +273,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         return { success: false, error: error.message };
+      }
+
+      // Registra esta sessão como a única válida: qualquer sessão anterior
+      // desse usuário (em outro navegador/dispositivo) vai detectar essa
+      // mudança via Realtime e se desconectar sozinha.
+      if (data.user) {
+        const novaSessaoId = crypto.randomUUID();
+        localStorage.setItem(SESSAO_STORAGE_KEY, novaSessaoId);
+        await supabase.rpc("definir_sessao_atual", { p_sessao_id: novaSessaoId });
       }
 
       return { success: true };
