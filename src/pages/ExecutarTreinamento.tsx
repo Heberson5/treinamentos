@@ -2240,6 +2240,10 @@ function renderTextSection(text: string) {
   let currentList: string[] = [];
   let currentCheckList: string[] = [];
   let listType: 'ul' | 'ol' | null = null;
+  // Alinhamento definido no editor (negrito/itálico/cor visual do editor não
+  // sobrevivem ao salvar, mas o alinhamento precisa — senão "justificado"
+  // fica só cosmético dentro do editor e nunca aparece pra quem estuda.
+  let currentAlign: "center" | "right" | "justify" | null = null;
 
   const flushList = () => {
     if (currentList.length > 0) {
@@ -2288,6 +2292,21 @@ function renderTextSection(text: string) {
       if (trimmedLine === '---') {
         elements.push(<hr key={`hr-${index}`} className="my-6 border-border" />);
       }
+      index++;
+      continue;
+    }
+
+    // Marcadores de alinhamento (vindos do editor moderno)
+    const alignStartMatch = trimmedLine.match(/^\[\[align:(center|right|justify)\]\]$/);
+    if (alignStartMatch) {
+      flushList();
+      currentAlign = alignStartMatch[1] as "center" | "right" | "justify";
+      index++;
+      continue;
+    }
+    if (trimmedLine === '[[/align]]') {
+      flushList();
+      currentAlign = null;
       index++;
       continue;
     }
@@ -2448,7 +2467,7 @@ function renderTextSection(text: string) {
     elements.push(
       <p
         key={`p-${index}`}
-        className="text-base leading-relaxed mb-3"
+        className={`text-base leading-relaxed mb-3${currentAlign ? ` text-${currentAlign}` : ""}`}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedText) }}
       />
     );

@@ -74,6 +74,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
+  Maximize2,
   Bold,
   Italic,
   Underline,
@@ -102,7 +104,7 @@ export interface ContentBlock {
   type: "text" | "heading" | "image" | "video" | "divider" | "quote" | "list" | "checklist" | "numbered-list" | "table";
   content: string;
   level?: 1 | 2 | 3;
-  align?: "left" | "center" | "right";
+  align?: "left" | "center" | "right" | "justify";
   mediaUrl?: string;
   caption?: string;
   listItems?: string[];
@@ -216,6 +218,7 @@ export function ModernTrainingEditor({
   const { rewriteText, checkAIAccess } = useAIRewrite();
   const [showAIButton, setShowAIButton] = useState(false);
   const [rewritingBlockId, setRewritingBlockId] = useState<string | null>(null);
+  const [expandedBlock, setExpandedBlock] = useState<{ sectionIndex: number; blockId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadContext, setUploadContext] = useState<{
     sectionId: string;
@@ -545,6 +548,7 @@ export function ModernTrainingEditor({
       left: "text-left",
       center: "text-center",
       right: "text-right",
+      justify: "text-justify",
     }[block.align || "left"];
 
     const textStyles = cn(
@@ -769,6 +773,7 @@ export function ModernTrainingEditor({
       left: "text-left",
       center: "text-center",
       right: "text-right",
+      justify: "text-justify",
     }[block.align || "left"];
 
     const fontSizeClass = {
@@ -811,7 +816,7 @@ export function ModernTrainingEditor({
               onChange={(e) => updateBlock(sectionIndex, block.id, { content: e.target.value })}
               placeholder="Comece a digitar seu conteúdo aqui..."
               className={cn(
-                "min-h-[120px] border-none shadow-none focus-visible:ring-0 resize-none bg-transparent",
+                "min-h-[200px] border-none shadow-none focus-visible:ring-0 resize-y bg-transparent",
                 fontSizeClass,
                 alignClass,
                 block.textColor,
@@ -1333,6 +1338,21 @@ export function ModernTrainingEditor({
                         <TooltipContent>Alinhar à direita</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={block.align === "justify" ? "secondary" : "ghost"}
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateBlock(sectionIndex, block.id, { align: "justify" })}
+                          >
+                            <AlignJustify className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Justificado</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
 
                   {/* Tamanho da fonte */}
@@ -1399,6 +1419,26 @@ export function ModernTrainingEditor({
                       </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  {/* Expandir para uma tela maior, mais confortável pra formatar textos longos */}
+                  {(block.type === "text" || block.type === "quote") && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 px-2"
+                            onClick={() => setExpandedBlock({ sectionIndex, blockId: block.id })}
+                          >
+                            <Maximize2 className="h-3.5 w-3.5" />
+                            <span className="text-xs">Expandir</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar em tela maior</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
 
                   {/* Botão de IA sempre visível */}
                   {showAIButton && (block.type === "text" || block.type === "quote") && (
@@ -2003,6 +2043,50 @@ export function ModernTrainingEditor({
 
       {/* Preview dialog */}
       {renderPreviewContent()}
+
+      {/* Editor expandido — tela maior pra formatar textos longos com mais conforto */}
+      {expandedBlock && (() => {
+        const block = formData.sections[expandedBlock.sectionIndex]?.blocks.find(
+          (b) => b.id === expandedBlock.blockId
+        );
+        if (!block) return null;
+        const alignClass = {
+          left: "text-left",
+          center: "text-center",
+          right: "text-right",
+          justify: "text-justify",
+        }[block.align || "left"];
+        return (
+          <Dialog open onOpenChange={(open) => !open && setExpandedBlock(null)}>
+            <DialogContent className="max-w-5xl w-[95vw] h-[85vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="p-4 border-b shrink-0">
+                <DialogTitle>Editar conteúdo em tela maior</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-hidden p-4">
+                <Textarea
+                  autoFocus
+                  value={block.content}
+                  onChange={(e) =>
+                    updateBlock(expandedBlock.sectionIndex, expandedBlock.blockId, { content: e.target.value })
+                  }
+                  placeholder="Comece a digitar seu conteúdo aqui..."
+                  className={cn(
+                    "h-full resize-none text-base leading-relaxed",
+                    alignClass,
+                    block.textColor,
+                    block.isBold && "font-bold",
+                    block.isItalic && "italic",
+                    block.isUnderline && "underline"
+                  )}
+                />
+              </div>
+              <DialogFooter className="p-4 border-t shrink-0">
+                <Button onClick={() => setExpandedBlock(null)}>Concluído</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }

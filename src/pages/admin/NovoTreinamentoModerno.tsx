@@ -92,7 +92,9 @@ export default function NovoTreinamentoModerno() {
                 return `${"#".repeat(block.level || 2)} ${block.content}`;
               case "text":
               case "quote":
-                return block.content;
+                return block.align && block.align !== "left"
+                  ? `[[align:${block.align}]]\n${block.content}\n[[/align]]`
+                  : block.content;
               case "image":
                 return block.mediaUrl ? `[Imagem: ${block.caption || block.mediaUrl}]` : "";
               case "video":

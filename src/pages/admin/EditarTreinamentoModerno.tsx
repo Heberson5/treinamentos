@@ -59,9 +59,39 @@ function parseTextToSections(texto: string): TrainingSection[] {
     let sectionTitle = `Seção ${sectionIndex + 1}`;
     const blocks: ContentBlock[] = [];
     let currentTextContent = "";
+    let currentAlign: "left" | "center" | "right" | "justify" = "left";
 
     lines.forEach((line) => {
       const trimmedLine = line.trim();
+
+      // Marcadores de alinhamento (gravados pelo editor moderno ao salvar)
+      const alignStartMatch = trimmedLine.match(/^\[\[align:(center|right|justify)\]\]$/);
+      if (alignStartMatch) {
+        if (currentTextContent.trim()) {
+          blocks.push({
+            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: "text",
+            content: currentTextContent.trim(),
+            align: currentAlign,
+          });
+          currentTextContent = "";
+        }
+        currentAlign = alignStartMatch[1] as "center" | "right" | "justify";
+        return;
+      }
+      if (trimmedLine === "[[/align]]") {
+        if (currentTextContent.trim()) {
+          blocks.push({
+            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: "text",
+            content: currentTextContent.trim(),
+            align: currentAlign,
+          });
+          currentTextContent = "";
+        }
+        currentAlign = "left";
+        return;
+      }
 
       // Detectar título da seção (## Título)
       if (trimmedLine.startsWith("## ")) {
@@ -70,7 +100,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
             id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: "text",
             content: currentTextContent.trim(),
-            align: "left",
+            align: currentAlign,
           });
           currentTextContent = "";
         }
@@ -85,7 +115,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
             id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: "text",
             content: currentTextContent.trim(),
-            align: "left",
+            align: currentAlign,
           });
           currentTextContent = "";
         }
@@ -105,7 +135,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
             id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: "text",
             content: currentTextContent.trim(),
-            align: "left",
+            align: currentAlign,
           });
           currentTextContent = "";
         }
@@ -126,7 +156,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
             id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: "text",
             content: currentTextContent.trim(),
-            align: "left",
+            align: currentAlign,
           });
           currentTextContent = "";
         }
@@ -148,7 +178,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
             id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: "text",
             content: currentTextContent.trim(),
-            align: "left",
+            align: currentAlign,
           });
           currentTextContent = "";
         }
@@ -170,7 +200,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
             id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: "text",
             content: currentTextContent.trim(),
-            align: "left",
+            align: currentAlign,
           });
           currentTextContent = "";
         }
@@ -192,7 +222,7 @@ function parseTextToSections(texto: string): TrainingSection[] {
         id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: "text",
         content: currentTextContent.trim(),
-        align: "left",
+        align: currentAlign,
       });
     }
 
@@ -403,7 +433,9 @@ export default function EditarTreinamentoModerno() {
                 return `${"#".repeat(block.level || 2)} ${block.content}`;
               case "text":
               case "quote":
-                return block.content;
+                return block.align && block.align !== "left"
+                  ? `[[align:${block.align}]]\n${block.content}\n[[/align]]`
+                  : block.content;
               case "image":
                 return block.mediaUrl ? `[Imagem: ${block.caption || block.mediaUrl}]` : "";
               case "video":
