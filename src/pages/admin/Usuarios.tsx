@@ -45,6 +45,15 @@ import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useOnlineUsers } from "@/hooks/use-online-users"
 import { usePagination } from "@/hooks/use-pagination"
 import { ListPagination } from "@/components/shared/list-pagination"
+import { PageHeader } from "@/components/layout/page-header"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 
 import {
   Building2,
@@ -66,6 +75,7 @@ import {
   EyeOff,
   Lock,
   Loader2,
+  MoreHorizontal,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -144,6 +154,19 @@ const getPapelColor = (papel: PapelUsuario): string => {
       return "bg-emerald-500"
     default:
       return "bg-slate-500"
+  }
+}
+
+const getPapelPillClass = (papel: PapelUsuario): string => {
+  switch (papel) {
+    case "master":
+      return "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+    case "admin":
+      return "bg-sky-500/10 text-sky-700 dark:text-sky-400"
+    case "instrutor":
+      return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+    default:
+      return "bg-muted text-muted-foreground"
   }
 }
 
@@ -290,6 +313,25 @@ export default function Usuarios() {
   const departamentos = data?.departamentos ?? []
   const cargos = data?.cargos ?? []
   const empresas = data?.empresas ?? []
+
+  // Treinamentos iniciados/concluídos por usuário (coluna "Treinamentos")
+  const { data: progressoPorUsuario = {} } = useQuery({
+    queryKey: [USUARIOS_QUERY_KEY, "progresso", user?.id],
+    queryFn: async () => {
+      const { data: prog } = await supabase
+        .from("progresso_treinamentos")
+        .select("usuario_id, concluido")
+      const acc: Record<string, { iniciados: number; concluidos: number }> = {}
+      ;(prog || []).forEach((p) => {
+        const s = (acc[p.usuario_id] ||= { iniciados: 0, concluidos: 0 })
+        s.iniciados++
+        if (p.concluido) s.concluidos++
+      })
+      return acc
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  })
 
   const setUsuarios = (updater: (prev: Usuario[]) => Usuario[]) => {
     queryClient.setQueryData<UsuariosPageData | undefined>(usuariosQueryKey, (prev) =>
@@ -701,93 +743,122 @@ export default function Usuarios() {
     )
   }
 
+  const StatusDot = ({ usuario }: { usuario: Usuario }) =>
+    usuario.status === "ativo" ? (
+      <span className="inline-flex items-center gap-1.5 text-sm">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Ativo
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" /> Inativo
+      </span>
+    )
+
+  const PapelPill = ({ papel }: { papel: PapelUsuario }) => {
+    const PapelIcon = getPapelIcon(papel)
+    return (
+      <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", getPapelPillClass(papel))}>
+        <PapelIcon className="h-3 w-3" />
+        {getPapelLabel(papel)}
+      </span>
+    )
+  }
+
+  const UserAvatar = ({ usuario, size = "h-9 w-9" }: { usuario: Usuario; size?: string }) => (
+    <div className="relative shrink-0">
+      <Avatar className={size}>
+        <AvatarImage src={usuario.avatar_url || ""} alt={usuario.nome} />
+        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+          {getInitials(usuario.nome)}
+        </AvatarFallback>
+      </Avatar>
+      {onlineIds.has(usuario.id) && (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500"
+          title="Online agora"
+        />
+      )}
+    </div>
+  )
+
+  const UserActions = ({ usuario }: { usuario: Usuario }) => (
+    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={() => handleOpenEdit(usuario)} title="Editar usuário" aria-label={`Editar ${usuario.nome}`}>
+        <Edit3 className="h-4 w-4" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" aria-label={`Mais ações para ${usuario.nome}`}>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem onClick={() => handleOpenEdit(usuario)}>
+            <Edit3 className="mr-2 h-4 w-4" /> Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleToggleStatus(usuario)}>
+            {usuario.status === "ativo" ? (
+              <><PauseCircle className="mr-2 h-4 w-4" /> Inativar</>
+            ) : (
+              <><PlayCircle className="mr-2 h-4 w-4" /> Ativar</>
+            )}
+          </DropdownMenuItem>
+          {isMaster && usuario.id !== user?.id && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeletingUser(usuario)}>
+                <XCircle className="mr-2 h-4 w-4" /> Excluir
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+
+  const hasFilters = !!searchTerm || statusFilter !== "todos" || empresaFilter !== "todas"
+  const onlineCount = usuariosVisiveis.filter((u) => onlineIds.has(u.id)).length
+
+  const metricas = [
+    { label: "Total", value: totalUsuarios, hint: isMaster ? `em ${empresasAtendidas} ${empresasAtendidas === 1 ? "empresa" : "empresas"}` : "cadastrados" },
+    { label: "Ativos", value: usuariosAtivos, hint: totalUsuarios > 0 ? `${Math.round((usuariosAtivos / totalUsuarios) * 100)}%` : "" },
+    { label: "Administradores", value: usuariosAdmins, hint: "" },
+    { label: "Online agora", value: onlineCount, hint: "" },
+  ]
+
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
-            Gestão de Usuários
-          </h1>
-          <p className="text-muted-foreground">
-            Cadastre, edite e gerencie os usuários da plataforma.
-          </p>
-        </div>
-
-        <Button className="flex items-center gap-2" onClick={handleOpenCreate}>
-          <UserPlus className="h-4 w-4" />
-          Novo usuário
-        </Button>
-      </div>
+      <PageHeader
+        title="Usuários"
+        description="Gerencie acessos, papéis e o progresso de cada colaborador"
+        actions={
+          <Button onClick={handleOpenCreate}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Novo usuário
+          </Button>
+        }
+      />
 
       {/* Métricas */}
-      <div className={`grid gap-4 ${isMaster ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-            <div className="rounded-full bg-primary/10 p-2">
-              <Users className="h-4 w-4 text-primary" />
+      <Card className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 overflow-hidden">
+        {metricas.map((m) => (
+          <div key={m.label} className="px-5 py-4">
+            <div className="text-xs font-medium text-muted-foreground">{m.label}</div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-2xl font-semibold tabular-nums">{m.value}</span>
+              {m.hint && <span className="text-xs text-muted-foreground">{m.hint}</span>}
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalUsuarios}</div>
-          </CardContent>
-        </Card>
+          </div>
+        ))}
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-            <div className="rounded-full bg-emerald-500/10 p-2">
-              <Check className="h-4 w-4 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{usuariosAtivos}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-            <div className="rounded-full bg-sky-500/10 p-2">
-              <Shield className="h-4 w-4 text-sky-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{usuariosAdmins}</div>
-          </CardContent>
-        </Card>
-
-        {isMaster && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Empresas</CardTitle>
-              <div className="rounded-full bg-amber-500/10 p-2">
-                <Building2 className="h-4 w-4 text-amber-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{empresasAtendidas}</div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-
-      {/* Filtros */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      {/* Lista de usuários */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 border-b p-3 sm:px-4">
+          <div className="relative min-w-[220px] flex-1 sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-8"
+              className="h-9 pl-9"
               placeholder="Buscar por nome, e-mail ou empresa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -798,7 +869,7 @@ export default function Usuarios() {
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value as StatusUsuario | "todos")}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="h-9 w-auto min-w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -808,166 +879,147 @@ export default function Usuarios() {
             </SelectContent>
           </Select>
 
-          <Select value={empresaFilter} onValueChange={setEmpresaFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as empresas</SelectItem>
-              {empresas.map((empresa) => (
-                <SelectItem key={empresa.id} value={empresa.id}>
-                  {empresa.nome_fantasia || empresa.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+          {empresas.length > 1 && (
+            <Select value={empresaFilter} onValueChange={setEmpresaFilter}>
+              <SelectTrigger className="h-9 w-auto min-w-[160px] max-w-[240px]">
+                <SelectValue placeholder="Empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as empresas</SelectItem>
+                {empresas.map((empresa) => (
+                  <SelectItem key={empresa.id} value={empresa.id}>
+                    {empresa.nome_fantasia || empresa.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
-      {/* Lista de usuários */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Lista de usuários
-          </CardTitle>
-          <CardDescription>
-            {usuariosFiltrados.length} usuário(s) encontrado(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {usuariosFiltrados.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum usuário encontrado com os filtros atuais.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {usuariosPaginados.map((usuario) => {
-                const PapelIcon = getPapelIcon(usuario.papel)
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => {
+                setSearchTerm("")
+                setStatusFilter("todos")
+                setEmpresaFilter("todas")
+              }}
+            >
+              <X className="mr-1 h-4 w-4" /> Limpar
+            </Button>
+          )}
+        </div>
 
-                return (
-                  <div
-                    key={usuario.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={usuario.avatar_url || ""} alt={usuario.nome} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {getInitials(usuario.nome)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span
-                          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${
-                            onlineIds.has(usuario.id) ? "bg-emerald-500" : "bg-slate-400"
-                          }`}
-                          title={onlineIds.has(usuario.id) ? "Online" : "Offline"}
-                        />
-                      </div>
-
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h4 className="font-medium">{usuario.nome}</h4>
-                          {onlineIds.has(usuario.id) && (
-                            <Badge className="bg-emerald-500 text-white text-xs">Online</Badge>
-                          )}
-
-
-                          <Badge
-                            className={`${getPapelColor(usuario.papel)} text-white text-xs flex items-center gap-1`}
-                          >
-                            <PapelIcon className="h-3 w-3" />
-                            {getPapelLabel(usuario.papel)}
-                          </Badge>
-
-                          <Badge
-                            variant={usuario.status === "ativo" ? "default" : "secondary"}
-                            className="text-xs flex items-center gap-1"
-                          >
-                            {usuario.status === "ativo" ? (
-                              <>
-                                <Check className="h-3 w-3" />
-                                Ativo
-                              </>
-                            ) : (
-                              <>
-                                <X className="h-3 w-3" />
-                                Inativo
-                              </>
-                            )}
-                          </Badge>
-
-                          {usuario.trocar_senha_primeiro_login && (
-                            <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
-                              <Lock className="h-3 w-3 mr-1" />
-                              Trocar senha
-                            </Badge>
-                          )}
-                        </div>
-
-                        <p className="text-sm text-muted-foreground">{usuario.email}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {usuario.empresa_nome}
-                          {usuario.departamento_nome && ` • ${usuario.departamento_nome}`}
-                          {usuario.cargo && ` • ${usuario.cargo}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="outline"
+        {usuariosFiltrados.length === 0 ? (
+          <div className="p-12 text-center">
+            <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">Nenhum usuário encontrado com os filtros atuais.</p>
+          </div>
+        ) : (
+          <>
+            {/* Tabela (desktop) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+                    <th className="px-4 py-2.5 text-left font-medium">Nome</th>
+                    <th className="px-3 py-2.5 text-left font-medium">Papel</th>
+                    <th className="px-3 py-2.5 text-left font-medium">Empresa / Departamento</th>
+                    <th className="px-3 py-2.5 text-left font-medium">Status</th>
+                    <th className="px-3 py-2.5 text-left font-medium">Treinamentos</th>
+                    <th className="w-24 px-3 py-2.5"><span className="sr-only">Ações</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usuariosPaginados.map((usuario) => {
+                    const prog = progressoPorUsuario[usuario.id]
+                    const pct = prog && prog.iniciados > 0 ? Math.round((prog.concluidos / prog.iniciados) * 100) : 0
+                    return (
+                      <tr
+                        key={usuario.id}
+                        className="cursor-pointer border-b last:border-0 transition-colors hover:bg-muted/30"
                         onClick={() => handleOpenEdit(usuario)}
-                        title="Editar usuário"
                       >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <UserAvatar usuario={usuario} />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate font-medium">{usuario.nome}</span>
+                                {usuario.trocar_senha_primeiro_login && (
+                                  <Lock className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-label="Troca de senha pendente" />
+                                )}
+                              </div>
+                              <div className="max-w-[260px] truncate text-xs text-muted-foreground">{usuario.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3"><PapelPill papel={usuario.papel} /></td>
+                        <td className="px-3 py-3">
+                          <div className="max-w-[220px] truncate">{usuario.empresa_nome || "—"}</div>
+                          <div className="max-w-[220px] truncate text-xs text-muted-foreground">
+                            {[usuario.departamento_nome, usuario.cargo].filter(Boolean).join(" · ") || "—"}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3"><StatusDot usuario={usuario} /></td>
+                        <td className="px-3 py-3">
+                          {prog ? (
+                            <div className="flex items-center gap-2.5">
+                              <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+                                {prog.concluidos}/{prog.iniciados}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Nenhum iniciado</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3"><UserActions usuario={usuario} /></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => handleToggleStatus(usuario)}
-                        className={
-                          usuario.status === "ativo"
-                            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                            : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                        }
-                        title={usuario.status === "ativo" ? "Inativar" : "Ativar"}
-                      >
-                        {usuario.status === "ativo" ? (
-                          <PauseCircle className="h-4 w-4" />
-                        ) : (
-                          <PlayCircle className="h-4 w-4" />
-                        )}
-                      </Button>
-
-                      {isMaster && usuario.id !== user?.id && (
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => setDeletingUser(usuario)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          title="Excluir usuário"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      )}
+            {/* Lista compacta (celular) */}
+            <ul className="divide-y md:hidden">
+              {usuariosPaginados.map((usuario) => (
+                <li key={usuario.id} className="flex items-center gap-3 px-3 py-3">
+                  <UserAvatar usuario={usuario} size="h-10 w-10" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{usuario.nome}</div>
+                    <div className="truncate text-xs text-muted-foreground">{usuario.email}</div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <PapelPill papel={usuario.papel} />
+                      {usuario.status !== "ativo" && <StatusDot usuario={usuario} />}
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
-          <ListPagination
-            page={usuariosPage}
-            totalPages={usuariosTotalPages}
-            onPageChange={setUsuariosPage}
-            totalItems={usuariosFiltrados.length}
-            pageSize={20}
-          />
-        </CardContent>
+                  <UserActions usuario={usuario} />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        <div className="px-4 pb-3 empty:hidden">
+          {usuariosTotalPages > 1 ? (
+            <ListPagination
+              page={usuariosPage}
+              totalPages={usuariosTotalPages}
+              onPageChange={setUsuariosPage}
+              totalItems={usuariosFiltrados.length}
+              pageSize={20}
+            />
+          ) : usuariosFiltrados.length > 0 ? (
+            <p className="pt-3 border-t text-xs text-muted-foreground">
+              {usuariosFiltrados.length} {usuariosFiltrados.length === 1 ? "usuário" : "usuários"}
+            </p>
+          ) : null}
+        </div>
       </Card>
 
       {/* Dialog de novo usuário */}

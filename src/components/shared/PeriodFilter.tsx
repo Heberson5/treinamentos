@@ -31,7 +31,7 @@ export function PeriodFilter({ value, onChange, customStartDate, customEndDate, 
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <Select value={value} onValueChange={(v) => onChange(v as PeriodValue)}>
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger className="w-[188px]">
           <CalendarIcon className="mr-2 h-4 w-4" />
           <SelectValue />
         </SelectTrigger>

@@ -1,21 +1,25 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { sendCredentialsEmail } from "@/services/email-service";
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO, subDays } from "date-fns";
+import { format, formatDistanceToNow, startOfMonth, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  BarChart3, BookOpen, Clock, TrendingUp, Users, Award,
-  PlayCircle, Calendar, Target, Building2, Loader2, FileText, RefreshCw
+import {
+  BookOpen, Clock, Users, CircleCheck, CalendarClock, CircleAlert, FileWarning,
+  RefreshCw, ArrowRight, ChevronRight, PartyPopper,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context";
 import { supabase } from "@/integrations/supabase/client";
 import { PeriodFilter, PeriodValue, getStartDateFromPeriod } from "@/components/shared/PeriodFilter";
+import { PageHeader } from "@/components/layout/page-header";
+import { cn } from "@/lib/utils";
 
 interface DashboardFiltersState {
   period: PeriodValue;
@@ -48,6 +52,7 @@ interface ActivityData {
   tipo: string;
   descricao: string;
   criado_em: string;
+  usuario_nome: string | null;
 }
 
 interface UserAttemptData {
@@ -59,11 +64,27 @@ interface UserAttemptData {
   aprovado: boolean;
 }
 
+interface MonthlyData {
+  key: string;
+  label: string;
+  conclusoes: number;
+}
+
+interface AttentionItem {
+  id: string;
+  tipo: "prazo" | "sem_conclusao" | "reprovacao";
+  titulo: string;
+  detalhe: string;
+  link: string;
+}
+
 interface DashboardData {
   stats: DashboardStats;
   trainings: TrainingData[];
   activities: ActivityData[];
   userAttempts: UserAttemptData[];
+  monthly: MonthlyData[];
+  attention: AttentionItem[];
 }
 
 interface FetchDashboardParams {
@@ -72,6 +93,8 @@ interface FetchDashboardParams {
   startDate: Date;
   endDate: Date;
 }
+
+const DAY = 24 * 60 * 60 * 1000;
 
 async function fetchDashboardData({
   empresaScope,
@@ -123,31 +146,38 @@ async function fetchDashboardData({
           .lte("criado_em", endDate.toISOString())
           .order("criado_em", { ascending: false })
       ]);
-      
+
       if (treinamentosError) {
         console.error("Erro ao buscar treinamentos:", treinamentosError);
       }
 
       const masterUserIds = new Set((masterRoles || []).map(r => r.usuario_id));
 
-      // 5. Progresso (precisa do treinamentosData)
-      let progressoData: any[] = [];
+      // 5. Progresso de todo o histórico dos treinamentos: alimenta o gráfico
+      // mensal e os alertas; o recorte do período é feito em memória.
+      let historicoData: any[] = [];
       if (treinamentosData && treinamentosData.length > 0) {
         const { data } = await supabase
           .from("progresso_treinamentos")
-          .select("*")
-          .in("treinamento_id", treinamentosData.map(t => t.id))
-          .gte("atualizado_em", startDate.toISOString())
-          .lte("atualizado_em", endDate.toISOString());
-        progressoData = data || [];
+          .select("usuario_id, treinamento_id, concluido, data_conclusao, atualizado_em, tempo_assistido_minutos, criado_em")
+          .in("treinamento_id", treinamentosData.map(t => t.id));
+        historicoData = (data || []).filter(p => !masterUserIds.has(p.usuario_id));
       }
 
-      // Filter out master users from progress data
-      const filteredProgressoData = progressoData.filter(p => !masterUserIds.has(p.usuario_id));
+      const inPeriod = (iso: string | null) => {
+        if (!iso) return false;
+        const d = new Date(iso);
+        return d >= startDate && d <= endDate;
+      };
+      const filteredProgressoData = historicoData.filter(p => inPeriod(p.atualizado_em));
       const filteredTentativas = (tentativasData || []).filter(t => !masterUserIds.has(t.usuario_id));
+      const filteredActivitiesRaw = (atividadesData || []).filter(a => !a.usuario_id || !masterUserIds.has(a.usuario_id));
 
-      // Buscar perfis dos usuários que fizeram tentativas
-      const userIds = [...new Set(filteredTentativas.map(t => t.usuario_id))];
+      // Nomes de quem aparece nas tentativas e atividades
+      const userIds = [...new Set([
+        ...filteredTentativas.map(t => t.usuario_id),
+        ...filteredActivitiesRaw.slice(0, 8).map(a => a.usuario_id).filter(Boolean),
+      ])];
       let perfisMap: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: perfisData } = await supabase
@@ -192,7 +222,7 @@ async function fetchDashboardData({
       // Calcular estatísticas (usando dados filtrados sem master)
       const totalTreinamentos = treinamentosData?.length || 0;
       const treinamentosAtivos = treinamentosData?.filter(t => t.publicado).length || 0;
-      
+
       const progressoPorTreinamento = filteredProgressoData.reduce((acc, p) => {
         if (!acc[p.treinamento_id]) acc[p.treinamento_id] = [];
         acc[p.treinamento_id].push(p);
@@ -222,8 +252,71 @@ async function fetchDashboardData({
         };
       });
 
-      // Filter activities to exclude master users
-      const filteredActivities = (atividadesData || []).filter(a => !a.usuario_id || !masterUserIds.has(a.usuario_id));
+      // Conclusões dos últimos 6 meses (independe do filtro de período)
+      const now = new Date();
+      const monthly: MonthlyData[] = Array.from({ length: 6 }, (_, i) => {
+        const d = subMonths(startOfMonth(now), 5 - i);
+        const label = format(d, "MMM", { locale: ptBR });
+        return { key: format(d, "yyyy-MM"), label: label.charAt(0).toUpperCase() + label.slice(1, 3), conclusoes: 0 };
+      });
+      historicoData.forEach(p => {
+        if (!p.concluido) return;
+        const when = p.data_conclusao || p.atualizado_em;
+        if (!when) return;
+        const bucket = monthly.find(m => m.key === format(new Date(when), "yyyy-MM"));
+        if (bucket) bucket.conclusoes++;
+      });
+
+      // O que precisa de atenção (sempre sobre o histórico, não só o período)
+      const attention: AttentionItem[] = [];
+      (treinamentosData || []).forEach(t => {
+        if (!t.data_limite) return;
+        const limite = new Date(t.data_limite).getTime();
+        const dias = Math.ceil((limite - now.getTime()) / DAY);
+        if (dias > 7) return;
+        const pendentes = new Set(
+          historicoData.filter(p => p.treinamento_id === t.id && !p.concluido).map(p => p.usuario_id)
+        ).size;
+        if (pendentes === 0) return;
+        attention.push({
+          id: `prazo-${t.id}`,
+          tipo: "prazo",
+          titulo: `${pendentes} ${pendentes === 1 ? "colaborador" : "colaboradores"} com prazo ${dias < 0 ? "vencido" : "vencendo"}`,
+          detalhe: `${t.titulo} · ${dias < 0 ? `venceu há ${Math.abs(dias)} ${Math.abs(dias) === 1 ? "dia" : "dias"}` : dias === 0 ? "vence hoje" : `vence em ${dias} ${dias === 1 ? "dia" : "dias"}`}`,
+          link: `/relatorios`,
+        });
+      });
+      (treinamentosData || []).forEach(t => {
+        const regs = historicoData.filter(p => p.treinamento_id === t.id);
+        if (regs.length < 3 || regs.some(p => p.concluido)) return;
+        const maisAntigo = Math.min(...regs.map(p => new Date(p.criado_em || p.atualizado_em || now).getTime()));
+        if (now.getTime() - maisAntigo < 14 * DAY) return;
+        attention.push({
+          id: `sem-${t.id}`,
+          tipo: "sem_conclusao",
+          titulo: `${t.titulo} sem nenhuma conclusão`,
+          detalhe: `${regs.length} participantes inscritos há mais de 14 dias`,
+          link: `/treinamento/${t.id}`,
+        });
+      });
+      const reprovados = userAttempts.filter(a => !a.aprovado);
+      if (reprovados.length > 0) {
+        attention.push({
+          id: "reprovacoes",
+          tipo: "reprovacao",
+          titulo: `${reprovados.length} ${reprovados.length === 1 ? "colaborador ainda não aprovado" : "colaboradores ainda não aprovados"} em avaliação`,
+          detalhe: reprovados.slice(0, 3).map(a => a.usuario_nome).join(", ") + (reprovados.length > 3 ? "…" : ""),
+          link: "/relatorios",
+        });
+      }
+
+      const activities: ActivityData[] = filteredActivitiesRaw.map(a => ({
+        id: a.id,
+        tipo: a.tipo,
+        descricao: a.descricao,
+        criado_em: a.criado_em,
+        usuario_nome: a.usuario_id ? perfisMap[a.usuario_id] || null : null,
+      }));
 
       return {
         stats: {
@@ -234,18 +327,53 @@ async function fetchDashboardData({
           horasTreinamento: Math.round(horasTreinamento / 60),
           certificadosEmitidos: conclusoes
         },
-        trainings: treinamentosComStats.slice(0, 5),
-        activities: filteredActivities,
+        trainings: [...treinamentosComStats]
+          .sort((a, b) => b.participantes - a.participantes || b.taxa - a.taxa)
+          .slice(0, 5),
+        activities,
         userAttempts,
+        monthly,
+        attention: attention.slice(0, 5),
       };
 }
 
 const DASHBOARD_QUERY_KEY = "dashboard";
 
+const chartConfig = {
+  conclusoes: { label: "Conclusões", color: "hsl(var(--primary))" },
+} satisfies ChartConfig;
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  treinamento_concluido: "Concluiu um treinamento",
+  treinamento_iniciado: "Iniciou um treinamento",
+  certificado_emitido: "Recebeu um certificado",
+  avaliacao_realizada: "Realizou uma avaliação",
+  progresso_atualizado: "Avançou em um treinamento",
+};
+
+const ATTENTION_STYLES: Record<AttentionItem["tipo"], { icon: typeof CalendarClock; className: string }> = {
+  prazo: { icon: CalendarClock, className: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  sem_conclusao: { icon: CircleAlert, className: "bg-destructive/10 text-destructive" },
+  reprovacao: { icon: FileWarning, className: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
+};
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { empresaSelecionada, isMaster } = useEmpresaFilter();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -290,7 +418,7 @@ export default function Dashboard() {
 
   const queryKey = [DASHBOARD_QUERY_KEY, empresaScope, filters.departmentId, filters.period, filters.startDate, filters.endDate] as const;
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey,
     queryFn: () => fetchDashboardData({ empresaScope, departmentId: filters.departmentId, startDate, endDate }),
     enabled: !!user,
@@ -307,6 +435,10 @@ export default function Dashboard() {
   const trainings = data?.trainings ?? [];
   const activities = data?.activities ?? [];
   const userAttempts = data?.userAttempts ?? [];
+  const monthly = data?.monthly ?? [];
+  const attention = data?.attention ?? [];
+  const totalMensal = monthly.reduce((acc, m) => acc + m.conclusoes, 0);
+  const maxMensal = Math.max(0, ...monthly.map(m => m.conclusoes));
 
   // Realtime subscriptions (debounced refresh - evita flicker)
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -331,318 +463,339 @@ export default function Dashboard() {
     };
   }, [queryClient]);
 
-  const getDashboardTitle = () => {
-    if (isMaster) {
-      return empresaSelecionada ? "Dashboard - Empresa Selecionada" : "Dashboard Geral";
-    }
-    return "Dashboard";
-  };
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case "treinamento_iniciado": return "bg-blue-500";
-      case "treinamento_concluido": return "bg-green-500";
-      case "certificado_emitido": return "bg-amber-500";
-      case "avaliacao_realizada": return "bg-purple-500";
-      case "progresso_atualizado": return "bg-cyan-500";
-      default: return "bg-muted-foreground";
-    }
-  };
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "treinamento_concluido": return "Treinamento Concluído";
-      case "treinamento_iniciado": return "Treinamento Iniciado";
-      case "certificado_emitido": return "Certificado Emitido";
-      case "avaliacao_realizada": return "Avaliação Realizada";
-      case "progresso_atualizado": return "Progresso Atualizado";
-      default: return "Atividade";
-    }
-  };
+  const firstName = (user?.nome || "").trim().split(/\s+/)[0];
+  const today = format(now, "EEEE, d 'de' MMMM", { locale: ptBR });
+  const scopeText = isMaster
+    ? (empresaSelecionada ? "visão da empresa selecionada" : "visão geral de todas as empresas")
+    : "visão geral da sua empresa";
 
   const statCards = [
     {
-      title: "Treinamentos Ativos",
-      value: stats.treinamentosAtivos.toString(),
-      subtitle: `${stats.totalTreinamentos} total`,
+      title: "Treinamentos ativos",
+      value: stats.treinamentosAtivos.toLocaleString("pt-BR"),
+      subtitle: `${stats.totalTreinamentos} publicados`,
       icon: BookOpen,
-      color: "text-blue-600"
     },
     {
       title: "Participantes",
       value: stats.totalParticipantes.toLocaleString("pt-BR"),
-      subtitle: `${stats.treinamentosAtivos} treinamentos`,
+      subtitle: "com atividade no período",
       icon: Users,
-      color: "text-green-600"
     },
     {
-      title: "Taxa de Conclusão",
+      title: "Taxa de conclusão",
       value: `${stats.taxaConclusao}%`,
-      subtitle: `${stats.certificadosEmitidos} concluídos`,
-      icon: Target,
-      color: "text-purple-600"
+      subtitle: `${stats.certificadosEmitidos} ${stats.certificadosEmitidos === 1 ? "conclusão" : "conclusões"} no período`,
+      icon: CircleCheck,
     },
     {
-      title: "Horas de Treinamento",
-      value: stats.horasTreinamento.toLocaleString("pt-BR"),
-      subtitle: "horas registradas",
+      title: "Horas de estudo",
+      value: `${stats.horasTreinamento.toLocaleString("pt-BR")}h`,
+      subtitle: "registradas no período",
       icon: Clock,
-      color: "text-orange-600"
-    }
+    },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{getDashboardTitle()}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Acompanhe o desempenho e progresso dos treinamentos
-          </p>
-        </div>
-        
-        {/* Filtros */}
-        <div className="flex flex-wrap items-center gap-4">
-          <PeriodFilter 
-            value={filters.period} 
-            onChange={(value) => setFilters(prev => ({ ...prev, period: value }))}
-            customStartDate={filters.startDate}
-            customEndDate={filters.endDate}
-            onCustomDateChange={(start, end) => setFilters(prev => ({ 
-              ...prev, 
-              startDate: start, 
-              endDate: end,
-              period: 'custom'
-            }))}
-          />
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => refetch()}
-            disabled={isLoading}
-            title="Atualizar dados"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={firstName ? `${greeting()}, ${firstName}` : "Início"}
+        description={`${today.charAt(0).toUpperCase() + today.slice(1)} · ${scopeText}`}
+        actions={
+          <>
+            <PeriodFilter
+              value={filters.period}
+              onChange={(value) => setFilters(prev => ({ ...prev, period: value }))}
+              customStartDate={filters.startDate}
+              customEndDate={filters.endDate}
+              onCustomDateChange={(start, end) => setFilters(prev => ({
+                ...prev,
+                startDate: start,
+                endDate: end,
+                period: 'custom'
+              }))}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              title="Atualizar dados"
+              aria-label="Atualizar dados"
+            >
+              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            </Button>
+          </>
+        }
+      />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {statCards.map((stat, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
-              <CardTitle className="text-[10px] sm:text-sm font-medium truncate">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color} shrink-0`} />
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  <div className="text-lg sm:text-2xl font-bold">{stat.value}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                    {stat.subtitle}
-                  </p>
-                </>
-              )}
-            </CardContent>
+      {/* Indicadores */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {statCards.map((stat) => (
+          <Card key={stat.title} className="p-4 sm:p-5">
+            <div className="flex items-center gap-2 text-xs sm:text-[13px] font-medium text-muted-foreground">
+              <stat.icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{stat.title}</span>
+            </div>
+            {isLoading ? (
+              <div className="mt-3 h-8 w-16 rounded-md bg-muted animate-pulse" />
+            ) : (
+              <div className="mt-2 text-2xl sm:text-[28px] font-semibold tracking-tight tabular-nums">{stat.value}</div>
+            )}
+            <p className="mt-1 text-[11px] sm:text-xs text-muted-foreground truncate">{stat.subtitle}</p>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Treinamentos Recentes */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Treinamentos Recentes
-            </CardTitle>
-            <CardDescription>
-              Acompanhe o progresso dos treinamentos em andamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+        <div className="xl:col-span-2 space-y-4 sm:space-y-6 min-w-0">
+          {/* Conclusões por mês */}
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-base">Conclusões por mês</CardTitle>
+                <CardDescription>Treinamentos concluídos nos últimos 6 meses</CardDescription>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {trainings.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum treinamento encontrado</p>
-                  </div>
-                ) : (
-                  trainings.map((training) => (
-                    <div key={training.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-medium">{training.titulo}</h4>
-                          <Badge variant="secondary">
-                            {training.categoria || "Geral"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {training.participantes} participantes • {training.conclusoes} conclusões
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={training.taxa} className="flex-1" />
-                          <span className="text-sm font-medium">{training.taxa}%</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <Button variant="ghost" size="icon">
-                          <PlayCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="text-right">
+                <div className="text-2xl font-semibold tabular-nums">{totalMensal}</div>
+                <div className="text-xs text-muted-foreground">no total</div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-[240px] rounded-lg bg-muted/50 animate-pulse" />
+              ) : (
+                <ChartContainer config={chartConfig} className="h-[240px] w-full aspect-auto">
+                  <BarChart data={monthly} margin={{ top: 24, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={40} />
+                    <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} content={<ChartTooltipContent hideIndicator />} />
+                    <Bar dataKey="conclusoes" radius={[4, 4, 0, 0]} maxBarSize={44}>
+                      {monthly.map((m) => (
+                        <Cell
+                          key={m.key}
+                          fill="var(--color-conclusoes)"
+                          fillOpacity={maxMensal > 0 && m.conclusoes === maxMensal ? 1 : 0.7}
+                        />
+                      ))}
+                      <LabelList
+                        dataKey="conclusoes"
+                        position="top"
+                        className="fill-foreground text-xs font-medium"
+                        formatter={(v: number) => (maxMensal > 0 && v === maxMensal ? v : "")}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Atividades Recentes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Atividades Recentes
-            </CardTitle>
-            <CardDescription>
-              Últimas ações no sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          {/* Treinamentos com mais participação */}
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Treinamentos com mais participação</CardTitle>
+              <Button variant="ghost" size="sm" className="text-primary hover:text-primary" onClick={() => navigate("/admin/treinamentos")}>
+                Ver todos <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </CardHeader>
             {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
+              <CardContent className="space-y-3">
+                {[0, 1, 2].map(i => <div key={i} className="h-12 rounded-lg bg-muted/50 animate-pulse" />)}
+              </CardContent>
+            ) : trainings.length === 0 ? (
+              <CardContent>
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  <BookOpen className="mx-auto mb-2 h-10 w-10 opacity-40" />
+                  Nenhum treinamento publicado ainda
+                </div>
+              </CardContent>
             ) : (
-              <div className="space-y-4">
-                {activities.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhuma atividade recente</p>
-                  </div>
-                ) : (
-                  activities.slice(0, 8).map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3">
-                      <div className={`w-2 h-2 ${getActivityColor(activity.tipo)} rounded-full mt-2`}></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{getActivityIcon(activity.tipo)}</p>
-                        <p className="text-xs text-muted-foreground">{activity.descricao}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {activity.criado_em ? new Date(activity.criado_em).toLocaleString("pt-BR") : ""}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-y bg-muted/40 text-xs text-muted-foreground">
+                      <th className="px-6 py-2.5 text-left font-medium">Treinamento</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Participantes</th>
+                      <th className="px-6 py-2.5 text-left font-medium w-[38%]">Conclusão</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trainings.map((t) => (
+                      <tr
+                        key={t.id}
+                        className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                        onClick={() => navigate(`/treinamento/${t.id}`)}
+                      >
+                        <td className="px-6 py-3">
+                          <div className="font-medium leading-tight line-clamp-1">{t.titulo}</div>
+                          <div className="text-xs text-muted-foreground">{t.categoria || "Geral"}</div>
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums">{t.participantes}</td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-1.5 flex-1 min-w-[60px] rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-primary" style={{ width: `${t.taxa}%` }} />
+                            </div>
+                            <span className="w-10 text-right tabular-nums text-muted-foreground">{t.taxa}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </Card>
+        </div>
+
+        <div className="space-y-4 sm:space-y-6 min-w-0">
+          {/* Precisa de atenção */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                Precisa de atenção
+                {attention.length > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-destructive/10 px-1.5 text-[11px] font-semibold text-destructive">
+                    {attention.length}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pt-0">
+              {isLoading ? (
+                [0, 1].map(i => <div key={i} className="h-14 rounded-lg bg-muted/50 animate-pulse" />)
+              ) : attention.length === 0 ? (
+                <div className="flex items-center gap-3 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                  <PartyPopper className="h-5 w-5 shrink-0" />
+                  Tudo em dia. Nenhum prazo ou pendência crítica.
+                </div>
+              ) : (
+                attention.map((item) => {
+                  const style = ATTENTION_STYLES[item.tipo];
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => navigate(item.link)}
+                      className="group flex w-full items-center gap-3 rounded-lg p-2 -mx-2 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-lg", style.className)}>
+                        <style.icon className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium leading-snug">{item.titulo}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{item.detalhe}</span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 group-hover:text-foreground" />
+                    </button>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Atividade recente */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Atividade recente</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[0, 1, 2].map(i => <div key={i} className="h-10 rounded-lg bg-muted/50 animate-pulse" />)}
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  <Clock className="mx-auto mb-2 h-10 w-10 opacity-40" />
+                  Nenhuma atividade no período
+                </div>
+              ) : (
+                <ul className="space-y-4">
+                  {activities.slice(0, 6).map((a) => {
+                    const nome = a.usuario_nome || "Alguém";
+                    return (
+                      <li key={a.id} className="flex items-start gap-3">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                          {initials(nome) || "?"}
+                        </span>
+                        <div className="min-w-0 flex-1 text-sm leading-snug">
+                          <p className="font-medium">{nome}</p>
+                          <p className="text-muted-foreground line-clamp-2">
+                            {a.descricao || ACTIVITY_LABELS[a.tipo] || "Registrou uma atividade"}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground/80">
+                            {a.criado_em ? formatDistanceToNow(new Date(a.criado_em), { addSuffix: true, locale: ptBR }) : ""}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Tentativas de Avaliação por Usuário */}
       {userAttempts.length > 0 && (
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Tentativas de Avaliação por Usuário
-            </CardTitle>
-            <CardDescription>
-              Número de tentativas e notas de cada usuário nas avaliações
-            </CardDescription>
+            <CardTitle className="text-base">Tentativas de avaliação</CardTitle>
+            <CardDescription>Número de tentativas e notas de cada colaborador no período</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Usuário</th>
-                    <th className="text-left p-2 font-medium">Treinamento</th>
-                    <th className="text-center p-2 font-medium">Tentativas</th>
-                    <th className="text-center p-2 font-medium">Notas</th>
-                    <th className="text-center p-2 font-medium">Status</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-y bg-muted/40 text-xs text-muted-foreground">
+                  <th className="px-6 py-2.5 text-left font-medium">Colaborador</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Treinamento</th>
+                  <th className="px-4 py-2.5 text-center font-medium">Tentativas</th>
+                  <th className="px-4 py-2.5 text-center font-medium">Notas</th>
+                  <th className="px-6 py-2.5 text-right font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userAttempts.slice(0, 20).map((attempt, idx) => (
+                  <tr key={idx} className="border-b last:border-0">
+                    <td className="px-6 py-3 font-medium">{attempt.usuario_nome}</td>
+                    <td className="px-4 py-3 max-w-[240px] truncate text-muted-foreground">{attempt.treinamento_titulo}</td>
+                    <td className="px-4 py-3 text-center tabular-nums">{attempt.tentativas}x</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1 justify-center flex-wrap">
+                        {attempt.notas.map((nota, ni) => (
+                          <span
+                            key={ni}
+                            className={cn(
+                              "rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
+                              nota >= 7 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-destructive/10 text-destructive"
+                            )}
+                          >
+                            {nota.toFixed(1)}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "border-transparent",
+                          attempt.aprovado ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-destructive/10 text-destructive"
+                        )}
+                      >
+                        {attempt.aprovado ? "Aprovado" : "Reprovado"}
+                      </Badge>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {userAttempts.slice(0, 20).map((attempt, idx) => (
-                    <tr key={idx} className="border-b last:border-0">
-                      <td className="p-2">{attempt.usuario_nome}</td>
-                      <td className="p-2 max-w-[200px] truncate">{attempt.treinamento_titulo}</td>
-                      <td className="p-2 text-center">
-                        <Badge variant="secondary">{attempt.tentativas}x</Badge>
-                      </td>
-                      <td className="p-2 text-center">
-                        <div className="flex gap-1 justify-center flex-wrap">
-                          {attempt.notas.map((nota, ni) => (
-                            <Badge key={ni} variant={nota >= 7 ? "default" : "destructive"} className="text-xs">
-                              {nota.toFixed(1)}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-2 text-center">
-                        <Badge variant={attempt.aprovado ? "default" : "destructive"}>
-                          {attempt.aprovado ? "Aprovado" : "Reprovado"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Resumo de Performance
-          </CardTitle>
-          <CardDescription>
-            Visão geral das métricas de treinamento
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <Award className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold">{stats.certificadosEmitidos}</p>
-              <p className="text-sm text-muted-foreground">Certificados Emitidos</p>
-            </div>
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <TrendingUp className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold">{stats.taxaConclusao}%</p>
-              <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
-            </div>
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold">{stats.totalParticipantes}</p>
-              <p className="text-sm text-muted-foreground">Usuários Ativos</p>
-            </div>
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold">{stats.horasTreinamento}h</p>
-              <p className="text-sm text-muted-foreground">Tempo Total</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
