@@ -2379,9 +2379,13 @@ function renderTextSection(text: string) {
       elements.push(
         <div key={`check-${elements.length}`} className="space-y-2 mb-5">
           {currentCheckList.map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-              <span className="text-[16.5px] leading-[1.75] text-foreground/90"><InlineText text={item} /></span>
+            <div key={i} className="flex items-start gap-2">
+              {item.startsWith('☐') ? (
+                <span className="mt-[7px] h-4 w-4 flex-shrink-0 rounded-full border-2 border-muted-foreground/40" />
+              ) : (
+                <CheckCircle2 className="mt-[7px] h-4 w-4 text-emerald-600 flex-shrink-0" />
+              )}
+              <span className="text-[16.5px] leading-[1.75] text-foreground/90"><InlineText text={item.replace(/^[☑☐]\s*/, '')} /></span>
             </div>
           ))}
         </div>
@@ -2427,6 +2431,18 @@ function renderTextSection(text: string) {
         <h2 key={`h2-${index}`} className="text-xl font-semibold tracking-tight mt-10 mb-4 first:mt-0">
           {headingText}
         </h2>
+      );
+      index++;
+      continue;
+    }
+
+    // Subtítulo ####
+    if (trimmedLine.startsWith('#### ')) {
+      flushList();
+      elements.push(
+        <h4 key={`h4-${index}`} className="text-base font-semibold mt-6 mb-2 first:mt-0">
+          {trimmedLine.replace(/^#### /, '')}
+        </h4>
       );
       index++;
       continue;
@@ -2489,10 +2505,10 @@ function renderTextSection(text: string) {
       continue;
     }
 
-    // Checklist ☑
-    if (trimmedLine.startsWith('☑')) {
-      flushList();
-      currentCheckList.push(trimmedLine.replace(/^☑\s*/, ''));
+    // Checklist ☑ / ☐
+    if (trimmedLine.startsWith('☑') || trimmedLine.startsWith('☐')) {
+      if (currentList.length > 0) flushList();
+      currentCheckList.push(trimmedLine);
       index++;
       continue;
     }

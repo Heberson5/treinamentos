@@ -11,7 +11,8 @@ import {
 } from "@/components/training/modern-training-editor";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseTextToSections, sectionsToText } from "@/lib/training-content";
+import { cn } from "@/lib/utils";
 import { QuizEditor } from "@/components/training/quiz-editor";
 
 interface TrainingDB {
@@ -33,232 +34,6 @@ interface TrainingDB {
 }
 
 // Função para converter texto markdown-like em seções
-function parseTextToSections(texto: string): TrainingSection[] {
-  if (!texto || texto.trim() === "") {
-    return [
-      {
-        id: `section-${Date.now()}`,
-        title: "Conteúdo Principal",
-        blocks: [
-          {
-            id: `block-${Date.now()}`,
-            type: "text",
-            content: "",
-            align: "left",
-          },
-        ],
-      },
-    ];
-  }
-
-  const sections: TrainingSection[] = [];
-  const sectionParts = texto.split(/\n---\n/);
-
-  sectionParts.forEach((part, sectionIndex) => {
-    const lines = part.trim().split("\n");
-    let sectionTitle = `Seção ${sectionIndex + 1}`;
-    const blocks: ContentBlock[] = [];
-    let currentTextContent = "";
-    let currentAlign: "left" | "center" | "right" | "justify" = "left";
-
-    lines.forEach((line) => {
-      const trimmedLine = line.trim();
-
-      // Marcadores de alinhamento (gravados pelo editor moderno ao salvar)
-      const alignStartMatch = trimmedLine.match(/^\[\[align:(center|right|justify)\]\]$/);
-      if (alignStartMatch) {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        currentAlign = alignStartMatch[1] as "center" | "right" | "justify";
-        return;
-      }
-      if (trimmedLine === "[[/align]]") {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        currentAlign = "left";
-        return;
-      }
-
-      // Detectar título da seção (## Título)
-      if (trimmedLine.startsWith("## ")) {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        sectionTitle = trimmedLine.replace(/^## /, "");
-        return;
-      }
-
-      // Detectar títulos (# ## ###)
-      if (trimmedLine.startsWith("# ")) {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        blocks.push({
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: "heading",
-          level: 1,
-          content: trimmedLine.replace(/^# /, ""),
-          align: "left",
-        });
-        return;
-      }
-
-      if (trimmedLine.startsWith("### ")) {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        blocks.push({
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: "heading",
-          level: 3,
-          content: trimmedLine.replace(/^### /, ""),
-          align: "left",
-        });
-        return;
-      }
-
-      // Detectar imagem
-      if (trimmedLine.startsWith("[Imagem:")) {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        const url = trimmedLine.replace(/^\[Imagem: /, "").replace(/\]$/, "");
-        blocks.push({
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: "image",
-          content: "",
-          mediaUrl: url,
-          align: "center",
-        });
-        return;
-      }
-
-      // Detectar vídeo
-      if (trimmedLine.startsWith("[Vídeo:")) {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        const url = trimmedLine.replace(/^\[Vídeo: /, "").replace(/\]$/, "");
-        blocks.push({
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: "video",
-          content: "",
-          mediaUrl: url,
-          align: "center",
-        });
-        return;
-      }
-
-      // Detectar divisor
-      if (trimmedLine === "---") {
-        if (currentTextContent.trim()) {
-          blocks.push({
-            id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: "text",
-            content: currentTextContent.trim(),
-            align: currentAlign,
-          });
-          currentTextContent = "";
-        }
-        blocks.push({
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: "divider",
-          content: "",
-        });
-        return;
-      }
-
-      // Texto normal
-      currentTextContent += (currentTextContent ? "\n" : "") + line;
-    });
-
-    // Adicionar texto restante
-    if (currentTextContent.trim()) {
-      blocks.push({
-        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: "text",
-        content: currentTextContent.trim(),
-        align: currentAlign,
-      });
-    }
-
-    // Se não houver blocos, adicionar um vazio
-    if (blocks.length === 0) {
-      blocks.push({
-        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: "text",
-        content: "",
-        align: "left",
-      });
-    }
-
-    sections.push({
-      id: `section-${Date.now()}-${sectionIndex}`,
-      title: sectionTitle,
-      blocks,
-    });
-  });
-
-  return sections.length > 0 ? sections : [
-    {
-      id: `section-${Date.now()}`,
-      title: "Conteúdo Principal",
-      blocks: [
-        {
-          id: `block-${Date.now()}`,
-          type: "text",
-          content: "",
-          align: "left",
-        },
-      ],
-    },
-  ];
-}
-
 function formatDuration(minutes: number | null): string {
   if (!minutes) return "00:30";
   const hours = Math.floor(minutes / 60);
@@ -276,6 +51,7 @@ export default function EditarTreinamentoModerno() {
   const [dbTraining, setDbTraining] = useState<TrainingDB | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFromDatabase, setIsFromDatabase] = useState(false);
+  const [aba, setAba] = useState<"conteudo" | "avaliacao">("conteudo");
 
   useEffect(() => {
     const loadTraining = async () => {
@@ -424,40 +200,7 @@ export default function EditarTreinamentoModerno() {
     }
 
     // Converter seções em texto consolidado
-    const textoConsolidado = data.sections
-      .map((section) => {
-        const sectionContent = section.blocks
-          .map((block) => {
-            switch (block.type) {
-              case "heading":
-                return `${"#".repeat(block.level || 2)} ${block.content}`;
-              case "text":
-              case "quote":
-                return block.align && block.align !== "left"
-                  ? `[[align:${block.align}]]\n${block.content}\n[[/align]]`
-                  : block.content;
-              case "image":
-                return block.mediaUrl ? `[Imagem: ${block.caption || block.mediaUrl}]` : "";
-              case "video":
-                return block.mediaUrl ? `[Vídeo: ${block.caption || block.mediaUrl}]` : "";
-              case "list":
-                return (block.listItems || []).map((item) => `• ${item}`).join("\n");
-              case "checklist":
-                return (block.checkItems || [])
-                  .map((item) => `${item.checked ? "☑" : "☐"} ${item.text}`)
-                  .join("\n");
-              case "divider":
-                return "---";
-              default:
-                return "";
-            }
-          })
-          .filter(Boolean)
-          .join("\n\n");
-
-        return `## ${section.title}\n\n${sectionContent}`;
-      })
-      .join("\n\n---\n\n");
+    const textoConsolidado = sectionsToText(data.sections);
 
     // Extrair primeira imagem como capa se não tiver
     let capa = data.capa;
@@ -614,39 +357,55 @@ export default function EditarTreinamentoModerno() {
     }
   };
 
+  const quizEditor = dbTraining ? (
+    <QuizEditor
+      treinamentoId={dbTraining.id}
+      avaliacaoObrigatoria={false}
+      notaMinima={7}
+      conteudoTreinamento={dbTraining.conteudo_html || ""}
+      onSettingsChange={handleQuizSettingsChange}
+    />
+  ) : id ? (
+    <QuizEditor
+      treinamentoId={id}
+      conteudoTreinamento={training?.texto || ""}
+      onSettingsChange={() => {}}
+    />
+  ) : (
+    <p className="text-muted-foreground text-center py-8">Salve o treinamento primeiro para adicionar avaliações.</p>
+  );
+
+  const tabs = (
+    <div className="inline-flex rounded-lg bg-muted p-1" role="tablist">
+      {([
+        ["conteudo", "Conteúdo"],
+        ["avaliacao", "Avaliação"],
+      ] as const).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="tab"
+          aria-selected={aba === value}
+          onClick={() => setAba(value)}
+          className={cn(
+            "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
+            aba === value ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <Tabs defaultValue="conteudo" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="conteudo">Conteúdo</TabsTrigger>
-        <TabsTrigger value="avaliacao">Avaliação</TabsTrigger>
-      </TabsList>
-      <TabsContent value="conteudo">
-        <ModernTrainingEditor
-          initialData={initialData}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          isEditing
-        />
-      </TabsContent>
-      <TabsContent value="avaliacao">
-        {dbTraining ? (
-          <QuizEditor
-            treinamentoId={dbTraining.id}
-            avaliacaoObrigatoria={false}
-            notaMinima={7}
-            conteudoTreinamento={dbTraining.conteudo_html || ""}
-            onSettingsChange={handleQuizSettingsChange}
-          />
-        ) : id ? (
-          <QuizEditor
-            treinamentoId={id}
-            conteudoTreinamento={training?.texto || ""}
-            onSettingsChange={() => {}}
-          />
-        ) : (
-          <p className="text-muted-foreground text-center py-8">Salve o treinamento primeiro para adicionar avaliações.</p>
-        )}
-      </TabsContent>
-    </Tabs>
+    <ModernTrainingEditor
+      initialData={initialData}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      isEditing
+      headerCenter={tabs}
+      bodyOverride={aba === "avaliacao" ? quizEditor : undefined}
+    />
   );
 }

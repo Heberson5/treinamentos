@@ -7,6 +7,7 @@ import {
   ModernTrainingEditor,
   TrainingData,
 } from "@/components/training/modern-training-editor";
+import { sectionsToText } from "@/lib/training-content";
 
 export default function NovoTreinamentoModerno() {
   const navigate = useNavigate();
@@ -83,40 +84,7 @@ export default function NovoTreinamentoModerno() {
     }
 
     // Converter seções em texto consolidado
-    const textoConsolidado = data.sections
-      .map((section) => {
-        const sectionContent = section.blocks
-          .map((block) => {
-            switch (block.type) {
-              case "heading":
-                return `${"#".repeat(block.level || 2)} ${block.content}`;
-              case "text":
-              case "quote":
-                return block.align && block.align !== "left"
-                  ? `[[align:${block.align}]]\n${block.content}\n[[/align]]`
-                  : block.content;
-              case "image":
-                return block.mediaUrl ? `[Imagem: ${block.caption || block.mediaUrl}]` : "";
-              case "video":
-                return block.mediaUrl ? `[Vídeo: ${block.caption || block.mediaUrl}]` : "";
-              case "list":
-                return (block.listItems || []).map((item) => `• ${item}`).join("\n");
-              case "checklist":
-                return (block.checkItems || [])
-                  .map((item) => `${item.checked ? "☑" : "☐"} ${item.text}`)
-                  .join("\n");
-              case "divider":
-                return "---";
-              default:
-                return "";
-            }
-          })
-          .filter(Boolean)
-          .join("\n\n");
-
-        return `## ${section.title}\n\n${sectionContent}`;
-      })
-      .join("\n\n---\n\n");
+    const textoConsolidado = sectionsToText(data.sections);
 
     // Extrair primeira imagem como capa se não tiver
     let capa = data.capa;

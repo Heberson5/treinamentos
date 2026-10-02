@@ -1,5 +1,5 @@
 // Editor moderno de treinamentos estilo Word com seções/páginas
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,12 +91,15 @@ import {
   ChevronDown,
   ChevronUp,
   Table2,
+  CircleCheck,
+  ImagePlus,
 } from "lucide-react";
 import { useAIRewrite } from "@/hooks/use-ai-rewrite";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { InlineRichText } from "@/components/training/inline-rich-text";
 
 // Types
 export interface ContentBlock {
@@ -147,6 +150,10 @@ interface ModernTrainingEditorProps {
   onSave: (data: TrainingData) => void;
   onCancel: () => void;
   isEditing?: boolean;
+  /** Abas exibidas no centro do cabeçalho (ex.: Conteúdo / Avaliação) */
+  headerCenter?: ReactNode;
+  /** Quando informado, substitui a área de edição (mantendo o cabeçalho) */
+  bodyOverride?: ReactNode;
 }
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -212,6 +219,8 @@ export function ModernTrainingEditor({
   onSave,
   onCancel,
   isEditing = false,
+  headerCenter,
+  bodyOverride,
 }: ModernTrainingEditorProps) {
   const { user } = useAuth();
   const { canUploadVideo } = usePermissions();
@@ -235,7 +244,10 @@ export function ModernTrainingEditor({
 
   // Editor state
   const [activeSection, setActiveSection] = useState(0);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(() => typeof window === "undefined" || window.innerWidth >= 640);
+  const [showSettings, setShowSettings] = useState(() => typeof window === "undefined" || window.innerWidth >= 1280);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [focusListItem, setFocusListItem] = useState<{ blockId: string; index: number } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showMediaDialog, setShowMediaDialog] = useState(false);
   const [mediaDialogData, setMediaDialogData] = useState<{
@@ -327,6 +339,35 @@ export function ModernTrainingEditor({
       )
     : departamentos;
 
+  // Alterações pendentes (comparadas ao que foi aberto)
+  const serialized = useMemo(() => JSON.stringify(formData), [formData]);
+  const initialSnapshot = useRef(serialized);
+  const isDirty = serialized !== initialSnapshot.current;
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  // Ctrl/⌘ + S salva
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        onSave(formDataRef.current);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onSave]);
+
   // Check AI access
   useEffect(() => {
     const check = async () => {
@@ -389,40 +430,41 @@ export function ModernTrainingEditor({
   // Block management
   const addBlock = (sectionIndex: number, type: ContentBlock["type"], position?: number) => {
     const newBlock = createEmptyBlock(type);
-    setFormData((prev) => {
-      const newSections = [...prev.sections];
-      const section = newSections[sectionIndex];
-      const insertAt = position !== undefined ? position + 1 : section.blocks.length;
-      section.blocks = [
-        ...section.blocks.slice(0, insertAt),
-        newBlock,
-        ...section.blocks.slice(insertAt),
-      ];
-      return { ...prev, sections: newSections };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section, i) => {
+        if (i !== sectionIndex) return section;
+        const insertAt = position !== undefined && position >= 0 ? position + 1 : section.blocks.length;
+        return {
+          ...section,
+          blocks: [...section.blocks.slice(0, insertAt), newBlock, ...section.blocks.slice(insertAt)],
+        };
+      }),
+    }));
+    setActiveBlockId(newBlock.id);
+    return newBlock.id;
   };
 
   const updateBlock = (sectionIndex: number, blockId: string, updates: Partial<ContentBlock>) => {
-    setFormData((prev) => {
-      const newSections = [...prev.sections];
-      newSections[sectionIndex].blocks = newSections[sectionIndex].blocks.map((block) =>
-        block.id === blockId ? { ...block, ...updates } : block
-      );
-      return { ...prev, sections: newSections };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section, i) =>
+        i === sectionIndex
+          ? { ...section, blocks: section.blocks.map((block) => (block.id === blockId ? { ...block, ...updates } : block)) }
+          : section
+      ),
+    }));
   };
 
   const deleteBlock = (sectionIndex: number, blockId: string) => {
-    setFormData((prev) => {
-      const newSections = [...prev.sections];
-      const section = newSections[sectionIndex];
-      if (section.blocks.length === 1) {
-        section.blocks = [createEmptyBlock("text")];
-      } else {
-        section.blocks = section.blocks.filter((block) => block.id !== blockId);
-      }
-      return { ...prev, sections: newSections };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section, i) => {
+        if (i !== sectionIndex) return section;
+        const blocks = section.blocks.filter((block) => block.id !== blockId);
+        return { ...section, blocks: blocks.length > 0 ? blocks : [createEmptyBlock("text")] };
+      }),
+    }));
   };
 
   // Drag and drop
@@ -449,11 +491,10 @@ export function ModernTrainingEditor({
       const [removed] = newBlocks.splice(source.index, 1);
       newBlocks.splice(destination.index, 0, removed);
 
-      setFormData((prev) => {
-        const newSections = [...prev.sections];
-        newSections[sectionIndex].blocks = newBlocks;
-        return { ...prev, sections: newSections };
-      });
+      setFormData((prev) => ({
+        ...prev,
+        sections: prev.sections.map((section, i) => (i === sectionIndex ? { ...section, blocks: newBlocks } : section)),
+      }));
     }
   };
 
@@ -789,52 +830,42 @@ export function ModernTrainingEditor({
     const blockContent = () => {
       switch (block.type) {
         case "heading":
-          const headingClass = {
-            1: "text-3xl font-bold",
-            2: "text-2xl font-semibold",
-            3: "text-xl font-medium",
-          }[block.level || 2];
+          const headingClass = block.level === 3
+            ? "text-lg md:text-lg font-semibold"
+            : "text-xl md:text-2xl font-semibold tracking-tight";
 
           return (
             <Input
               value={block.content}
               onChange={(e) => updateBlock(sectionIndex, block.id, { content: e.target.value })}
-              placeholder={`Título ${block.level || 2}`}
+              placeholder={block.level === 3 ? "Subtítulo" : "Título"}
               className={cn(
-                "border-none shadow-none focus-visible:ring-0 bg-transparent",
-                headingClass,
-                alignClass,
-                block.textColor
+                "h-auto border-none bg-transparent px-0 py-1 shadow-none focus-visible:ring-0",
+                headingClass
               )}
             />
           );
 
         case "text":
           return (
-            <Textarea
+            <InlineRichText
               value={block.content}
-              onChange={(e) => updateBlock(sectionIndex, block.id, { content: e.target.value })}
+              onChange={(content) => updateBlock(sectionIndex, block.id, { content })}
               placeholder="Comece a digitar seu conteúdo aqui..."
-              className={cn(
-                "min-h-[200px] border-none shadow-none focus-visible:ring-0 resize-y bg-transparent",
-                fontSizeClass,
-                alignClass,
-                block.textColor,
-                block.isBold && "font-bold",
-                block.isItalic && "italic",
-                block.isUnderline && "underline"
-              )}
+              ariaLabel="Texto"
+              className={cn("text-[16.5px] leading-[1.8] text-foreground/90 [&>div+div]:mt-0", alignClass)}
             />
           );
 
         case "quote":
           return (
-            <div className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r-md">
-              <Textarea
+            <div className="border-l-4 border-primary/60 pl-4 py-1">
+              <InlineRichText
                 value={block.content}
-                onChange={(e) => updateBlock(sectionIndex, block.id, { content: e.target.value })}
+                onChange={(content) => updateBlock(sectionIndex, block.id, { content })}
                 placeholder="Digite uma citação..."
-                className="min-h-[80px] border-none shadow-none focus-visible:ring-0 resize-none italic bg-transparent"
+                ariaLabel="Citação"
+                className={cn("text-[16.5px] leading-[1.8] italic text-muted-foreground", alignClass)}
               />
             </div>
           );
@@ -997,74 +1028,50 @@ export function ModernTrainingEditor({
           return <Separator className="my-6" />;
 
         case "list":
+        case "numbered-list": {
+          const items = block.listItems && block.listItems.length > 0 ? block.listItems : [""];
+          const setItems = (listItems: string[], focusIndex?: number) => {
+            updateBlock(sectionIndex, block.id, { listItems });
+            if (focusIndex !== undefined) setFocusListItem({ blockId: block.id, index: focusIndex });
+          };
           return (
-            <div className="space-y-2">
-              {(block.listItems || [""]).map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-muted-foreground">•</span>
-                  <Input
+            <div className="space-y-1">
+              {items.map((item, i) => (
+                <div key={`${block.id}-${i}-${items.length}`} className="flex items-start gap-2.5">
+                  <span className={cn("mt-[3px] shrink-0 text-[16.5px] leading-[1.8] tabular-nums", block.type === "list" ? "w-3 text-primary" : "min-w-[20px] text-muted-foreground")}>
+                    {block.type === "list" ? "•" : `${i + 1}.`}
+                  </span>
+                  <InlineRichText
+                    singleLine
                     value={item}
-                    onChange={(e) => {
-                      const newItems = [...(block.listItems || [])];
-                      newItems[i] = e.target.value;
-                      updateBlock(sectionIndex, block.id, { listItems: newItems });
+                    autoFocus={focusListItem?.blockId === block.id && focusListItem.index === i}
+                    onChange={(value) => {
+                      const next = [...items];
+                      next[i] = value;
+                      updateBlock(sectionIndex, block.id, { listItems: next });
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        e.preventDefault();
-                        const newItems = [...(block.listItems || [])];
-                        newItems.splice(i + 1, 0, "");
-                        updateBlock(sectionIndex, block.id, { listItems: newItems });
+                        const next = [...items];
+                        next.splice(i + 1, 0, "");
+                        setItems(next, i + 1);
                       }
-                      if (e.key === "Backspace" && item === "" && (block.listItems?.length || 0) > 1) {
+                      if (e.key === "Backspace" && !e.currentTarget.textContent && items.length > 1) {
                         e.preventDefault();
-                        const newItems = [...(block.listItems || [])];
-                        newItems.splice(i, 1);
-                        updateBlock(sectionIndex, block.id, { listItems: newItems });
+                        const next = [...items];
+                        next.splice(i, 1);
+                        setItems(next, Math.max(0, i - 1));
                       }
                     }}
                     placeholder="Item da lista..."
-                    className="flex-1 border-none shadow-none focus-visible:ring-0 bg-transparent"
+                    ariaLabel={`Item ${i + 1}`}
+                    className="flex-1 py-[3px] text-[16.5px] leading-[1.8] text-foreground/90"
                   />
                 </div>
               ))}
             </div>
           );
-
-        case "numbered-list":
-          return (
-            <div className="space-y-2">
-              {(block.listItems || [""]).map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-muted-foreground min-w-[20px]">{i + 1}.</span>
-                  <Input
-                    value={item}
-                    onChange={(e) => {
-                      const newItems = [...(block.listItems || [])];
-                      newItems[i] = e.target.value;
-                      updateBlock(sectionIndex, block.id, { listItems: newItems });
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const newItems = [...(block.listItems || [])];
-                        newItems.splice(i + 1, 0, "");
-                        updateBlock(sectionIndex, block.id, { listItems: newItems });
-                      }
-                      if (e.key === "Backspace" && item === "" && (block.listItems?.length || 0) > 1) {
-                        e.preventDefault();
-                        const newItems = [...(block.listItems || [])];
-                        newItems.splice(i, 1);
-                        updateBlock(sectionIndex, block.id, { listItems: newItems });
-                      }
-                    }}
-                    placeholder="Item da lista..."
-                    className="flex-1 border-none shadow-none focus-visible:ring-0 bg-transparent"
-                  />
-                </div>
-              ))}
-            </div>
-          );
+        }
 
         case "checklist":
           return (
@@ -1195,13 +1202,16 @@ export function ModernTrainingEditor({
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
+            onFocusCapture={() => setActiveBlockId(block.id)}
+            onMouseDownCapture={() => setActiveBlockId(block.id)}
             className={cn(
-              "group relative mb-4 rounded-lg transition-all",
-              snapshot.isDragging && "shadow-lg bg-background ring-2 ring-primary"
+              "group relative mb-3 rounded-lg px-3 -mx-3 py-1 transition-colors",
+              activeBlockId === block.id ? "bg-primary/[0.04] ring-1 ring-primary/30" : "hover:bg-muted/40",
+              snapshot.isDragging && "shadow-lg bg-card ring-2 ring-primary"
             )}
           >
             {/* Block toolbar */}
-            <div className="absolute -left-12 top-0 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute -left-10 top-1 hidden sm:flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <div {...provided.dragHandleProps} className="cursor-grab p-1 rounded hover:bg-muted">
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>
@@ -1220,252 +1230,6 @@ export function ModernTrainingEditor({
                   <TooltipContent>Excluir bloco</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
-
-            {/* Block type toolbar - always visible */}
-            <div className="flex items-center gap-1 mb-2 flex-wrap">
-              {block.type === "heading" && (
-                <div className="flex items-center gap-0.5 bg-background border rounded-md p-0.5">
-                  {[1, 2, 3].map((level) => (
-                    <Button
-                      key={level}
-                      variant={block.level === level ? "secondary" : "ghost"}
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => updateBlock(sectionIndex, block.id, { level: level as 1 | 2 | 3 })}
-                    >
-                      <span className="text-xs font-bold">H{level}</span>
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {(block.type === "text" || block.type === "heading" || block.type === "quote") && (
-                <>
-                  {/* Formatação de texto - Negrito, Itálico, Sublinhado */}
-                  <div className="flex items-center gap-0.5 bg-background border rounded-md p-0.5">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.isBold ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { isBold: !block.isBold })}
-                          >
-                            <Bold className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Negrito</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.isItalic ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { isItalic: !block.isItalic })}
-                          >
-                            <Italic className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Itálico</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.isUnderline ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { isUnderline: !block.isUnderline })}
-                          >
-                            <Underline className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Sublinhado</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-
-                  {/* Alinhamento */}
-                  <div className="flex items-center gap-0.5 bg-background border rounded-md p-0.5">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.align === "left" ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { align: "left" })}
-                          >
-                            <AlignLeft className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Alinhar à esquerda</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.align === "center" ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { align: "center" })}
-                          >
-                            <AlignCenter className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Centralizar</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.align === "right" ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { align: "right" })}
-                          >
-                            <AlignRight className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Alinhar à direita</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={block.align === "justify" ? "secondary" : "ghost"}
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateBlock(sectionIndex, block.id, { align: "justify" })}
-                          >
-                            <AlignJustify className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Justificado</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-
-                  {/* Tamanho da fonte */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 gap-1 px-2">
-                        <Type className="h-3.5 w-3.5" />
-                        <span className="text-xs">
-                          {FONT_SIZES.find(s => s.value === (block.fontSize || "base"))?.name || "Normal"}
-                        </span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      {FONT_SIZES.map((size) => (
-                        <DropdownMenuItem
-                          key={size.value}
-                          onClick={() => updateBlock(sectionIndex, block.id, { fontSize: size.value as any })}
-                          className={cn(block.fontSize === size.value && "bg-accent")}
-                        >
-                          <span className={`text-${size.value}`}>{size.name}</span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Cor do texto */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 gap-1 px-2">
-                        <Palette className="h-3.5 w-3.5" />
-                        <span className="text-xs">Cor</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="p-2">
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {TEXT_COLORS.map((color) => (
-                          <TooltipProvider key={color.value}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => updateBlock(sectionIndex, block.id, { textColor: color.value })}
-                                  className={cn(
-                                    "w-7 h-7 rounded-md border-2 transition-all hover:scale-110",
-                                    block.textColor === color.value ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-muted-foreground/30",
-                                    color.value === "" && "bg-gradient-to-br from-foreground to-muted-foreground",
-                                    color.value === "text-black" && "bg-black",
-                                    color.value === "text-gray-600" && "bg-gray-600",
-                                    color.value === "text-red-600" && "bg-red-600",
-                                    color.value === "text-orange-600" && "bg-orange-600",
-                                    color.value === "text-yellow-600" && "bg-yellow-600",
-                                    color.value === "text-green-600" && "bg-green-600",
-                                    color.value === "text-blue-600" && "bg-blue-600",
-                                    color.value === "text-purple-600" && "bg-purple-600",
-                                    color.value === "text-pink-600" && "bg-pink-600"
-                                  )}
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="text-xs">
-                                {color.name}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ))}
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Expandir para uma tela maior, mais confortável pra formatar textos longos */}
-                  {(block.type === "text" || block.type === "quote") && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 px-2"
-                            onClick={() => setExpandedBlock({ sectionIndex, blockId: block.id })}
-                          >
-                            <Maximize2 className="h-3.5 w-3.5" />
-                            <span className="text-xs">Expandir</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar em tela maior</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-
-                  {/* Botão de IA sempre visível */}
-                  {showAIButton && (block.type === "text" || block.type === "quote") && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 px-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:border-purple-500/50"
-                            onClick={() => handleAIRewrite(sectionIndex, block.id, block.content)}
-                            disabled={rewritingBlockId === block.id || !block.content.trim()}
-                          >
-                            {rewritingBlockId === block.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
-                            )}
-                            <span className="text-xs">Reescrever com IA</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Reescrever texto usando inteligência artificial</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </>
-              )}
             </div>
 
             {/* Block content */}
@@ -1522,92 +1286,188 @@ export function ModernTrainingEditor({
     );
   };
 
+  const activeSectionData = formData.sections[activeSection];
+  const activeBlockIndex = activeSectionData ? activeSectionData.blocks.findIndex((b) => b.id === activeBlockId) : -1;
+  const activeBlock = activeBlockIndex >= 0 ? activeSectionData.blocks[activeBlockIndex] : null;
+  const isTextLike = !!activeBlock && (activeBlock.type === "text" || activeBlock.type === "quote");
+  const blockStyle = !activeBlock
+    ? ""
+    : activeBlock.type === "text"
+    ? "p"
+    : activeBlock.type === "quote"
+    ? "quote"
+    : activeBlock.type === "heading"
+    ? (activeBlock.level === 3 ? "h3" : "h2")
+    : "";
+
+  const changeBlockStyle = (style: string) => {
+    if (!activeBlock) return;
+    const plain = (t: string) => t.replace(/\*\*|\*/g, "").replace(/\s*\n+\s*/g, " ").trim();
+    if (style === "p") updateBlock(activeSection, activeBlock.id, { type: "text" });
+    if (style === "quote") updateBlock(activeSection, activeBlock.id, { type: "quote" });
+    if (style === "h2" || style === "h3") {
+      updateBlock(activeSection, activeBlock.id, {
+        type: "heading",
+        level: style === "h3" ? 3 : 2,
+        content: activeBlock.type === "heading" ? activeBlock.content : plain(activeBlock.content),
+      });
+    }
+  };
+
+  // Negrito/itálico agem sobre o texto selecionado no bloco ativo
+  const applyInline = (command: "bold" | "italic") => {
+    document.execCommand(command);
+  };
+
+  const insertBlock = (type: ContentBlock["type"]) => {
+    addBlock(activeSection, type, activeBlockIndex >= 0 ? activeBlockIndex : undefined);
+  };
+
+  const ToolbarButton = ({
+    label,
+    onClick,
+    disabled,
+    active,
+    children,
+    keepFocus,
+  }: {
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+    active?: boolean;
+    children: ReactNode;
+    keepFocus?: boolean;
+  }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          disabled={disabled}
+          onMouseDown={(e) => keepFocus && e.preventDefault()}
+          onClick={onClick}
+          className={cn(
+            "grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors",
+            "hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
+            active && "bg-foreground text-background hover:bg-foreground hover:text-background"
+          )}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
+
+  const ToolbarDivider = () => <span className="mx-1 h-5 w-px shrink-0 bg-border" />;
+
+  const displaySectionTitle = (title: string) => title.replace(/^Seção\s+\d+\s*:\s*/i, "") || "Sem título";
+
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
-      {/* Top toolbar */}
-      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 gap-2">
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-          <Button variant="ghost" size="icon" onClick={onCancel} className="shrink-0 h-8 w-8 sm:h-9 sm:w-9">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <Input
-              value={formData.titulo}
-              onChange={(e) => setFormData((prev) => ({ ...prev, titulo: e.target.value }))}
-              placeholder="Título do treinamento"
-              className="text-base sm:text-xl font-semibold border-none shadow-none focus-visible:ring-0 h-auto p-0 bg-transparent w-full"
-            />
-            <p className="text-[10px] sm:text-xs text-muted-foreground">
-              {formData.sections.length} seção(ões) • {formData.sections.reduce((acc, s) => acc + s.blocks.length, 0)} bloco(s)
-            </p>
-          </div>
+    <TooltipProvider delayDuration={300}>
+    <div className="h-screen flex flex-col bg-background">
+      {/* Cabeçalho */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-2 sm:gap-3 sm:px-4">
+        <Button variant="ghost" size="icon" onClick={onCancel} className="h-9 w-9 shrink-0" aria-label="Voltar">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="min-w-0 flex-1 lg:max-w-[440px]">
+          <Input
+            value={formData.titulo}
+            onChange={(e) => setFormData((prev) => ({ ...prev, titulo: e.target.value }))}
+            placeholder="Título do treinamento"
+            aria-label="Título do treinamento"
+            className="h-auto w-full truncate border-none bg-transparent p-0 text-sm font-semibold shadow-none focus-visible:ring-0 md:text-[15px]"
+          />
+          <p className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground sm:text-xs">
+            {isDirty ? (
+              <>
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                Alterações não salvas
+              </>
+            ) : (
+              <>
+                <CircleCheck className="h-3 w-3 shrink-0 text-emerald-600" />
+                Nenhuma alteração pendente
+              </>
+            )}
+            <span className="hidden sm:inline">· {formData.sections.length} {formData.sections.length === 1 ? "seção" : "seções"}</span>
+          </p>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        {headerCenter && <div className="hidden flex-1 justify-center md:flex">{headerCenter}</div>}
+
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Select
             value={formData.status}
             onValueChange={(value: "ativo" | "inativo" | "rascunho") =>
               setFormData((prev) => ({ ...prev, status: value }))
             }
           >
-            <SelectTrigger className="w-24 sm:w-32 h-8 text-xs sm:text-sm">
+            <SelectTrigger className="h-9 w-[104px] text-xs sm:w-[124px] sm:text-sm" aria-label="Situação">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="rascunho">Rascunho</SelectItem>
-              <SelectItem value="ativo">Ativo</SelectItem>
+              <SelectItem value="ativo">Publicado</SelectItem>
               <SelectItem value="inativo">Inativo</SelectItem>
             </SelectContent>
           </Select>
 
-          <TooltipProvider>
+          <Button variant="outline" className="hidden h-9 sm:inline-flex" onClick={() => setShowPreview(true)}>
+            <Eye className="h-4 w-4 lg:mr-2" />
+            <span className="hidden lg:inline">Pré-visualizar</span>
+          </Button>
+
+          {!bodyOverride && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowSidebar(!showSidebar)}>
-                  <PanelLeft className="h-4 w-4" />
+                <Button
+                  variant={showSettings ? "secondary" : "outline"}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setShowSettings((v) => !v)}
+                  aria-label="Detalhes do treinamento"
+                >
+                  <Settings className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{showSidebar ? "Ocultar" : "Mostrar"} painel</TooltipContent>
+              <TooltipContent>Detalhes do treinamento</TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          )}
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 hidden sm:flex" onClick={() => setShowPreview(true)}>
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Visualizar</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <Button onClick={() => onSave(formData)} size="sm" className="h-8 text-xs sm:text-sm">
+          <Button onClick={() => onSave(formData)} className="h-9">
             <Save className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Salvar</span>
           </Button>
         </div>
-      </div>
+      </header>
+      {headerCenter && <div className="flex justify-center border-b bg-card px-3 py-2 md:hidden">{headerCenter}</div>}
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left sidebar - Section navigation */}
+      {bodyOverride ? (
+        <div className="flex-1 overflow-y-auto bg-muted/30">
+          <div className="mx-auto w-full max-w-5xl p-3 sm:p-6">{bodyOverride}</div>
+        </div>
+      ) : (
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Seções */}
         {showSidebar && (
-          <div className="absolute inset-0 z-30 sm:relative sm:inset-auto w-full sm:w-72 border-r bg-background sm:bg-muted/20 flex flex-col">
-            <div className="p-4 border-b">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Layers className="h-4 w-4" />
-                  Seções
-                </h3>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={addSection}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:hidden" onClick={() => setShowSidebar(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+          <aside className="absolute inset-0 z-30 flex w-full flex-col border-r bg-card sm:relative sm:inset-auto sm:w-64">
+            <div className="flex items-center justify-between px-4 pb-2 pt-4">
+              <h3 className="text-sm font-semibold">Seções</h3>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={addSection} aria-label="Nova seção">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Nova seção</TooltipContent>
+                </Tooltip>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowSidebar(false)} aria-label="Ocultar seções">
+                  <X className="h-4 w-4 sm:hidden" />
+                  <PanelLeft className="hidden h-4 w-4 sm:block" />
+                </Button>
               </div>
             </div>
 
@@ -1615,7 +1475,7 @@ export function ModernTrainingEditor({
               <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="sections" type="section">
                   {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="p-2 space-y-1">
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-0.5 px-2 pb-4">
                       {formData.sections.map((section, index) => (
                         <Draggable key={section.id} draggableId={section.id} index={index}>
                           {(provided, snapshot) => (
@@ -1623,37 +1483,40 @@ export function ModernTrainingEditor({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               className={cn(
-                                "group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors",
+                                "group flex cursor-pointer items-center gap-1.5 rounded-lg py-2 pl-1 pr-1.5 text-sm transition-colors",
                                 activeSection === index
-                                  ? "bg-primary/10 border border-primary/30"
-                                  : "hover:bg-muted",
-                                snapshot.isDragging && "shadow-lg bg-background"
+                                  ? "bg-primary/10 font-medium text-primary"
+                                  : "text-foreground/80 hover:bg-muted",
+                                snapshot.isDragging && "bg-card shadow-lg"
                               )}
-                              onClick={() => { setActiveSection(index); if (window.innerWidth < 640) setShowSidebar(false); }}
+                              onClick={() => {
+                                setActiveSection(index);
+                                setActiveBlockId(null);
+                                if (window.innerWidth < 640) setShowSidebar(false);
+                              }}
                             >
-                              <div {...provided.dragHandleProps} className="cursor-grab">
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              <div {...provided.dragHandleProps} className="cursor-grab px-0.5 text-muted-foreground/40 group-hover:text-muted-foreground" aria-label="Arrastar seção">
+                                <GripVertical className="h-3.5 w-3.5" />
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{section.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {section.blocks.length} bloco(s)
-                                </p>
-                              </div>
+                              <span className={cn("w-5 shrink-0 text-xs tabular-nums", activeSection === index ? "text-primary" : "text-muted-foreground")}>
+                                {index + 1}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{displaySectionTitle(section.title)}</span>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                    className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
                                     onClick={(e) => e.stopPropagation()}
+                                    aria-label="Ações da seção"
                                   >
-                                    <MoreVertical className="h-3 w-3" />
+                                    <MoreVertical className="h-3.5 w-3.5" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => duplicateSection(index)}>
-                                    <Copy className="h-4 w-4 mr-2" />
+                                    <Copy className="mr-2 h-4 w-4" />
                                     Duplicar
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
@@ -1662,7 +1525,7 @@ export function ModernTrainingEditor({
                                     onClick={() => deleteSection(index)}
                                     disabled={formData.sections.length === 1}
                                   >
-                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    <Trash2 className="mr-2 h-4 w-4" />
                                     Excluir
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -1677,23 +1540,236 @@ export function ModernTrainingEditor({
                 </Droppable>
               </DragDropContext>
             </ScrollArea>
+          </aside>
+        )}
 
-            {/* Settings panel */}
-            <Collapsible defaultOpen>
-            <div className="border-t p-4 space-y-4">
-              <CollapsibleTrigger className="w-full flex items-center justify-between">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Configurações
-                </h3>
-                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform data-[state=open]:rotate-180" />
-              </CollapsibleTrigger>
+        {/* Área de edição */}
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/30">
+          <div className="flex-1 overflow-y-auto">
+            {/* Barra de ferramentas única */}
+            <div className="sticky top-0 z-20 flex justify-center px-2 pt-3 sm:px-4 sm:pt-4">
+              <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-xl border bg-card/95 p-1 shadow-sm backdrop-blur">
+                {!showSidebar && (
+                  <>
+                    <ToolbarButton label="Mostrar seções" onClick={() => setShowSidebar(true)}>
+                      <PanelLeft className="h-4 w-4" />
+                    </ToolbarButton>
+                    <ToolbarDivider />
+                  </>
+                )}
+                <Select value={blockStyle} onValueChange={changeBlockStyle} disabled={!activeBlock || !blockStyle}>
+                  <SelectTrigger className="h-8 w-[118px] shrink-0 border-none bg-transparent text-xs shadow-none focus:ring-0" aria-label="Estilo do bloco">
+                    <SelectValue placeholder="Estilo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="p">Parágrafo</SelectItem>
+                    <SelectItem value="h2">Título</SelectItem>
+                    <SelectItem value="h3">Subtítulo</SelectItem>
+                    <SelectItem value="quote">Citação</SelectItem>
+                  </SelectContent>
+                </Select>
+                <ToolbarDivider />
+                <ToolbarButton label="Negrito (Ctrl+B)" keepFocus disabled={!isTextLike} onClick={() => applyInline("bold")}>
+                  <Bold className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton label="Itálico (Ctrl+I)" keepFocus disabled={!isTextLike} onClick={() => applyInline("italic")}>
+                  <Italic className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarDivider />
+                {([
+                  ["left", AlignLeft, "Alinhar à esquerda"],
+                  ["center", AlignCenter, "Centralizar"],
+                  ["right", AlignRight, "Alinhar à direita"],
+                  ["justify", AlignJustify, "Justificar"],
+                ] as const).map(([value, Icon, label]) => (
+                  <ToolbarButton
+                    key={value}
+                    label={label}
+                    keepFocus
+                    disabled={!isTextLike}
+                    active={isTextLike && (activeBlock?.align || "left") === value}
+                    onClick={() => activeBlock && updateBlock(activeSection, activeBlock.id, { align: value })}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </ToolbarButton>
+                ))}
+                <ToolbarDivider />
+                <ToolbarButton label="Lista com marcadores" onClick={() => insertBlock("list")}>
+                  <List className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton label="Lista numerada" onClick={() => insertBlock("numbered-list")}>
+                  <ListOrdered className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton label="Imagem" onClick={() => insertBlock("image")}>
+                  <ImagePlus className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton label="Vídeo" onClick={() => insertBlock("video")}>
+                  <Video className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton label="Tabela" onClick={() => insertBlock("table")}>
+                  <Table2 className="h-4 w-4" />
+                </ToolbarButton>
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <button type="button" aria-label="Inserir bloco" className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Inserir bloco</TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => insertBlock("text")}>
+                      <Type className="mr-2 h-4 w-4" /> Parágrafo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => insertBlock("heading")}>
+                      <Heading2 className="mr-2 h-4 w-4" /> Título
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => insertBlock("quote")}>
+                      <Quote className="mr-2 h-4 w-4" /> Citação
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => insertBlock("checklist")}>
+                      <CheckSquare className="mr-2 h-4 w-4" /> Checklist
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => insertBlock("divider")}>
+                      <Minus className="mr-2 h-4 w-4" /> Divisor
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {showAIButton && (
+                  <>
+                    <ToolbarDivider />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={!isTextLike || !activeBlock?.content.trim() || rewritingBlockId === activeBlock?.id}
+                          onClick={() => activeBlock && handleAIRewrite(activeSection, activeBlock.id, activeBlock.content)}
+                          className="flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-40"
+                        >
+                          {rewritingBlockId && rewritingBlockId === activeBlock?.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          IA
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Reescrever o bloco com IA</TooltipContent>
+                    </Tooltip>
+                  </>
+                )}
+                <ToolbarButton
+                  label="Editar em tela maior"
+                  disabled={!isTextLike}
+                  onClick={() => activeBlock && setExpandedBlock({ sectionIndex: activeSection, blockId: activeBlock.id })}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </ToolbarButton>
+              </div>
+            </div>
 
-              <CollapsibleContent className="space-y-3">
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="mx-auto w-full max-w-3xl px-2 pb-16 pt-3 sm:px-6 sm:pt-4">
+                <div className="rounded-xl border bg-card px-4 py-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:px-14 sm:py-10">
+                  {!/^Seção\s+\d/i.test(activeSectionData?.title || "") && (
+                    <div className="mb-1 text-xs font-semibold text-primary">Seção {activeSection + 1}</div>
+                  )}
+                  <Input
+                    value={activeSectionData?.title || ""}
+                    onChange={(e) => updateSectionTitle(activeSection, e.target.value)}
+                    onFocus={() => setActiveBlockId(null)}
+                    placeholder="Nome da seção"
+                    aria-label="Nome da seção"
+                    className="mb-5 h-auto border-none bg-transparent p-0 text-xl font-semibold tracking-tight shadow-none focus-visible:ring-0 md:text-[28px]"
+                  />
+                  <Droppable droppableId={`section-${activeSection}`} type="block">
+                    {(provided) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="min-h-[240px]">
+                        {activeSectionData?.blocks.map((block, blockIndex) =>
+                          renderBlock(block, activeSection, blockIndex)
+                        )}
+                        {provided.placeholder}
+
+                        {activeSectionData?.blocks.length === 0 && (
+                          <div className="py-10 text-center text-muted-foreground">
+                            <FileText className="mx-auto mb-3 h-10 w-10 opacity-40" />
+                            <p className="text-sm">Esta seção está vazia</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                  <button
+                    type="button"
+                    onClick={() => addBlock(activeSection, "text")}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                  >
+                    <Plus className="h-4 w-4" /> Adicionar parágrafo
+                  </button>
+                </div>
+
+                {/* Navegação entre seções */}
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={activeSection === 0}
+                    onClick={() => { setActiveSection(activeSection - 1); setActiveBlockId(null); }}
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    <span className="hidden sm:inline">Seção anterior</span>
+                  </Button>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {activeSection + 1} de {formData.sections.length}
+                  </span>
+                  {activeSection === formData.sections.length - 1 ? (
+                    <Button variant="ghost" size="sm" onClick={addSection}>
+                      <Plus className="mr-1 h-4 w-4" />
+                      Nova seção
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setActiveSection(activeSection + 1); setActiveBlockId(null); }}
+                    >
+                      <span className="hidden sm:inline">Próxima seção</span>
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </DragDropContext>
+          </div>
+        </main>
+
+        {/* Detalhes do treinamento */}
+        {showSettings && (
+          <aside className="absolute inset-y-0 right-0 z-30 flex w-full flex-col border-l bg-card shadow-xl sm:w-80 xl:relative xl:z-auto xl:shadow-none">
+            <div className="flex items-center justify-between px-5 pb-2 pt-4">
+              <h3 className="text-sm font-semibold">Detalhes do treinamento</h3>
+              <Button variant="ghost" size="icon" className="h-7 w-7 xl:hidden" onClick={() => setShowSettings(false)} aria-label="Fechar">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-6 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
+                  <Textarea
+                    value={formData.descricao}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
+                    placeholder="Resumo exibido no catálogo"
+                    className="min-h-[72px] resize-none text-sm"
+                    maxLength={500}
+                  />
+                </div>
                 {/* Seleção de empresa para master */}
                 {user?.role === "master" && (
                   <div className="space-y-2">
-                    <Label className="text-xs flex items-center gap-1">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                       <Building2 className="h-3 w-3" />
                       Empresa
                     </Label>
@@ -1708,7 +1784,7 @@ export function ModernTrainingEditor({
                         }));
                       }}
                     >
-                      <SelectTrigger className="h-8 text-sm">
+                      <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Selecione a empresa" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1723,12 +1799,12 @@ export function ModernTrainingEditor({
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Categoria</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
                   <Select
                     value={formData.categoria}
                     onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria: value }))}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1753,12 +1829,12 @@ export function ModernTrainingEditor({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Nível</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Nível</Label>
                   <Select
                     value={formData.nivel || "basico"}
                     onValueChange={(value) => setFormData((prev) => ({ ...prev, nivel: value }))}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1770,7 +1846,7 @@ export function ModernTrainingEditor({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Departamento</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Departamento</Label>
                   <Select
                     value={formData.departamento_id || formData.departamento}
                     onValueChange={(value) => {
@@ -1782,7 +1858,7 @@ export function ModernTrainingEditor({
                       }
                     }}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1801,7 +1877,7 @@ export function ModernTrainingEditor({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Duração estimada</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Duração estimada</Label>
                   <div className="relative">
                     <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
@@ -1817,20 +1893,20 @@ export function ModernTrainingEditor({
                       }}
                       placeholder="00:00"
                       maxLength={5}
-                      className="h-8 text-sm pl-7"
+                      className="h-9 text-sm pl-7"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Capa do treinamento</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Capa do treinamento</Label>
                   <div className="relative">
                     {formData.capa ? (
                       <div className="relative group">
                         <img
                           src={formData.capa}
                           alt="Capa"
-                          className="w-full h-24 object-cover rounded-lg"
+                          className="w-full aspect-[16/8] object-cover rounded-lg"
                         />
                         <Button
                           variant="destructive"
@@ -1857,7 +1933,7 @@ export function ModernTrainingEditor({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Instrutor</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Instrutor</Label>
                   <Select
                     value={formData.instrutor_id || ""}
                     onValueChange={(value) => {
@@ -1865,7 +1941,7 @@ export function ModernTrainingEditor({
                       setFormData((prev) => ({ ...prev, instrutor_id: value, instrutor: perfil?.nome || "" }));
                     }}
                   >
-                    <SelectTrigger className="h-8 text-sm">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecione o instrutor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1877,160 +1953,11 @@ export function ModernTrainingEditor({
                     </SelectContent>
                   </Select>
                 </div>
-              </CollapsibleContent>
             </div>
-            </Collapsible>
-          </div>
+          </aside>
         )}
-
-        {/* Main editor area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Section header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-6 py-2 sm:py-3 border-b bg-muted/20 gap-2">
-            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 sm:h-9 sm:w-9 shrink-0"
-                disabled={activeSection === 0}
-                onClick={() => setActiveSection(activeSection - 1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-                <span className="text-xs sm:text-sm text-muted-foreground font-medium whitespace-nowrap">
-                  Seção {activeSection + 1}
-                </span>
-                <span className="text-muted-foreground hidden sm:inline">•</span>
-                <Input
-                  value={formData.sections[activeSection]?.title || ""}
-                  onChange={(e) => updateSectionTitle(activeSection, e.target.value)}
-                  className="border-none shadow-none focus-visible:ring-0 font-medium text-sm sm:text-lg h-auto p-0 bg-transparent max-w-[120px] sm:max-w-[300px]"
-                  placeholder="Nome da seção"
-                />
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 sm:h-9 sm:w-9 shrink-0"
-                disabled={activeSection === formData.sections.length - 1}
-                onClick={() => setActiveSection(activeSection + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs sm:text-sm w-full sm:w-auto">
-                    <Plus className="h-4 w-4 mr-1 sm:mr-2" />
-                    <span className="sm:inline">Adicionar bloco</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "text")}>
-                    <Type className="h-4 w-4 mr-2" /> Texto
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "heading")}>
-                    <Heading2 className="h-4 w-4 mr-2" /> Título
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "image")}>
-                    <ImageIcon className="h-4 w-4 mr-2" /> Imagem
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "video")}>
-                    <Video className="h-4 w-4 mr-2" /> Vídeo
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "quote")}>
-                    <Quote className="h-4 w-4 mr-2" /> Citação
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "list")}>
-                    <List className="h-4 w-4 mr-2" /> Marcadores
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "numbered-list")}>
-                    <ListOrdered className="h-4 w-4 mr-2" /> Numeração
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "checklist")}>
-                    <CheckSquare className="h-4 w-4 mr-2" /> Checklist
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addBlock(activeSection, "divider")}>
-                    <Minus className="h-4 w-4 mr-2" /> Divisor
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Editor content */}
-          <ScrollArea className="flex-1">
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="max-w-3xl mx-auto py-4 sm:py-8 px-3 sm:px-12">
-                <Droppable droppableId={`section-${activeSection}`} type="block">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="min-h-[300px] sm:min-h-[500px]">
-                      {formData.sections[activeSection]?.blocks.map((block, blockIndex) =>
-                        renderBlock(block, activeSection, blockIndex)
-                      )}
-                      {provided.placeholder}
-
-                      {/* Empty state */}
-                      {formData.sections[activeSection]?.blocks.length === 0 && (
-                        <div className="text-center py-8 sm:py-12 text-muted-foreground">
-                          <FileText className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50" />
-                          <p className="text-sm sm:text-base">Esta seção está vazia</p>
-                          <p className="text-xs sm:text-sm">Clique em "Adicionar bloco" para começar</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            </DragDropContext>
-          </ScrollArea>
-
-          {/* Bottom navigation */}
-          <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3 border-t bg-muted/20">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={activeSection === 0}
-              onClick={() => setActiveSection(activeSection - 1)}
-              className="h-8 text-xs sm:text-sm"
-            >
-              <ChevronLeft className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Seção anterior</span>
-            </Button>
-
-            <div className="flex items-center gap-1">
-              {formData.sections.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveSection(index)}
-                  className={cn(
-                    "w-2 h-2 rounded-full transition-colors",
-                    activeSection === index ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                  )}
-                />
-              ))}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={activeSection === formData.sections.length - 1}
-              onClick={() => setActiveSection(activeSection + 1)}
-              className="h-8 text-xs sm:text-sm"
-            >
-              <span className="hidden sm:inline">Próxima seção</span>
-              <ChevronRight className="h-4 w-4 sm:ml-2" />
-            </Button>
-          </div>
-        </div>
       </div>
+      )}
 
       {/* Hidden file input - aceita todos tipos de imagem */}
       <input
@@ -2061,24 +1988,21 @@ export function ModernTrainingEditor({
             <DialogContent className="max-w-5xl w-[95vw] h-[85vh] flex flex-col p-0 gap-0">
               <DialogHeader className="p-4 border-b shrink-0">
                 <DialogTitle>Editar conteúdo em tela maior</DialogTitle>
+                <DialogDescription>Selecione um trecho e use Ctrl+B para negrito ou Ctrl+I para itálico.</DialogDescription>
               </DialogHeader>
               <div className="flex-1 overflow-hidden p-4">
-                <Textarea
-                  autoFocus
-                  value={block.content}
-                  onChange={(e) =>
-                    updateBlock(expandedBlock.sectionIndex, expandedBlock.blockId, { content: e.target.value })
-                  }
-                  placeholder="Comece a digitar seu conteúdo aqui..."
-                  className={cn(
-                    "h-full resize-none text-base leading-relaxed",
-                    alignClass,
-                    block.textColor,
-                    block.isBold && "font-bold",
-                    block.isItalic && "italic",
-                    block.isUnderline && "underline"
-                  )}
-                />
+                <div className="h-full overflow-y-auto rounded-lg border bg-card px-6 py-5">
+                  <InlineRichText
+                    autoFocus
+                    value={block.content}
+                    onChange={(content) =>
+                      updateBlock(expandedBlock.sectionIndex, expandedBlock.blockId, { content })
+                    }
+                    placeholder="Comece a digitar seu conteúdo aqui..."
+                    ariaLabel="Texto em tela maior"
+                    className={cn("mx-auto max-w-3xl text-[17px] leading-[1.85]", alignClass)}
+                  />
+                </div>
               </div>
               <DialogFooter className="p-4 border-t shrink-0">
                 <Button onClick={() => setExpandedBlock(null)}>Concluído</Button>
@@ -2088,5 +2012,6 @@ export function ModernTrainingEditor({
         );
       })()}
     </div>
+    </TooltipProvider>
   );
 }

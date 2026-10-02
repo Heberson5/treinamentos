@@ -27,7 +27,7 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
   const { pathname } = useLocation();
   // Telas de foco (estudo do treinamento e editor) ocupam a tela inteira,
   // sem menu lateral nem cabeçalho — mas os hooks acima continuam ativos.
-  const focusMode = /^\/executar-treinamento\//.test(pathname);
+  const focusMode = /^\/(executar-treinamento\/|admin\/treinamentos\/(novo|editar\/))/.test(pathname);
 
   if (focusMode) {
     return (
