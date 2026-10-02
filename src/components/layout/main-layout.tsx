@@ -1,4 +1,5 @@
 import { ReactNode } from "react"
+import { useLocation } from "react-router-dom"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { Header } from "@/components/layout/header"
@@ -23,6 +24,22 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
   // Registra o usuário atual no canal de presença global
   useOnlineUsers();
   const isMobile = useIsMobile();
+  const { pathname } = useLocation();
+  // Telas de foco (estudo do treinamento e editor) ocupam a tela inteira,
+  // sem menu lateral nem cabeçalho — mas os hooks acima continuam ativos.
+  const focusMode = /^\/executar-treinamento\//.test(pathname);
+
+  if (focusMode) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen w-full bg-background pt-[env(safe-area-inset-top)]">
+          {children}
+          <PWAInstallPrompt />
+          <PopupDisplay />
+        </div>
+      </SidebarProvider>
+    );
+  }
 
 
   return (

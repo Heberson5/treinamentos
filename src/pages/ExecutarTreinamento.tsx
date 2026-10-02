@@ -6,16 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, 
+  ArrowRight,
   Clock, 
   Play, 
   Pause, 
+  Check,
   CheckCircle2,
   AlertTriangle,
   Eye,
   EyeOff,
   Award,
+  Lock,
   Star
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { useActiveTimer } from "@/hooks/use-active-timer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
@@ -81,6 +86,9 @@ export default function ExecutarTreinamento() {
   const studyStartRef = useRef<number>(Date.now());
   const prevVisibleRef = useRef<boolean>(true);
 
+  // Leitura por seção: índice atual e seções já abertas (marcadas no índice)
+  const [currentSection, setCurrentSection] = useState(0);
+  const [visitedSections, setVisitedSections] = useState<Set<number>>(() => new Set([0]));
   const targetDuration = training?.duracao_minutos || 60;
   const minimumTimeRequired = Math.ceil(targetDuration * 0.5); // 50% do tempo
 
@@ -1870,198 +1878,250 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
 
   // Usa conteúdo do banco de dados primeiro, depois fallback para hardcoded
   const content = training.conteudo_completo || getTrainingContent(training.titulo);
-  const progressPercent = Math.min(Math.round((timer.activeTime / (targetDuration * 60)) * 100), 100);
-  const minimumTimeReachedPercent = Math.min(Math.round((timer.activeTime / (minimumTimeRequired * 60)) * 100), 100);
+  const sections = splitSections(content);
+  const totalSections = sections.length;
+  const current = Math.min(currentSection, Math.max(0, totalSections - 1));
+  const section = sections[current];
+  const isLastSection = current >= totalSections - 1;
+  const minSeconds = minimumTimeRequired * 60;
+  const minRemaining = Math.max(0, Math.ceil((minSeconds - timer.activeTime) / 60));
+  const minProgress = Math.min(1, timer.activeTime / minSeconds);
+  const visitedCount = [...visitedSections].filter((i) => i !== current && i < totalSections).length;
+  const precisaAvaliacao = hasQuiz && !quizApproved;
+
+  const goToSection = (index: number) => {
+    setCurrentSection(index);
+    setVisitedSections((prev) => new Set(prev).add(index));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const acaoPrincipal = precisaAvaliacao ? (
+    canComplete ? (
+      <Button onClick={() => setShowExamWarning(true)} className="gap-2">
+        <Award className="h-4 w-4" />
+        <span className="hidden sm:inline">Iniciar avaliação</span>
+        <span className="sm:hidden">Avaliação</span>
+      </Button>
+    ) : (
+      <Button variant="secondary" disabled className="gap-2" title={`Libera após ${minimumTimeRequired} min de estudo`}>
+        <Lock className="h-4 w-4" />
+        <span className="hidden sm:inline">Avaliação</span>
+      </Button>
+    )
+  ) : (
+    <Button onClick={handleComplete} disabled={!canComplete} className="gap-2">
+      <Award className="h-4 w-4" />
+      Concluir
+    </Button>
+  );
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header com controles */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
+    <div className="min-h-screen bg-background">
+      {/* Barra superior fixa: título, cronômetro compacto e ação principal */}
+      <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1.5 px-2.5 text-muted-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Voltar
+            <span className="hidden sm:inline">Voltar</span>
           </Button>
-          <h1 className="text-xl md:text-2xl font-bold">{training.titulo}</h1>
-        </div>
+          <div className="hidden h-6 w-px bg-border sm:block" />
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-sm font-semibold sm:text-[15px]">{training.titulo}</h1>
+            <p className="truncate text-xs text-muted-foreground">
+              {examMode ? "Avaliação em andamento" : totalSections > 1 ? `Seção ${current + 1} de ${totalSections}` : training.categoria || "Treinamento"}
+            </p>
+          </div>
 
-        {/* Cronômetro: exibido apenas na tela de treinamento, não na avaliação */}
-        {!examMode && (
-          <div className="flex items-center gap-3">
-            <Badge
-              variant={timer.isPageVisible ? "default" : "secondary"}
-              className="gap-2"
+          {/* Cronômetro: exibido apenas na tela de treinamento, não na avaliação */}
+          {!examMode && (
+            <div
+              className={cn(
+                "flex h-10 items-center gap-2.5 rounded-full border pl-1.5 pr-2 sm:pr-3.5",
+                timer.isPageVisible ? "bg-muted/40" : "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
+              )}
+              title={`Tempo ativo de estudo (meta ${timer.formattedTargetTime}). Mínimo para ${precisaAvaliacao ? "liberar a avaliação" : "concluir"}: ${minimumTimeRequired} min.`}
             >
-              {timer.isPageVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-              {timer.isPageVisible ? "Ativo" : "Pausado"}
-            </Badge>
-
-            <Badge variant="outline" className="gap-2 text-sm">
-              <Clock className="h-3 w-3" />
-              {timer.formattedActiveTime} / {timer.formattedTargetTime}
-            </Badge>
+              <ProgressRing value={minProgress} done={canComplete} />
+              <div className="leading-tight">
+                <div className="text-[13px] font-semibold tabular-nums">{timer.formattedActiveTime}</div>
+                <div className="hidden text-[11px] text-muted-foreground sm:block">
+                  {!timer.isPageVisible ? "pausado" : canComplete ? "tempo mínimo atingido" : `mín. ${minimumTimeRequired} min`}
+                </div>
+              </div>
+            </div>
+          )}
+          {!examMode && acaoPrincipal}
+        </div>
+        {!examMode && totalSections > 1 && (
+          <div className="h-0.5 bg-muted">
+            <div className="h-full bg-primary transition-all duration-300" style={{ width: `${((current + 1) / totalSections) * 100}%` }} />
           </div>
         )}
-      </div>
+      </header>
 
-      {/* Modo Avaliação: mostra somente o quiz */}
-      {examMode && id && hasQuiz && !quizApproved ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Avaliação em andamento
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Permaneça nesta tela até finalizar. Sair, trocar de aba ou fechar o navegador irá reiniciar a avaliação.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <QuizViewer
-              key={examKey}
-              treinamentoId={id}
-              notaMinima={7}
-              tempoEstudoSegundos={timer.activeTime}
-              onTentativaFinalizada={handleExamFinalizada}
-              onAprovado={() => {
-                setQuizApproved(true);
-                if (examStorageKey) localStorage.removeItem(examStorageKey);
-              }}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Card de progresso do tempo */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Tempo de Estudo
-                </CardTitle>
-                {!timer.isPageVisible && (
-                  <Badge variant="destructive" className="gap-1">
-                    <Pause className="h-3 w-3" />
-                    Timer pausado - volte para esta aba
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progresso do tempo</span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <Progress value={progressPercent} className="h-3" />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center gap-1">
-                    Tempo mínimo obrigatório (50% = {minimumTimeRequired} min)
-                    {canComplete && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                  </span>
-                  <span>{minimumTimeReachedPercent}%</span>
-                </div>
-                <Progress
-                  value={minimumTimeReachedPercent}
-                  className={`h-2 ${canComplete ? '[&>div]:bg-green-500' : '[&>div]:bg-amber-500'}`}
-                />
-              </div>
-
-              <div className={`p-3 rounded-lg text-sm ${
-                canComplete
-                  ? 'bg-green-500/10 text-green-700 dark:text-green-400'
-                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
-              }`}>
-                {canComplete ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>Você atingiu o tempo mínimo! Pode concluir o treinamento quando quiser.</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>
-                      Permaneça pelo menos {minimumTimeRequired} minutos para poder concluir.
-                      Faltam {Math.max(0, Math.ceil((minimumTimeRequired * 60 - timer.activeTime) / 60))} minutos.
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                ⚠️ Se você fechar esta página, o tempo será reiniciado.
-                Alternar entre abas apenas pausa o contador.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Conteúdo do treinamento */}
-          <Card>
-            <CardContent className="p-6 md:p-8">
-              <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
-                {renderFormattedContent(content)}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Iniciar Avaliação (após tempo mínimo) */}
-          {id && hasQuiz && !quizApproved && canComplete && (
-            <Card className="sticky bottom-4 mb-4">
-              <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-muted-foreground">
-                  Você atingiu o tempo mínimo. Quando iniciar a avaliação, o conteúdo será ocultado.
-                </div>
-                <Button size="lg" className="gap-2 w-full md:w-auto" onClick={() => setShowExamWarning(true)}>
-                  <Award className="h-5 w-5" />
-                  Iniciar Avaliação
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Botão de conclusão - sem quiz ou já aprovado */}
-          {(!hasQuiz || quizApproved) && (
-            <Card className="sticky bottom-4">
-              <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="text-sm text-muted-foreground">
-                    {canComplete ? (
-                      <span className="text-green-600 dark:text-green-400 font-medium">
-                        ✓ Pronto para concluir!
-                      </span>
-                    ) : (
-                      <span>
-                        Complete pelo menos {minimumTimeRequired} minutos de estudo para concluir.
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    size="lg"
-                    onClick={handleComplete}
-                    disabled={!canComplete}
-                    className="gap-2 w-full md:w-auto"
-                  >
-                    <Award className="h-5 w-5" />
-                    Concluir Treinamento
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {hasQuiz && !quizApproved && !canComplete && (
-            <Card className="sticky bottom-4">
-              <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                Complete pelo menos {minimumTimeRequired} minutos de estudo para liberar a avaliação.
-              </CardContent>
-            </Card>
-          )}
-        </>
+      {!examMode && !timer.isPageVisible && (
+        <div className="flex items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[13px] font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          <Pause className="h-3.5 w-3.5" />
+          Contador pausado — volte para esta tela para continuar contando o tempo.
+        </div>
       )}
+
+      <div className="flex">
+        {/* Índice de seções (desktop) */}
+        {!examMode && totalSections > 1 && (
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-[300px] shrink-0 overflow-y-auto border-r bg-muted/30 p-5 lg:block">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Conteúdo · {visitedCount} de {totalSections} lidas
+            </div>
+            <ol className="space-y-1">
+              {sections.map((sec, i) => {
+                const isCurrent = i === current;
+                const done = visitedSections.has(i) && !isCurrent;
+                return (
+                  <li key={i}>
+                    <button
+                      type="button"
+                      onClick={() => goToSection(i)}
+                      className={cn(
+                        "flex w-full items-start gap-3 rounded-lg px-2.5 py-2 text-left transition-colors",
+                        isCurrent ? "border bg-card shadow-sm" : "hover:bg-muted"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold",
+                          done ? "bg-emerald-500 text-white" : isCurrent ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"
+                        )}
+                      >
+                        {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                      </span>
+                      <span className={cn("text-[13.5px] leading-snug", isCurrent ? "font-semibold text-foreground" : done ? "text-muted-foreground" : "text-foreground/80")}>
+                        {sec.displayTitle || `Parte ${i + 1}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
+              Trocar de aba apenas pausa o contador. Fechar esta página reinicia o tempo de estudo.
+            </p>
+          </aside>
+        )}
+
+        <main className="min-w-0 flex-1">
+          <article className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
+            {/* Modo Avaliação: mostra somente o quiz */}
+            {examMode && id && hasQuiz && !quizApproved ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary" />
+                    Avaliação em andamento
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Permaneça nesta tela até finalizar. Sair, trocar de aba ou fechar o navegador irá reiniciar a avaliação.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <QuizViewer
+                    key={examKey}
+                    treinamentoId={id}
+                    notaMinima={7}
+                    tempoEstudoSegundos={timer.activeTime}
+                    onTentativaFinalizada={handleExamFinalizada}
+                    onAprovado={() => {
+                      setQuizApproved(true);
+                      if (examStorageKey) localStorage.removeItem(examStorageKey);
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Seletor de seção (celular/tablet) */}
+                {totalSections > 1 && (
+                  <div className="mb-6 lg:hidden">
+                    <Select value={String(current)} onValueChange={(v) => goToSection(Number(v))}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sections.map((sec, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {i + 1}. {sec.displayTitle || `Parte ${i + 1}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {section?.displayTitle && (
+                  <header className="mb-6">
+                    {totalSections > 1 && <div className="text-[12.5px] font-semibold text-primary">Seção {current + 1}</div>}
+                    <h2 className="mt-1 text-2xl font-semibold leading-tight tracking-tight sm:text-[30px]">{section.displayTitle}</h2>
+                  </header>
+                )}
+
+                <div className="study-content">{section ? renderTextSection(section.body) : null}</div>
+
+                {/* Navegação entre seções / conclusão */}
+                <div className="mt-12 flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  {current > 0 ? (
+                    <Button variant="outline" onClick={() => goToSection(current - 1)} className="gap-2">
+                      <ArrowLeft className="h-4 w-4" />
+                      Seção anterior
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  {!isLastSection && (
+                    <Button onClick={() => goToSection(current + 1)} className="h-11 gap-2 font-semibold">
+                      <span className="max-w-[260px] truncate">Próxima: {sections[current + 1]?.displayTitle || `Parte ${current + 2}`}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {isLastSection && (
+                  <Card className="mt-6">
+                    <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={cn(
+                            "grid h-10 w-10 shrink-0 place-items-center rounded-xl",
+                            canComplete ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10" : "bg-amber-50 text-amber-600 dark:bg-amber-500/10"
+                          )}
+                        >
+                          {canComplete ? <CheckCircle2 className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
+                        </span>
+                        <div className="text-sm">
+                          <div className="font-semibold">
+                            {canComplete
+                              ? precisaAvaliacao
+                                ? "Você chegou ao fim do conteúdo"
+                                : "Pronto para concluir!"
+                              : `Faltam ${minRemaining} min de estudo`}
+                          </div>
+                          <div className="mt-0.5 text-muted-foreground">
+                            {canComplete
+                              ? precisaAvaliacao
+                                ? "Ao iniciar a avaliação, o conteúdo será ocultado."
+                                : "Você já pode concluir este treinamento."
+                              : `O tempo mínimo é de ${minimumTimeRequired} min para ${precisaAvaliacao ? "liberar a avaliação" : "concluir"}.`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="shrink-0">{acaoPrincipal}</div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </article>
+        </main>
+      </div>
 
       {/* Diálogo de aviso antes de iniciar a avaliação */}
       <Dialog open={showExamWarning} onOpenChange={setShowExamWarning}>
@@ -2213,25 +2273,73 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
   );
 }
 
-// Função para renderizar conteúdo formatado
-function renderFormattedContent(text: string) {
-  if (!text) return null;
-
-  const sections = text.split(/(?=## Seção \d+:)/).filter(Boolean);
-  
-  if (sections.length === 0) {
-    return renderTextSection(text);
+// Divide o conteúdo em seções a partir das linhas "## Título" (não "###").
+// O texto antes do primeiro título vira uma seção própria só se tiver conteúdo.
+function splitSections(text: string): { title: string; displayTitle: string; body: string }[] {
+  if (!text) return [{ title: "", displayTitle: "", body: "" }];
+  const lines = text.split("\n");
+  const parts: { title: string; lines: string[] }[] = [];
+  let current: { title: string; lines: string[] } = { title: "", lines: [] };
+  for (const line of lines) {
+    const m = line.match(/^##\s+(?!#)(.*)$/);
+    if (m) {
+      if (current.title || current.lines.some((l) => l.trim() !== "" && l.trim() !== "---")) {
+        parts.push(current);
+      }
+      current = { title: m[1].trim(), lines: [] };
+    } else {
+      current.lines.push(line);
+    }
   }
+  if (current.title || current.lines.some((l) => l.trim() !== "" && l.trim() !== "---")) {
+    parts.push(current);
+  }
+  if (parts.length === 0) return [{ title: "", displayTitle: "", body: text }];
 
+  return parts.map(({ title, lines: bodyLines }) => {
+    const body = [...bodyLines];
+    const isFiller = (l: string) => l.trim() === "" || l.trim() === "---";
+    while (body.length && isFiller(body[0])) body.shift();
+    while (body.length && isFiller(body[body.length - 1])) body.pop();
+    return {
+      title,
+      displayTitle: title.replace(/^Seção\s+\d+\s*:\s*/i, ""),
+      body: body.join("\n"),
+    };
+  });
+}
+
+// Anel de progresso do tempo mínimo de estudo.
+function ProgressRing({ value, done }: { value: number; done: boolean }) {
+  const size = 28;
+  const stroke = 3;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="space-y-8">
-      {sections.map((section, sectionIndex) => (
-        <div key={sectionIndex} className="space-y-4">
-          {renderTextSection(section)}
-        </div>
-      ))}
-    </div>
+    <svg width={size} height={size} className="-rotate-90 shrink-0" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - pct / 100)}
+        className={cn("transition-[stroke-dashoffset] duration-700", done ? "stroke-emerald-500" : "stroke-primary")}
+      />
+    </svg>
   );
+}
+
+// Negrito/itálico inline (**texto** / *texto*) em listas, tabelas e parágrafos.
+function InlineText({ text }: { text: string }) {
+  const html = text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+  return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />;
 }
 
 function renderTextSection(text: string) {
@@ -2249,17 +2357,17 @@ function renderTextSection(text: string) {
     if (currentList.length > 0) {
       if (listType === 'ol') {
         elements.push(
-          <ol key={`ol-${elements.length}`} className="list-decimal list-inside space-y-1 ml-4">
+          <ol key={`ol-${elements.length}`} className="list-decimal pl-6 space-y-1.5 mb-5 marker:text-muted-foreground">
             {currentList.map((item, i) => (
-              <li key={i} className="text-base leading-relaxed">{item}</li>
+              <li key={i} className="text-[16.5px] leading-[1.75] text-foreground/90"><InlineText text={item} /></li>
             ))}
           </ol>
         );
       } else {
         elements.push(
-          <ul key={`ul-${elements.length}`} className="list-disc list-inside space-y-1 ml-4">
+          <ul key={`ul-${elements.length}`} className="list-disc pl-6 space-y-1.5 mb-5 marker:text-primary">
             {currentList.map((item, i) => (
-              <li key={i} className="text-base leading-relaxed">{item}</li>
+              <li key={i} className="text-[16.5px] leading-[1.75] text-foreground/90"><InlineText text={item} /></li>
             ))}
           </ul>
         );
@@ -2269,11 +2377,11 @@ function renderTextSection(text: string) {
     }
     if (currentCheckList.length > 0) {
       elements.push(
-        <div key={`check-${elements.length}`} className="space-y-2 ml-4">
+        <div key={`check-${elements.length}`} className="space-y-2 mb-5">
           {currentCheckList.map((item, i) => (
             <div key={i} className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-              <span className="text-base">{item}</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-[16.5px] leading-[1.75] text-foreground/90"><InlineText text={item} /></span>
             </div>
           ))}
         </div>
@@ -2290,7 +2398,7 @@ function renderTextSection(text: string) {
     if (trimmedLine === '' || trimmedLine === '---') {
       flushList();
       if (trimmedLine === '---') {
-        elements.push(<hr key={`hr-${index}`} className="my-6 border-border" />);
+        elements.push(<hr key={`hr-${index}`} className="my-8 border-border" />);
       }
       index++;
       continue;
@@ -2316,7 +2424,7 @@ function renderTextSection(text: string) {
       flushList();
       const headingText = trimmedLine.replace(/^## /, '').replace(/Seção \d+:\s*/, '');
       elements.push(
-        <h2 key={`h2-${index}`} className="text-xl font-bold text-primary mt-8 mb-4">
+        <h2 key={`h2-${index}`} className="text-xl font-semibold tracking-tight mt-10 mb-4 first:mt-0">
           {headingText}
         </h2>
       );
@@ -2328,7 +2436,7 @@ function renderTextSection(text: string) {
     if (trimmedLine.startsWith('### ')) {
       flushList();
       elements.push(
-        <h3 key={`h3-${index}`} className="text-lg font-semibold mt-6 mb-3">
+        <h3 key={`h3-${index}`} className="text-lg font-semibold tracking-tight mt-8 mb-3 first:mt-0">
           {trimmedLine.replace(/^### /, '')}
         </h3>
       );
@@ -2342,11 +2450,11 @@ function renderTextSection(text: string) {
       const urlMatch = trimmedLine.match(/\[Imagem:\s*(.+?)\]/);
       if (urlMatch) {
         elements.push(
-          <div key={`img-${index}`} className="my-6 rounded-lg overflow-hidden">
+          <div key={`img-${index}`} className="my-7 rounded-xl overflow-hidden border">
             <img 
               src={urlMatch[1]} 
               alt="Conteúdo do treinamento"
-              className="w-full h-auto max-h-[400px] object-cover rounded-lg shadow-md"
+              className="w-full h-auto max-h-[440px] object-cover"
               loading="lazy"
             />
           </div>
@@ -2364,7 +2472,7 @@ function renderTextSection(text: string) {
         const videoInfo = getVideoInfo(urlMatch[1]);
         if (videoInfo.embedUrl) {
           elements.push(
-            <div key={`video-${index}`} className="my-6 rounded-lg overflow-hidden aspect-video shadow-md">
+            <div key={`video-${index}`} className="my-7 rounded-xl overflow-hidden aspect-video border bg-black">
               <iframe
                 src={videoInfo.embedUrl}
                 title="Vídeo do treinamento"
@@ -2429,12 +2537,12 @@ function renderTextSection(text: string) {
         const dataRows = tableLines.slice(dataStart).map(parseRow);
         
         elements.push(
-          <div key={`table-${index}`} className="overflow-x-auto my-4">
-            <table className="w-full border-collapse border border-border rounded-lg text-sm">
+          <div key={`table-${index}`} className="overflow-x-auto my-6 rounded-xl border">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50">
                   {headers.map((h, hi) => (
-                    <th key={hi} className="border border-border px-3 py-2 text-left font-semibold">{h}</th>
+                    <th key={hi} className="border-b border-border px-4 py-2.5 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground"><InlineText text={h} /></th>
                   ))}
                 </tr>
               </thead>
@@ -2442,7 +2550,7 @@ function renderTextSection(text: string) {
                 {dataRows.map((row, ri) => (
                   <tr key={ri} className={ri % 2 === 0 ? "" : "bg-muted/20"}>
                     {row.map((cell, ci) => (
-                      <td key={ci} className="border border-border px-3 py-2">{cell}</td>
+                      <td key={ci} className="border-t border-border px-4 py-2.5"><InlineText text={cell} /></td>
                     ))}
                   </tr>
                 ))}
@@ -2467,7 +2575,7 @@ function renderTextSection(text: string) {
     elements.push(
       <p
         key={`p-${index}`}
-        className={`text-base leading-relaxed mb-3${currentAlign ? ` text-${currentAlign}` : ""}`}
+        className={`text-[16.5px] leading-[1.8] mb-4 text-foreground/90${currentAlign ? ` text-${currentAlign}` : ""}`}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedText) }}
       />
     );

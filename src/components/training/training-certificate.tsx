@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -7,6 +7,7 @@ import { useBrazilianDate } from "@/hooks/use-brazilian-date"
 import jsPDF from "jspdf"
 
 interface TrainingCertificateProps {
+  trigger?: ReactNode
   training: {
     id: string | number
     titulo: string
@@ -26,7 +27,7 @@ interface TrainingCertificateProps {
   userDepartment?: string
 }
 
-export function TrainingCertificate({ training, userProgress, userName, userCompany = "Sauberlich System", userDepartment }: TrainingCertificateProps) {
+export function TrainingCertificate({ training, userProgress, userName, userCompany = "Sauberlich System", userDepartment, trigger }: TrainingCertificateProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const certificateRef = useRef<HTMLDivElement>(null)
@@ -268,10 +269,12 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 hover:from-amber-600 hover:to-amber-700">
-          <Award className="mr-2 h-4 w-4" />
-          Ver Certificado
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 hover:from-amber-600 hover:to-amber-700">
+            <Award className="mr-2 h-4 w-4" />
+            Ver Certificado
+          </Button>
+        )}
       </DialogTrigger>
       
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
