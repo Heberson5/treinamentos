@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Bell, LogOut, Settings, User, Building2, Camera, X } from "lucide-react"
+import { Bell, LogOut, Settings, User, Building2, Camera, X, ChevronRight, ChevronDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAuth } from "@/contexts/auth-context"
@@ -36,7 +36,8 @@ import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { validarArquivoImagem } from "@/lib/utils"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
+import { useBreadcrumbs } from "@/components/layout/use-navigation"
 
 interface HeaderProps {
   onLogout?: () => void
@@ -56,6 +57,8 @@ export function Header({ onLogout }: HeaderProps) {
   const { empresas, empresaSelecionada, setEmpresaSelecionada, isMaster, isLoading } = useEmpresaFilter()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
+  const breadcrumbs = useBreadcrumbs(location.pathname)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -187,22 +190,37 @@ export function Header({ onLogout }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b bg-background text-foreground flex items-center justify-between gap-2 px-2 sm:px-6">
+    <header className="sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70 text-foreground flex items-center justify-between gap-2 px-2 sm:px-6 lg:px-8">
       <div className="flex items-center gap-2 min-w-0 flex-shrink">
         <SidebarTrigger className="md:hidden" />
+        {breadcrumbs.length > 0 && (
+          <nav aria-label="Você está em" className="hidden sm:flex items-center gap-1.5 min-w-0 text-[13.5px]">
+            {breadcrumbs.map((crumb, i) => {
+              const last = i === breadcrumbs.length - 1
+              return (
+                <span key={`${crumb}-${i}`} className="flex items-center gap-1.5 min-w-0">
+                  <span className={last ? "font-semibold text-foreground truncate" : "text-muted-foreground whitespace-nowrap"}>{crumb}</span>
+                  {!last && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />}
+                </span>
+              )
+            })}
+          </nav>
+        )}
       </div>
 
       <div className="flex items-center gap-1 sm:gap-3 min-w-0">
         {/* Filtro de Empresa (apenas para Master) */}
         {isMaster && (
-          <div className="hidden md:flex items-center gap-2 min-w-0">
-            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="hidden md:flex items-center min-w-0">
             <Select
               value={empresaSelecionada || "todas"}
               onValueChange={(value) => setEmpresaSelecionada(value === "todas" ? null : value)}
               disabled={isLoading}
             >
-              <SelectTrigger className="w-[160px] lg:w-[200px]">
+              <SelectTrigger className="h-9 w-[180px] lg:w-[220px] gap-2">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </span>
                 <SelectValue placeholder="Selecione a empresa" />
               </SelectTrigger>
               <SelectContent>
@@ -222,10 +240,10 @@ export function Header({ onLogout }: HeaderProps) {
         {/* Notificações - sininho */}
         <DropdownMenu open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="relative h-10 w-10 text-muted-foreground hover:text-foreground" aria-label="Notificações">
+              <Bell className="h-[18px] w-[18px]" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                <Badge className="absolute -top-0.5 -right-0.5 h-[18px] min-w-[18px] flex items-center justify-center p-0 px-1 text-[10px] ring-2 ring-card bg-destructive text-destructive-foreground hover:bg-destructive">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </Badge>
               )}
@@ -268,13 +286,18 @@ export function Header({ onLogout }: HeaderProps) {
         {/* Menu do usuário */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
-              <Avatar className="h-10 w-10">
+            <Button variant="ghost" className="h-10 gap-2.5 rounded-lg p-1 sm:pr-2.5">
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={avatarUrl || ""} alt={currentUser.name} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                   {currentUser.avatar}
                 </AvatarFallback>
               </Avatar>
+              <span className="hidden lg:block text-left leading-tight">
+                <span className="block max-w-[140px] truncate text-[13px] font-semibold text-foreground">{currentUser.name.split(" ")[0]}</span>
+                <span className="block text-[11.5px] font-normal text-muted-foreground">{currentUser.role}</span>
+              </span>
+              <ChevronDown className="hidden lg:block h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

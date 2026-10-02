@@ -32,11 +32,11 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
         <div className="flex-1 flex flex-col min-w-0">
           <Header onLogout={onLogout} />
           <main
-            className={`flex-1 p-3 sm:p-6 overflow-auto ${
+            className={`flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7 overflow-auto ${
               isMobile ? "pb-24" : ""
             }`}
           >
-            {children}
+            <div className="mx-auto w-full max-w-[1400px]">{children}</div>
           </main>
         </div>
         {/* Bottom navigation visible apenas em mobile */}

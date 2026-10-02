@@ -1,324 +1,229 @@
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { ChevronDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import {
-  LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
-  Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, ChevronLeft, ChevronRight, ChevronDown,
-  Megaphone,
-} from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import logoImage from "@/assets/logo.png"
 import { useAuth } from "@/contexts/auth-context"
-import { supabase } from "@/integrations/supabase/client"
+import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useSystemBranding } from "@/hooks/use-system-branding"
+import { usePlanoUso } from "@/hooks/use-plano-uso"
+import { useNavigation, isNavItemActive, type NavGroup, type NavGroupId, type NavItem } from "./use-navigation"
+import { CommandSearch } from "./command-search"
 
-const iconMap: Record<string, any> = {
-  LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
-  Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone,
+const GROUPS_STORAGE_KEY = "sidebar-grupos-abertos"
+const DEFAULT_OPEN: Record<NavGroupId, boolean> = { aprender: true, gestao: true, organizacao: false, sistema: false }
+
+function lerGruposAbertos(): Record<NavGroupId, boolean> {
+  try {
+    const raw = localStorage.getItem(GROUPS_STORAGE_KEY)
+    return raw ? { ...DEFAULT_OPEN, ...JSON.parse(raw) } : DEFAULT_OPEN
+  } catch {
+    return DEFAULT_OPEN
+  }
 }
-
-interface MenuItemConfig {
-  id: string
-  title: string
-  url: string
-  icon: string
-  visible: boolean
-  order: number
-  section: "main" | "admin" | "master"
-}
-
-interface MenuItem {
-  title: string
-  url: string
-  icon: any
-}
-
-const defaultMainItems = [
-  { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: "LayoutDashboard", roles: ["master", "admin", "instrutor"] },
-  { id: "meus-treinamentos", title: "Meus Treinamentos", url: "/meus-treinamentos", icon: "GraduationCap", roles: ["master", "admin", "instrutor", "usuario"] },
-  { id: "catalogo", title: "Catálogo", url: "/catalogo", icon: "BookOpen", roles: ["master", "admin", "instrutor", "usuario"] },
-  { id: "relatorios", title: "Relatórios", url: "/relatorios", icon: "FileText", roles: ["master", "admin", "instrutor"] },
-  { id: "calendario", title: "Calendário", url: "/calendario", icon: "Calendar", roles: ["master", "admin", "instrutor", "usuario"] },
-]
-
-const defaultAdminItems = [
-  { id: "executivo", title: "Dashboard Executivo", url: "/admin/executivo", icon: "Sparkles", roles: ["master", "admin"] },
-  { id: "treinamentos", title: "Gestão de Treinamentos", url: "/admin/treinamentos", icon: "BookOpen", roles: ["master", "admin", "instrutor"] },
-  { id: "usuarios", title: "Usuários", url: "/admin/usuarios", icon: "Users", roles: ["master", "admin"] },
-  { id: "cargos", title: "Cargos", url: "/admin/cargos", icon: "Briefcase", roles: ["master", "admin"] },
-  { id: "departamentos", title: "Departamentos", url: "/admin/departamentos", icon: "Building2", roles: ["master", "admin"] },
-  { id: "categorias", title: "Categorias", url: "/admin/categorias", icon: "Tag", roles: ["master", "admin"] },
-  { id: "avisos-popup", title: "Avisos & Pop-ups", url: "/admin/avisos-popup", icon: "Megaphone", roles: ["master", "admin"] },
-  { id: "empresas", title: "Empresas", url: "/admin/empresas", icon: "Building2", roles: ["master"] },
-  { id: "planos", title: "Planos", url: "/admin/planos", icon: "CreditCard", roles: ["master"] },
-  { id: "integracoes", title: "Integrações", url: "/admin/integracoes", icon: "Zap", roles: ["master", "admin"] },
-  { id: "analytics", title: "Analytics", url: "/admin/analytics", icon: "BarChart3", roles: ["master", "admin"] },
-  { id: "permissoes", title: "Permissões", url: "/admin/permissoes", icon: "Shield", roles: ["master"] },
-  { id: "configuracoes", title: "Configurações", url: "/admin/configuracoes", icon: "Settings", roles: ["master"] },
-]
-
-const defaultMasterItems = [
-  { id: "landing-page", title: "Editor Landing Page", url: "/admin/landing-page", icon: "Palette" },
-  { id: "financeiro", title: "Financeiro", url: "/admin/financeiro", icon: "DollarSign" },
-  { id: "arquitetura", title: "Arquitetura do Sistema", url: "/admin/arquitetura", icon: "Settings2" },
-]
 
 export function AppSidebar() {
   const { open, isMobile, setOpenMobile, toggleSidebar } = useSidebar()
-  const [adminOpen, setAdminOpen] = useState(false)
-  const [masterOpen, setMasterOpen] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { empresaSelecionada, isMaster } = useEmpresaFilter()
+  const { groups, isAdminOrHigher } = useNavigation()
+  const { systemName, logoUrl } = useSystemBranding()
+  const [openGroups, setOpenGroups] = useState<Record<NavGroupId, boolean>>(lerGruposAbertos)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const collapsed = !open && !isMobile
+
+  const empresaDoPlano = isMaster ? empresaSelecionada : user?.empresa_id
+  const podeVerPlano = user?.role === "master" || user?.role === "admin"
+  const { data: planoUso } = usePlanoUso(podeVerPlano ? empresaDoPlano : null)
+
+  // Abre automaticamente o grupo da página atual (sem impedir recolher depois)
+  useEffect(() => {
+    const atual = groups.find((g) => g.items.some((i) => isNavItemActive(location.pathname, i.url)))
+    if (atual && !openGroups[atual.id]) setGroupOpen(atual.id, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, groups])
+
+  // Atalho Ctrl/⌘ + K abre a busca
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
+
+  function setGroupOpen(id: NavGroupId, value: boolean) {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [id]: value }
+      try {
+        localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        // preferência local apenas; sem storage o menu continua funcionando
+      }
+      return next
+    })
+  }
+
   const handleNavClick = () => {
     if (isMobile) setOpenMobile(false)
   }
 
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const userRole = user?.role || 'usuario'
-  const isMaster = userRole === 'master'
-  const isAdminOrHigher = ['master', 'admin', 'instrutor'].includes(userRole)
-
-  // Nome/logo/favicon já são carregados e aplicados globalmente por
-  // useSystemBranding() em App.tsx (cobre também telas antes do login).
-  const { systemName, logoUrl: sidebarLogo } = useSystemBranding()
-  const [systemSubtitle] = useState("Treinamentos")
-  const [menuConfig, setMenuConfig] = useState<MenuItemConfig[] | null>(null)
-
-  // Load architecture menu config from database
-  useEffect(() => {
-    const loadMenuConfig = async () => {
-      const { data } = await supabase
-        .from("configuracoes_menu")
-        .select("menu_config")
-        .limit(1)
-        .single()
-
-      if (data) {
-        const d = data as any
-        if (d.menu_config && Array.isArray(d.menu_config) && d.menu_config.length > 0) {
-          setMenuConfig(d.menu_config)
-        }
-      }
-    }
-    loadMenuConfig()
-
-    // Listen for immediate updates from architecture page
-    const handleMenuUpdate = (e: Event) => {
-      const detail = (e as CustomEvent).detail
-      if (detail) setMenuConfig(detail)
-    }
-    window.addEventListener("menu-config-updated", handleMenuUpdate)
-    return () => window.removeEventListener("menu-config-updated", handleMenuUpdate)
-  }, [])
-
-  // Build menu items using architecture config if available
-  const getMenuItems = (section: "main" | "admin" | "master"): MenuItem[] => {
-    if (menuConfig) {
-      const sectionItems = menuConfig
-        .filter(m => m.section === section && m.visible !== false)
-        .sort((a, b) => a.order - b.order)
-
-      // Itens de menu novos adicionados ao código (ex: uma feature nova)
-      // ainda não existem no menu_config salvo em Arquitetura do Sistema —
-      // sem isso eles ficariam escondidos até alguém reabrir e resalvar
-      // aquela tela. Aparecem no fim da lista por padrão até o admin
-      // reordenar/ocultar manualmente.
-      const idsSalvos = new Set(menuConfig.map(m => m.id))
-
-      if (section === "main") {
-        const itensNaoSalvos = defaultMainItems.filter(d => !idsSalvos.has(d.id))
-        return [...sectionItems, ...itensNaoSalvos].filter(item => {
-          const defaultItem = defaultMainItems.find(d => d.id === item.id)
-          return defaultItem ? defaultItem.roles.includes(userRole) : true
-        }).map(item => ({
-          title: item.title,
-          url: item.url,
-          icon: iconMap[item.icon] || Settings,
-        }))
-      }
-      if (section === "admin") {
-        const itensNaoSalvos = defaultAdminItems.filter(d => !idsSalvos.has(d.id))
-        return [...sectionItems, ...itensNaoSalvos].filter(item => {
-          const defaultItem = defaultAdminItems.find(d => d.id === item.id)
-          return defaultItem ? defaultItem.roles.includes(userRole) : true
-        }).map(item => ({
-          title: item.title,
-          url: item.url,
-          icon: iconMap[item.icon] || Settings,
-        }))
-      }
-      // master
-      const itensNaoSalvos = defaultMasterItems.filter(d => !idsSalvos.has(d.id))
-      return [...sectionItems, ...itensNaoSalvos].map(item => ({
-        title: item.title,
-        url: item.url,
-        icon: iconMap[item.icon] || Settings,
-      }))
-    }
-
-    // Fallback: default menu
-    if (section === "main") {
-      return defaultMainItems.filter(i => i.roles.includes(userRole)).map(i => ({
-        title: i.title, url: i.url, icon: iconMap[i.icon] || Settings,
-      }))
-    }
-    if (section === "admin") {
-      return defaultAdminItems.filter(i => i.roles.includes(userRole)).map(i => ({
-        title: i.title, url: i.url, icon: iconMap[i.icon] || Settings,
-      }))
-    }
-    return defaultMasterItems.map(i => ({
-      title: i.title, url: i.url, icon: iconMap[i.icon] || Settings,
-    }))
+  const renderItem = (item: NavItem) => {
+    const active = isNavItemActive(location.pathname, item.url)
+    const link = (
+      <NavLink
+        key={item.url}
+        to={item.url}
+        onClick={handleNavClick}
+        className={cn(
+          "group/item relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13.5px] transition-colors",
+          collapsed && "justify-center px-0",
+          active
+            ? "bg-primary/10 font-semibold text-primary"
+            : "font-medium text-sidebar-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        {active && !collapsed && <span className="absolute -left-3 top-1.5 bottom-1.5 w-1 rounded-r bg-primary" />}
+        <item.icon
+          className={cn(
+            "h-[18px] w-[18px] shrink-0",
+            active ? "text-primary" : "text-muted-foreground group-hover/item:text-foreground"
+          )}
+          strokeWidth={1.75}
+        />
+        {!collapsed && <span className="truncate">{item.title}</span>}
+      </NavLink>
+    )
+    if (!collapsed) return link
+    return (
+      <Tooltip key={item.url}>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right">{item.title}</TooltipContent>
+      </Tooltip>
+    )
   }
 
-  const mainMenuItems = getMenuItems("main")
-  const adminMenuItems = getMenuItems("admin")
-  const masterMenuItems = getMenuItems("master")
-
-  const isItemActive = (url: string) => location.pathname === url || location.pathname.startsWith(url + "/")
-
-  // Abre a seção automaticamente ao navegar para uma página que pertence a ela,
-  // sem travar o usuário impedido de recolher manualmente depois (por isso não
-  // usamos isso como condição direta de "expanded" — só como gatilho pontual).
-  useEffect(() => {
-    if (adminMenuItems.some(item => isItemActive(item.url))) setAdminOpen(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
-
-  useEffect(() => {
-    if (masterMenuItems.some(item => isItemActive(item.url))) setMasterOpen(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
-
-  const getNavClass = ({ isActive }: { isActive: boolean }) =>
-    isActive
-      ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-
-  const handleLogoClick = () => {
-    navigate(isAdminOrHigher ? "/dashboard" : "/meus-treinamentos")
-  }
-
-  const renderMenuItems = (items: MenuItem[]) => (
-    <SidebarMenu>
-      {items.map(item => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            asChild
-            tooltip={item.title}
-            isActive={isItemActive(item.url)}
-          >
-            <NavLink to={item.url} className={getNavClass} onClick={handleNavClick}>
-              <item.icon className="mr-2 h-4 w-4" />
-              {open && <span>{item.title}</span>}
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  )
-
-  const renderMenuGroup = (label: string, items: MenuItem[]) => (
-    <SidebarGroup>
-      <SidebarGroupLabel className="text-muted-foreground font-medium">{label}</SidebarGroupLabel>
-      <SidebarGroupContent>{renderMenuItems(items)}</SidebarGroupContent>
-    </SidebarGroup>
-  )
-
-  // Grupos Administração/Master começam minimizados; o usuário expande ao clicar,
-  // e abrem automaticamente se a página atual pertencer à seção.
-  const renderCollapsibleMenuGroup = (
-    label: string,
-    items: MenuItem[],
-    isOpen: boolean,
-    setIsOpen: (v: boolean) => void
-  ) => {
-    const expanded = !open ? true : isOpen
-
-    // Sidebar recolhida (modo ícone): mostra os itens direto, sem o colapsável interno
-    if (!open) {
+  const renderGroup = (group: NavGroup) => {
+    if (collapsed) {
       return (
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground font-medium">{label}</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenuItems(items)}</SidebarGroupContent>
-        </SidebarGroup>
+        <div key={group.id} className="mt-3 space-y-0.5 border-t border-sidebar-border pt-3 first:mt-0 first:border-t-0 first:pt-0">
+          {group.items.map(renderItem)}
+        </div>
       )
     }
-
+    const isOpen = openGroups[group.id]
     return (
-      <Collapsible open={expanded} onOpenChange={setIsOpen}>
-        <SidebarGroup>
-          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
-            <span>{label}</span>
-            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <SidebarGroupContent>{renderMenuItems(items)}</SidebarGroupContent>
-          </CollapsibleContent>
-        </SidebarGroup>
+      <Collapsible key={group.id} open={isOpen} onOpenChange={(v) => setGroupOpen(group.id, v)} className="mt-5 first:mt-1">
+        <CollapsibleTrigger className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 hover:text-foreground">
+          {group.label}
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !isOpen && "-rotate-90")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <nav className="space-y-0.5">{group.items.map(renderItem)}</nav>
+        </CollapsibleContent>
       </Collapsible>
     )
   }
 
+  const usoPct = planoUso && planoUso.limiteUsuarios > 0
+    ? Math.min(100, Math.round((planoUso.usuariosAtivos / planoUso.limiteUsuarios) * 100))
+    : 0
+
   return (
-    <Sidebar
-      variant="floating"
-      collapsible="icon"
-      className={cn(open ? "w-64" : "w-16")}
-    >
-      <SidebarContent className="bg-sidebar">
-        <div
-          className={cn(
-            "p-3 border-b border-sidebar-border flex items-center",
-            open ? "gap-1" : "flex-col gap-2"
-          )}
-        >
-          <button
-            type="button"
-            onClick={handleLogoClick}
-            title="Ir para o início"
-            className={cn(
-              "flex items-center gap-3 rounded-md p-1 hover:bg-sidebar-accent transition-colors text-left",
-              open ? "flex-1 min-w-0 -m-1" : "shrink-0"
-            )}
-          >
-            <img src={sidebarLogo || logoImage} alt="Logo" className="h-8 w-8 object-contain shrink-0" />
-            {open && (
-              <div className="text-foreground min-w-0">
-                <h2 className="font-bold text-lg truncate">{systemName}</h2>
-                <p className="text-xs text-muted-foreground truncate">{systemSubtitle}</p>
-              </div>
-            )}
-          </button>
-          {!isMobile && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={toggleSidebar}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-              title={open ? "Recolher menu" : "Expandir menu"}
+    <>
+      <Sidebar variant="sidebar" collapsible="icon" className="border-sidebar-border">
+        <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
+          <div className={cn("flex h-16 items-center gap-3", collapsed ? "justify-center px-2" : "px-4")}>
+            <button
+              type="button"
+              onClick={() => navigate(isAdminOrHigher ? "/dashboard" : "/meus-treinamentos")}
+              title="Ir para o início"
+              className="flex min-w-0 items-center gap-3 rounded-lg text-left"
             >
-              {open ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </Button>
+              <img src={logoUrl || logoImage} alt="Logo" className="h-9 w-9 shrink-0 rounded-xl object-contain" />
+              {!collapsed && (
+                <div className="min-w-0 leading-tight">
+                  <div className="truncate text-[15px] font-semibold text-foreground">{systemName}</div>
+                  <div className="truncate text-xs text-muted-foreground">Treinamentos</div>
+                </div>
+              )}
+            </button>
+            {!isMobile && !collapsed && (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                title="Recolher menu"
+                className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent className={cn("gap-0 pb-4", collapsed ? "px-2 pt-3" : "px-4 pt-4")}>
+          {collapsed ? (
+            <div className="mb-3 flex flex-col items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                title="Expandir menu"
+                className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                title="Buscar (Ctrl K)"
+                className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="mb-1 flex h-9 w-full items-center gap-2 rounded-lg border border-sidebar-border bg-muted/50 px-3 text-[13px] text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <Search className="h-4 w-4" />
+              <span className="flex-1 text-left">Buscar…</span>
+              <kbd className="hidden rounded border border-sidebar-border bg-card px-1.5 text-[11px] font-medium sm:inline">Ctrl K</kbd>
+            </button>
           )}
-        </div>
+          {groups.map(renderGroup)}
+        </SidebarContent>
 
-        {renderMenuGroup("Menu Principal", mainMenuItems)}
-
-        {isAdminOrHigher && adminMenuItems.length > 0 &&
-          renderCollapsibleMenuGroup("Administração", adminMenuItems, adminOpen, setAdminOpen)}
-
-        {isMaster && masterMenuItems.length > 0 &&
-          renderCollapsibleMenuGroup("Master", masterMenuItems, masterOpen, setMasterOpen)}
-      </SidebarContent>
-    </Sidebar>
+        {planoUso && !collapsed && (
+          <SidebarFooter className="border-t border-sidebar-border p-4">
+            <div className="rounded-xl border border-sidebar-border bg-muted/40 p-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="truncate font-semibold text-foreground">Plano {planoUso.nomePlano}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {planoUso.usuariosAtivos}/{planoUso.limiteUsuarios}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-border">
+                <div
+                  className={cn("h-full rounded-full", usoPct >= 90 ? "bg-destructive" : "bg-primary")}
+                  style={{ width: `${usoPct}%` }}
+                />
+              </div>
+              <div className="mt-1.5 text-[11.5px] text-muted-foreground">usuários ativos no plano</div>
+            </div>
+          </SidebarFooter>
+        )}
+      </Sidebar>
+      <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} groups={groups} />
+    </>
   )
 }

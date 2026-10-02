@@ -8,14 +8,14 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 221 39% 11%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 221 39% 11%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 221 39% 11%;
+    --popover-foreground: 222 47% 11%;
 
     /* Purple gradient theme inspired by Solides/Twygo */
     --primary: 262 83% 58%;
@@ -23,10 +23,10 @@ All colors MUST be HSL.
     --primary-light: 262 83% 65%;
     --primary-dark: 262 83% 45%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 221 39% 11%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 220 14% 96%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
     --accent: 262 83% 95%;
@@ -41,8 +41,8 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 214 32% 91%;
+    --input: 214 32% 88%;
     --ring: 262 83% 58%;
 
     --radius: 0.75rem;
@@ -62,24 +62,24 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 221 39% 11%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 27%;
     --sidebar-primary: 262 83% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 262 83% 95%;
     --sidebar-accent-foreground: 262 83% 58%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 214 32% 91%;
     --sidebar-ring: 262 83% 58%;
   }
 
   .dark {
-    --background: 221 39% 11%;
+    --background: 222 47% 7%;
     --foreground: 0 0% 100%;
 
-    --card: 224 37% 15%;
+    --card: 222 40% 10%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 224 37% 15%;
+    --popover: 222 40% 10%;
     --popover-foreground: 0 0% 100%;
 
     --primary: 262 83% 58%;
@@ -105,8 +105,8 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 215 27% 17%;
-    --input: 215 27% 17%;
+    --border: 217 30% 17%;
+    --input: 217 30% 20%;
     --ring: 262 83% 58%;
 
     /* Dark mode gradients */
@@ -117,13 +117,13 @@ All colors MUST be HSL.
     /* Dark shadows */
     --shadow-elegant: 0 10px 25px -5px hsl(0 0% 0% / 0.25), 0 4px 6px -2px hsl(0 0% 0% / 0.1);
     --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
-    --sidebar-background: 221 39% 11%;
-    --sidebar-foreground: 0 0% 100%;
+    --sidebar-background: 222 40% 10%;
+    --sidebar-foreground: 215 20% 80%;
     --sidebar-primary: 262 83% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 215 27% 17%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 215 27% 17%;
+    --sidebar-border: 217 30% 17%;
     --sidebar-ring: 262 83% 58%;
   }
 }
@@ -134,6 +134,11 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
