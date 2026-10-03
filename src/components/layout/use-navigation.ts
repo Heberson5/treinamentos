@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy,
   type LucideIcon,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client"
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy,
 }
 
 interface MenuItemConfig {
@@ -46,6 +46,8 @@ export const defaultMainItems = [
   { id: "catalogo", title: "Catálogo", url: "/catalogo", icon: "BookOpen", roles: ["master", "admin", "instrutor", "usuario"] },
   { id: "relatorios", title: "Relatórios", url: "/relatorios", icon: "FileText", roles: ["master", "admin", "instrutor"] },
   { id: "calendario", title: "Calendário", url: "/calendario", icon: "Calendar", roles: ["master", "admin", "instrutor", "usuario"] },
+  // Fica fixo no rodapé do menu, mas nome/visibilidade seguem a Arquitetura do Sistema
+  { id: "ajuda", title: "Ajuda", url: "/ajuda", icon: "LifeBuoy", roles: ["master", "admin", "instrutor", "usuario"] },
 ]
 
 export const defaultAdminItems = [
@@ -111,6 +113,7 @@ export const GROUP_LABELS: Record<NavGroupId, string> = {
 const GROUP_ORDER: NavGroupId[] = ["aprender", "gestao", "organizacao", "sistema"]
 
 export const MENU_CONFIG_QUERY_KEY = ["configuracoes-menu"]
+export const AJUDA_URL = "/ajuda"
 
 export function useNavigation() {
   const { user } = useAuth()
@@ -143,7 +146,7 @@ export function useNavigation() {
     return () => window.removeEventListener("menu-config-updated", handleMenuUpdate)
   }, [queryClient])
 
-  const groups = useMemo<NavGroup[]>(() => {
+  const { groups, helpItem } = useMemo<{ groups: NavGroup[]; helpItem: NavItem | null }>(() => {
     const toItem = (i: { id: string; title: string; url: string; icon: string }): NavItem => ({
       id: i.id,
       title: i.title,
@@ -175,15 +178,23 @@ export function useNavigation() {
     if (isMaster) sections.push(["master", getSection("master")])
 
     const buckets: Record<NavGroupId, NavItem[]> = { aprender: [], gestao: [], organizacao: [], sistema: [] }
+    let ajuda: NavItem | null = null
     for (const [section, items] of sections) {
       for (const item of items) {
+        if (item.url === AJUDA_URL) {
+          ajuda = item
+          continue
+        }
         buckets[GROUP_BY_URL[item.url] || SECTION_FALLBACK[section]].push(item)
       }
     }
-    return GROUP_ORDER.filter((g) => buckets[g].length > 0).map((g) => ({ id: g, label: GROUP_LABELS[g], items: buckets[g] }))
+    return {
+      groups: GROUP_ORDER.filter((g) => buckets[g].length > 0).map((g) => ({ id: g, label: GROUP_LABELS[g], items: buckets[g] })),
+      helpItem: ajuda,
+    }
   }, [menuConfig, userRole, isAdminOrHigher, isMaster])
 
-  return { groups, isMaster, isAdminOrHigher, userRole }
+  return { groups, helpItem, isMaster, isAdminOrHigher, userRole }
 }
 
 export function isNavItemActive(pathname: string, url: string) {
@@ -192,8 +203,10 @@ export function isNavItemActive(pathname: string, url: string) {
 
 // Caminho exibido no topo (ex.: "Gestão › Treinamentos › Editar").
 export function useBreadcrumbs(pathname: string): string[] {
-  const { groups } = useNavigation()
+  const { groups, helpItem } = useNavigation()
   return useMemo(() => {
+    if (pathname === AJUDA_URL) return [helpItem?.title || "Ajuda"]
+    if (pathname.startsWith(AJUDA_URL + "/")) return [helpItem?.title || "Ajuda", "Guia"]
     const extra: Array<[RegExp, string, string]> = [
       [/^\/executar-treinamento\//, "/meus-treinamentos", "Estudo"],
       [/^\/treinamento\//, "/catalogo", "Detalhes"],
@@ -219,5 +232,5 @@ export function useBreadcrumbs(pathname: string): string[] {
     }
     if (pathname === "/checkout") return ["Assinatura"]
     return []
-  }, [groups, pathname])
+  }, [groups, helpItem, pathname])
 }

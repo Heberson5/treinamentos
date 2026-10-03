@@ -47,6 +47,8 @@ const Financeiro = lazy(() => import("./pages/admin/Financeiro"));
 const Categorias = lazy(() => import("./pages/admin/Categorias"));
 const ArquiteturaSistema = lazy(() => import("./pages/admin/ArquiteturaSistema"));
 const AvisosPopup = lazy(() => import("./pages/admin/AvisosPopup"));
+const Ajuda = lazy(() => import("./pages/Ajuda"));
+const AjudaGuia = lazy(() => import("./pages/AjudaGuia"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -147,6 +149,8 @@ function AppContent() {
         <Route path="/treinamento/:id" element={<TrainingPage />} />
         <Route path="/executar-treinamento/:id" element={<ExecutarTreinamento />} />
         <Route path="/calendario" element={<Calendario />} />
+        <Route path="/ajuda" element={<Ajuda />} />
+        <Route path="/ajuda/:guiaId" element={<AjudaGuia />} />
 
         {/* Rotas para admin/instrutor/master */}
         <Route path="/dashboard" element={isAdminOrHigher ? <Dashboard /> : <Navigate to="/meus-treinamentos" replace />} />

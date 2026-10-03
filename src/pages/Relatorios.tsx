@@ -331,7 +331,7 @@ export default function Relatorios() {
     ? Math.round((reportData.horasTreinamento / reportData.totalParticipantes) * 10) / 10
     : 0
 
-  const ChartSkeleton = ({ h = 260 }: { h?: number }) => (
+  const ChartSkeleton = ({ h = 260 }: { h?: number } = {}) => (
     <div className="rounded-lg bg-muted/50 animate-pulse" style={{ height: h }} />
   )
 
@@ -342,7 +342,7 @@ export default function Relatorios() {
     </div>
   )
 
-  const MonthlyChart = ({ height = 260 }: { height?: number }) => (
+  const MonthlyChart = ({ height = 260 }: { height?: number } = {}) => (
     <ChartContainer config={monthlyConfig} className="w-full aspect-auto" style={{ height }}>
       <BarChart data={monthlyData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} barGap={2}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -439,7 +439,7 @@ export default function Relatorios() {
                 <CardTitle className="text-base">Iniciados x concluídos</CardTitle>
                 <CardDescription>Últimos 6 meses</CardDescription>
               </CardHeader>
-              <CardContent>{isLoading ? <ChartSkeleton /> : <MonthlyChart />}</CardContent>
+              <CardContent>{isLoading ? ChartSkeleton() : MonthlyChart()}</CardContent>
             </Card>
 
             <Card className="xl:col-span-2">
@@ -448,8 +448,8 @@ export default function Relatorios() {
                 <CardDescription>Percentual de inscrições concluídas no período</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? <ChartSkeleton /> : deptChartData.length === 0 ? (
-                  <EmptyState icon={Building2} text="Sem atividade por departamento no período" />
+                {isLoading ? ChartSkeleton() : deptChartData.length === 0 ? (
+                  EmptyState({ icon: Building2, text: "Sem atividade por departamento no período" })
                 ) : (
                   <ChartContainer config={deptConfig} className="w-full aspect-auto" style={{ height: Math.max(160, deptChartData.length * 40) }}>
                     <BarChart data={deptChartData} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }}>
@@ -471,8 +471,8 @@ export default function Relatorios() {
       {/* Departamentos */}
       {activeTab === "departamentos" && (
         <Card className="overflow-hidden">
-          {isLoading ? <CardContent className="pt-6"><ChartSkeleton h={200} /></CardContent> : departmentReports.length === 0 ? (
-            <EmptyState icon={Building2} text="Nenhum departamento com atividade no período" />
+          {isLoading ? <CardContent className="pt-6">{ChartSkeleton({ h: 200 })}</CardContent> : departmentReports.length === 0 ? (
+            EmptyState({ icon: Building2, text: "Nenhum departamento com atividade no período" })
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -503,8 +503,8 @@ export default function Relatorios() {
       {/* Treinamentos */}
       {activeTab === "treinamentos" && (
         <Card className="overflow-hidden">
-          {isLoading ? <CardContent className="pt-6"><ChartSkeleton h={240} /></CardContent> : trainingReports.length === 0 ? (
-            <EmptyState icon={BookOpen} text="Nenhum treinamento encontrado" />
+          {isLoading ? <CardContent className="pt-6">{ChartSkeleton({ h: 240 })}</CardContent> : trainingReports.length === 0 ? (
+            EmptyState({ icon: BookOpen, text: "Nenhum treinamento encontrado" })
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -549,7 +549,7 @@ export default function Relatorios() {
 
       {/* Participantes */}
       {activeTab === "participantes" && (
-        isLoading ? <ChartSkeleton h={180} /> : (
+        isLoading ? ChartSkeleton({ h: 180 }) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Participação</CardTitle></CardHeader>
@@ -592,7 +592,7 @@ export default function Relatorios() {
             <CardTitle className="text-base">Evolução nos últimos 6 meses</CardTitle>
             <CardDescription>Inscrições iniciadas e concluídas a cada mês</CardDescription>
           </CardHeader>
-          <CardContent>{isLoading ? <ChartSkeleton h={300} /> : <MonthlyChart height={300} />}</CardContent>
+          <CardContent>{isLoading ? ChartSkeleton({ h: 300 }) : MonthlyChart({ height: 300 })}</CardContent>
           {!isLoading && (
             <div className="overflow-x-auto border-t">
               <table className="w-full text-sm">

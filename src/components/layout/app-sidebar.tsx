@@ -31,7 +31,7 @@ export function AppSidebar() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { empresaSelecionada, isMaster } = useEmpresaFilter()
-  const { groups, isAdminOrHigher } = useNavigation()
+  const { groups, helpItem, isAdminOrHigher } = useNavigation()
   const { systemName, logoUrl } = useSystemBranding()
   const [openGroups, setOpenGroups] = useState<Record<NavGroupId, boolean>>(lerGruposAbertos)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -139,7 +139,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar variant="sidebar" collapsible="icon" className="border-sidebar-border">
+      <Sidebar variant="sidebar" collapsible="icon" className="border-sidebar-border print:hidden">
         <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
           <div className={cn("flex h-16 items-center gap-3", collapsed ? "justify-center px-2" : "px-4")}>
             <button
@@ -203,6 +203,10 @@ export function AppSidebar() {
           {groups.map(renderGroup)}
         </SidebarContent>
 
+        {helpItem && (
+          <div className={cn("pb-2 pt-1", collapsed ? "px-2" : "px-4")}>{renderItem(helpItem)}</div>
+        )}
+
         {planoUso && !collapsed && (
           <SidebarFooter className="border-t border-sidebar-border p-4">
             <div className="rounded-xl border border-sidebar-border bg-muted/40 p-3">
@@ -223,7 +227,7 @@ export function AppSidebar() {
           </SidebarFooter>
         )}
       </Sidebar>
-      <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} groups={groups} />
+      <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} groups={groups} helpItem={helpItem} />
     </>
   )
 }

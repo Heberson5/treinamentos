@@ -10,6 +10,7 @@ import { useCompanyTheme } from "@/hooks/use-company-theme"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useIdleLogout } from "@/hooks/use-idle-logout"
 import { useOnlineUsers } from "@/hooks/use-online-users"
+import { TrocaSenhaObrigatoria } from "@/components/auth/trocar-senha-dialog"
 
 interface MainLayoutProps {
   children: ReactNode
@@ -36,6 +37,7 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
           {children}
           <PWAInstallPrompt />
           <PopupDisplay />
+          <TrocaSenhaObrigatoria />
         </div>
       </SidebarProvider>
     );
@@ -62,6 +64,8 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
         <PWAInstallPrompt />
         {/* Pop-up de avisos/notícias internas */}
         <PopupDisplay />
+        {/* Troca de senha obrigatória (link de recuperação ou primeiro acesso) */}
+        <TrocaSenhaObrigatoria />
       </div>
     </SidebarProvider>
   )

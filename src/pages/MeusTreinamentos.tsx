@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -8,6 +9,7 @@ import {
 } from "lucide-react"
 import { useSupabaseTrainings, type SupabaseTraining } from "@/hooks/use-supabase-trainings"
 import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/integrations/supabase/client"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Card, CardContent } from "@/components/ui/card"
@@ -58,10 +60,14 @@ function diasAte(date: string) {
   return Math.ceil((fim.getTime() - Date.now()) / 86400000)
 }
 
-function prazoInfo(item: Item): { text: string; tone: "danger" | "warning" | "success" | "muted" } {
+function formatNota(nota: number) {
+  return nota.toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+}
+
+function prazoInfo(item: Item, notas: Record<string, number>): { text: string; tone: "danger" | "warning" | "success" | "muted" } {
   if (item.status === "concluido") {
-    const nota = item.original.progresso?.nota_avaliacao
-    return { text: nota != null ? `Concluído · nota ${Math.round(nota)}` : "Concluído", tone: "success" }
+    const nota = notas[item.id]
+    return { text: nota != null ? `Concluído · nota ${formatNota(nota)}` : "Concluído", tone: "success" }
   }
   if (!item.deadline) return { text: "Sem prazo", tone: "muted" }
   const dias = diasAte(item.deadline)
@@ -106,6 +112,47 @@ export default function MeusTreinamentos() {
   const { trainings: supabaseTrainings, isLoading, error, startTraining } = useSupabaseTrainings()
   const { user } = useAuth()
   const { empresaSelecionadaNome, isMaster } = useEmpresaFilter()
+
+  // Melhor nota aprovada na avaliação de cada treinamento (0 a 10)
+  const { data: notas = {} } = useQuery({
+    queryKey: ["minhas-notas-avaliacao", user?.id],
+    enabled: !!user?.id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tentativas_avaliacao")
+        .select("treinamento_id, nota, aprovado")
+        .eq("usuario_id", user!.id)
+      const melhor: Record<string, number> = {}
+      ;(data || []).forEach((t) => {
+        if (!t.aprovado) return
+        const n = Number(t.nota)
+        if (Number.isFinite(n) && (melhor[t.treinamento_id] == null || n > melhor[t.treinamento_id])) melhor[t.treinamento_id] = n
+      })
+      return melhor
+    },
+  })
+
+  // Nomes para o certificado: departamento e empresa de quem estuda
+  const { data: identidade } = useQuery({
+    queryKey: ["certificado-identidade", user?.id],
+    enabled: !!user?.id,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const [dep, emp] = await Promise.all([
+        user?.departamento_id
+          ? supabase.from("departamentos").select("nome").eq("id", user.departamento_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        user?.empresa_id
+          ? supabase.from("empresas").select("nome, nome_fantasia").eq("id", user.empresa_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+      return {
+        departamento: (dep.data as { nome?: string } | null)?.nome || undefined,
+        empresa: (emp.data as { nome?: string; nome_fantasia?: string } | null)?.nome_fantasia || (emp.data as { nome?: string } | null)?.nome || undefined,
+      }
+    },
+  })
 
   const items: Item[] = useMemo(
     () =>
@@ -189,11 +236,11 @@ export default function MeusTreinamentos() {
       userProgress={{
         totalTime: item.original.progresso?.tempo_assistido_minutos || 0,
         completionRate: item.progress,
-        score: item.original.progresso?.nota_avaliacao || 85,
+        score: notas[item.id],
       }}
       userName={user?.nome || "Usuário"}
-      userCompany={item.empresaNome}
-      userDepartment={user?.departamento_id}
+      userCompany={identidade?.empresa}
+      userDepartment={identidade?.departamento}
     />
   )
 
@@ -344,7 +391,7 @@ export default function MeusTreinamentos() {
       ) : isMobile ? (
         <ul className="space-y-2.5">
           {visiveis.map((item) => {
-            const prazo = prazoInfo(item)
+            const prazo = prazoInfo(item, notas)
             return (
               <li key={item.id}>
                 <button
@@ -376,7 +423,7 @@ export default function MeusTreinamentos() {
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {visiveis.map((item) => {
-            const prazo = prazoInfo(item)
+            const prazo = prazoInfo(item, notas)
             const done = item.status === "concluido"
             return (
               <Card key={item.id} className="group flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5">
@@ -441,11 +488,11 @@ export default function MeusTreinamentos() {
         onStartTraining={async (id) => {
           await startTraining(String(id))
           setIsViewOpen(false)
-          navigate(`/treinamento/${id}`)
+          navigate(`/executar-treinamento/${id}`)
         }}
         onContinueTraining={(id) => {
           setIsViewOpen(false)
-          navigate(`/treinamento/${id}`)
+          navigate(`/executar-treinamento/${id}`)
         }}
       />
     </div>

@@ -142,3 +142,20 @@ All colors MUST be HSL.
     font-variant-numeric: tabular-nums;
   }
 }
+/* Impressão (ex.: guias da Ajuda em PDF): só o conteúdo, sem menus */
+@media print {
+  .peer[data-variant] {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

@@ -1,0 +1,2192 @@
+[
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "18f135d2-5f55-4203-b018-50c5a38fd547",
+  "opcao_a": "Produtividade",
+  "opcao_b": "Saúde",
+  "opcao_c": "Lucro",
+  "opcao_d": "Liderança",
+  "opcoes": [
+   "Produtividade",
+   "Saúde",
+   "Lucro",
+   "Liderança"
+  ],
+  "ordem": 1,
+  "pergunta": "Segundo a OMS, citada no treinamento, o que não existe sem saúde mental?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "907a70c3-1012-4037-b64c-e4228c38fb29",
+  "opcao_a": "Respiração 4-7-8",
+  "opcao_b": "Respiração 1-2-3",
+  "opcao_c": "Respiração profunda contínua",
+  "opcao_d": "Apneia controlada",
+  "opcoes": [
+   "Respiração 4-7-8",
+   "Respiração 1-2-3",
+   "Respiração profunda contínua",
+   "Apneia controlada"
+  ],
+  "ordem": 2,
+  "pergunta": "Qual técnica de respiração é ensinada no treinamento para gerenciar o estresse?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "7f150524-34b9-45df-9e77-69b10f4205b4",
+  "opcao_a": "Uma rotina de exercícios físicos",
+  "opcao_b": "Uma técnica sensorial de ancoragem no presente (coisas que vê, toca, ouve, cheira e saboreia)",
+  "opcao_c": "Um método de organização de tarefas",
+  "opcao_d": "Uma dieta recomendada",
+  "opcoes": [
+   "Uma rotina de exercícios físicos",
+   "Uma técnica sensorial de ancoragem no presente (coisas que vê, toca, ouve, cheira e saboreia)",
+   "Um método de organização de tarefas",
+   "Uma dieta recomendada"
+  ],
+  "ordem": 3,
+  "pergunta": "O que é a técnica de Grounding 5-4-3-2-1?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "c6f87718-6d76-407e-881e-d162ae2eb154",
+  "opcao_a": "Trabalhar em múltiplas tarefas ao mesmo tempo",
+  "opcao_b": "Estar plenamente presente no momento atual, com atenção e sem julgamento",
+  "opcao_c": "Planejar o dia com antecedência",
+  "opcao_d": "Evitar pensar no trabalho",
+  "opcoes": [
+   "Trabalhar em múltiplas tarefas ao mesmo tempo",
+   "Estar plenamente presente no momento atual, com atenção e sem julgamento",
+   "Planejar o dia com antecedência",
+   "Evitar pensar no trabalho"
+  ],
+  "ordem": 4,
+  "pergunta": "O que é mindfulness, segundo o treinamento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "ec66a787-95e7-41d1-b731-af10506bf2ef",
+  "opcao_a": "190",
+  "opcao_b": "192",
+  "opcao_c": "188",
+  "opcao_d": "180",
+  "opcoes": [
+   "190",
+   "192",
+   "188",
+   "180"
+  ],
+  "ordem": 5,
+  "pergunta": "Qual é o telefone do CVV (Centro de Valorização da Vida) citado no treinamento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "3f98e277-4cbd-47ad-9c90-a9587403e430",
+  "opcao_a": "Dores de cabeça frequentes",
+  "opcao_b": "Irritabilidade excessiva e tristeza persistente",
+  "opcao_c": "Alterações no sono",
+  "opcao_d": "Tensão muscular",
+  "opcoes": [
+   "Dores de cabeça frequentes",
+   "Irritabilidade excessiva e tristeza persistente",
+   "Alterações no sono",
+   "Tensão muscular"
+  ],
+  "ordem": 6,
+  "pergunta": "Qual das opções é um sinal de alerta EMOCIONAL de problemas de saúde mental?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "c7a2ea20-b2f1-4c94-ae05-319acb5c7427",
+  "opcao_a": "4 a 5 horas",
+  "opcao_b": "5 a 6 horas",
+  "opcao_c": "7 a 8 horas",
+  "opcao_d": "10 a 12 horas",
+  "opcoes": [
+   "4 a 5 horas",
+   "5 a 6 horas",
+   "7 a 8 horas",
+   "10 a 12 horas"
+  ],
+  "ordem": 7,
+  "pergunta": "Quantas horas de sono de qualidade o treinamento recomenda por noite?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "4cdd2055-930d-4eaf-94f4-733f3e7d1bfb",
+  "opcao_a": "1ª causa",
+  "opcao_b": "3ª causa",
+  "opcao_c": "5ª causa",
+  "opcao_d": "Não é uma causa relevante",
+  "opcoes": [
+   "1ª causa",
+   "3ª causa",
+   "5ª causa",
+   "Não é uma causa relevante"
+  ],
+  "ordem": 8,
+  "pergunta": "Segundo o treinamento, transtornos mentais ocupam qual posição entre as causas de afastamento do trabalho?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "57ee05cd-e009-42c7-bebf-f20686734721",
+  "opcao_a": "1:1",
+  "opcao_b": "2:1",
+  "opcao_c": "4:1",
+  "opcao_d": "Não há retorno mensurável",
+  "opcoes": [
+   "1:1",
+   "2:1",
+   "4:1",
+   "Não há retorno mensurável"
+  ],
+  "ordem": 9,
+  "pergunta": "De acordo com o treinamento, investir em saúde mental no trabalho traz qual retorno?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "9be4bcfc-49b6-4a08-b2e6-cc3ababced20",
+  "opcao_a": "Somente em situações de emergência extrema",
+  "opcao_b": "Quando os sintomas persistem por mais de 2 semanas ou afetam as atividades cotidianas",
+  "opcao_c": "Nunca é necessário se o problema for leve",
+  "opcao_d": "Apenas se o RH sugerir",
+  "opcoes": [
+   "Somente em situações de emergência extrema",
+   "Quando os sintomas persistem por mais de 2 semanas ou afetam as atividades cotidianas",
+   "Nunca é necessário se o problema for leve",
+   "Apenas se o RH sugerir"
+  ],
+  "ordem": 10,
+  "pergunta": "Quando o treinamento recomenda buscar ajuda profissional?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "9531985d-5d9d-49f8-9818-e811892f902b"
+ },
+ {
+  "atualizado_em": "2026-03-15T00:53:57.190802+00:00",
+  "criado_em": "2026-03-15T00:53:57.190802+00:00",
+  "id": "830e07bc-1e39-4f10-92bd-4acefaecbd38",
+  "opcao_a": "1",
+  "opcao_b": "2",
+  "opcao_c": "3",
+  "opcao_d": "4",
+  "opcoes": [],
+  "ordem": 0,
+  "pergunta": "teste",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "a170b338-3926-4059-b28c-105d1fb17c23"
+ },
+ {
+  "atualizado_em": "2026-03-15T00:53:57.190802+00:00",
+  "criado_em": "2026-03-15T00:53:57.190802+00:00",
+  "id": "5790f82e-c1d3-4cff-aa3a-f4d46b0a18e8",
+  "opcao_a": "5",
+  "opcao_b": "6",
+  "opcao_c": "7",
+  "opcao_d": "8",
+  "opcoes": [],
+  "ordem": 1,
+  "pergunta": "Teste 2",
+  "resposta_correta": "d",
+  "tipo": "quiz",
+  "treinamento_id": "a170b338-3926-4059-b28c-105d1fb17c23"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "6bf46c69-7d2c-4f82-aeea-cbe226e87555",
+  "opcao_a": "Emenda Constitucional nº 132/2023",
+  "opcao_b": "Emenda Constitucional nº 45/2004",
+  "opcao_c": "Emenda Constitucional nº 95/2016",
+  "opcao_d": "Emenda Constitucional nº 19/1998",
+  "opcoes": [
+   "Emenda Constitucional nº 132/2023",
+   "Emenda Constitucional nº 45/2004",
+   "Emenda Constitucional nº 95/2016",
+   "Emenda Constitucional nº 19/1998"
+  ],
+  "ordem": 1,
+  "pergunta": "Qual emenda constitucional aprovou a Reforma Tributária brasileira?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "13deef86-ab10-41d0-b646-e1f40a097c97",
+  "opcao_a": "Lei Complementar nº 116/2003",
+  "opcao_b": "Lei Complementar nº 87/1996 (Lei Kandir)",
+  "opcao_c": "Lei Complementar nº 214/2025",
+  "opcao_d": "Lei Complementar nº 123/2006",
+  "opcoes": [
+   "Lei Complementar nº 116/2003",
+   "Lei Complementar nº 87/1996 (Lei Kandir)",
+   "Lei Complementar nº 214/2025",
+   "Lei Complementar nº 123/2006"
+  ],
+  "ordem": 2,
+  "pergunta": "Qual lei complementar regulamentou a Reforma Tributária, detalhando o funcionamento do IBS e da CBS?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "ca02135e-92b1-43f2-8ede-0d7ac3baea9e",
+  "opcao_a": "IOF, IR e CSLL",
+  "opcao_b": "PIS, Cofins, ICMS e ISS",
+  "opcao_c": "ITBI, IPTU e ITCMD",
+  "opcao_d": "INSS e FGTS",
+  "opcoes": [
+   "IOF, IR e CSLL",
+   "PIS, Cofins, ICMS e ISS",
+   "ITBI, IPTU e ITCMD",
+   "INSS e FGTS"
+  ],
+  "ordem": 3,
+  "pergunta": "Quais tributos são extintos e substituídos pelo IBS e pela CBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "57124242-5051-41cc-917f-9acae01f5057",
+  "opcao_a": "Imposto sobre Bens e Serviços",
+  "opcao_b": "Imposto sobre Benefícios Sociais",
+  "opcao_c": "Imposto Base Simplificada",
+  "opcao_d": "Imposto sobre Bens Sustentáveis",
+  "opcoes": [
+   "Imposto sobre Bens e Serviços",
+   "Imposto sobre Benefícios Sociais",
+   "Imposto Base Simplificada",
+   "Imposto sobre Bens Sustentáveis"
+  ],
+  "ordem": 4,
+  "pergunta": "O que significa a sigla IBS?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "7f26144b-9828-4fcd-99a5-4a7bb1fee08f",
+  "opcao_a": "Contribuição sobre Benefícios Sociais",
+  "opcao_b": "Contribuição sobre Bens e Serviços",
+  "opcao_c": "Compensação de Benefícios Sociais",
+  "opcao_d": "Crédito de Bens e Serviços",
+  "opcoes": [
+   "Contribuição sobre Benefícios Sociais",
+   "Contribuição sobre Bens e Serviços",
+   "Compensação de Benefícios Sociais",
+   "Crédito de Bens e Serviços"
+  ],
+  "ordem": 5,
+  "pergunta": "O que significa a sigla CBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "119a72d1-74c9-4f6a-8c01-1cdd9474031b",
+  "opcao_a": "Somente à União",
+  "opcao_b": "Somente aos Estados",
+  "opcao_c": "Estados, Distrito Federal e Municípios, de forma compartilhada",
+  "opcao_d": "Somente aos Municípios",
+  "opcoes": [
+   "Somente à União",
+   "Somente aos Estados",
+   "Estados, Distrito Federal e Municípios, de forma compartilhada",
+   "Somente aos Municípios"
+  ],
+  "ordem": 6,
+  "pergunta": "A quem pertence a competência do IBS?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "451abd81-f1d6-4ed6-97f5-e837d70820fe",
+  "opcao_a": "À União (governo federal)",
+  "opcao_b": "Aos Estados",
+  "opcao_c": "Aos Municípios",
+  "opcao_d": "Ao Comitê Gestor do IBS",
+  "opcoes": [
+   "À União (governo federal)",
+   "Aos Estados",
+   "Aos Municípios",
+   "Ao Comitê Gestor do IBS"
+  ],
+  "ordem": 7,
+  "pergunta": "A quem pertence a competência da CBS?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "10a3d6b2-aa05-411a-b271-5945795e8229",
+  "opcao_a": "Imposto Único Nacional",
+  "opcao_b": "IVA Dual",
+  "opcao_c": "Sistema Tributário Simplificado",
+  "opcao_d": "Regime Especial de Consumo",
+  "opcoes": [
+   "Imposto Único Nacional",
+   "IVA Dual",
+   "Sistema Tributário Simplificado",
+   "Regime Especial de Consumo"
+  ],
+  "ordem": 8,
+  "pergunta": "Como é chamado o modelo formado pela junção do IBS e da CBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "4f426dcb-b394-4b36-bb2d-420f0f88080b",
+  "opcao_a": "Aumentar a arrecadação geral do governo",
+  "opcao_b": "Desestimular o consumo de produtos prejudiciais à saúde ou ao meio ambiente",
+  "opcao_c": "Substituir o Imposto de Renda",
+  "opcao_d": "Financiar exclusivamente a previdência social",
+  "opcoes": [
+   "Aumentar a arrecadação geral do governo",
+   "Desestimular o consumo de produtos prejudiciais à saúde ou ao meio ambiente",
+   "Substituir o Imposto de Renda",
+   "Financiar exclusivamente a previdência social"
+  ],
+  "ordem": 9,
+  "pergunta": "Qual é a principal finalidade do Imposto Seletivo (IS)?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "ae658f33-fe3b-490b-93f4-48b3a5aa3c81",
+  "opcao_a": "Porque incide sobre doações religiosas",
+  "opcao_b": "Porque incide sobre produtos como cigarro, bebida alcoólica e itens poluentes",
+  "opcao_c": "Porque é cobrado apenas de pessoas físicas",
+  "opcao_d": "Porque substitui o antigo imposto sobre heranças",
+  "opcoes": [
+   "Porque incide sobre doações religiosas",
+   "Porque incide sobre produtos como cigarro, bebida alcoólica e itens poluentes",
+   "Porque é cobrado apenas de pessoas físicas",
+   "Porque substitui o antigo imposto sobre heranças"
+  ],
+  "ordem": 10,
+  "pergunta": "Por que o Imposto Seletivo ficou conhecido como \"imposto do pecado\"?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "b774eb52-48db-40af-b215-8370d269a9a5",
+  "opcao_a": "Sim, sempre gera crédito integral",
+  "opcao_b": "Não, o valor pago não gera crédito",
+  "opcao_c": "Somente para empresas do Simples Nacional",
+  "opcao_d": "Somente para produtos importados",
+  "opcoes": [
+   "Sim, sempre gera crédito integral",
+   "Não, o valor pago não gera crédito",
+   "Somente para empresas do Simples Nacional",
+   "Somente para produtos importados"
+  ],
+  "ordem": 11,
+  "pergunta": "O Imposto Seletivo gera direito a crédito nas etapas seguintes da cadeia produtiva?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "58d5563d-ab2c-431e-a315-128862c33a4f",
+  "opcao_a": "A empresa não paga nenhum tributo",
+  "opcao_b": "Praticamente todo tributo pago nas etapas anteriores vira crédito, evitando o efeito cascata",
+  "opcao_c": "Apenas grandes empresas podem aproveitar créditos",
+  "opcao_d": "O crédito tributário só pode ser usado após 10 anos",
+  "opcoes": [
+   "A empresa não paga nenhum tributo",
+   "Praticamente todo tributo pago nas etapas anteriores vira crédito, evitando o efeito cascata",
+   "Apenas grandes empresas podem aproveitar créditos",
+   "O crédito tributário só pode ser usado após 10 anos"
+  ],
+  "ordem": 12,
+  "pergunta": "O que caracteriza o princípio da \"não cumulatividade plena\" no novo modelo?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "5affb229-7631-4992-b0ce-583505c6af07",
+  "opcao_a": "O imposto é recolhido no local onde a mercadoria é produzida",
+  "opcao_b": "O imposto é recolhido no local onde o bem ou serviço é consumido",
+  "opcao_c": "O imposto é recolhido no local da sede da empresa, sempre",
+  "opcao_d": "O imposto é recolhido proporcionalmente entre todos os estados do país",
+  "opcoes": [
+   "O imposto é recolhido no local onde a mercadoria é produzida",
+   "O imposto é recolhido no local onde o bem ou serviço é consumido",
+   "O imposto é recolhido no local da sede da empresa, sempre",
+   "O imposto é recolhido proporcionalmente entre todos os estados do país"
+  ],
+  "ordem": 13,
+  "pergunta": "O que significa o princípio da \"tributação no destino\"?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "7e62aa0a-1df9-4d78-9c65-39382b0537e6",
+  "opcao_a": "2024",
+  "opcao_b": "2025",
+  "opcao_c": "2026",
+  "opcao_d": "2030",
+  "opcoes": [
+   "2024",
+   "2025",
+   "2026",
+   "2030"
+  ],
+  "ordem": 14,
+  "pergunta": "Em que ano tem início a fase de testes do IBS e da CBS?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "49952399-c4aa-4ac1-b7dc-76fb0f17a300",
+  "opcao_a": "CBS 5% e IBS 5%",
+  "opcao_b": "CBS 0,9% e IBS 0,1%",
+  "opcao_c": "CBS 10% e IBS 10%",
+  "opcao_d": "CBS 0% e IBS 0%",
+  "opcoes": [
+   "CBS 5% e IBS 5%",
+   "CBS 0,9% e IBS 0,1%",
+   "CBS 10% e IBS 10%",
+   "CBS 0% e IBS 0%"
+  ],
+  "ordem": 15,
+  "pergunta": "Durante a fase de testes de 2026, quais são as alíquotas simbólicas de CBS e IBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "65dc9f50-3f63-4f83-bd05-61e6211c70cf",
+  "opcao_a": "Extinção do PIS e da Cofins, com entrada plena da CBS e redução do IPI a zero (exceto Zona Franca de Manaus)",
+  "opcao_b": "Extinção definitiva do ICMS e do ISS",
+  "opcao_c": "Fim total da Reforma Tributária",
+  "opcao_d": "Criação de um novo imposto sobre grandes fortunas",
+  "opcoes": [
+   "Extinção do PIS e da Cofins, com entrada plena da CBS e redução do IPI a zero (exceto Zona Franca de Manaus)",
+   "Extinção definitiva do ICMS e do ISS",
+   "Fim total da Reforma Tributária",
+   "Criação de um novo imposto sobre grandes fortunas"
+  ],
+  "ordem": 16,
+  "pergunta": "O que ocorre a partir de 2027 na transição da Reforma Tributária?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "7f1b103c-df15-42b0-aab4-77d26415479c",
+  "opcao_a": "2026 e 2027",
+  "opcao_b": "2029 e 2032",
+  "opcao_c": "2034 e 2040",
+  "opcao_d": "2023 e 2024",
+  "opcoes": [
+   "2026 e 2027",
+   "2029 e 2032",
+   "2034 e 2040",
+   "2023 e 2024"
+  ],
+  "ordem": 17,
+  "pergunta": "Entre quais anos ocorre a transição gradual do ICMS e do ISS para o IBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "66d22876-72fd-4202-aa96-fb1a14a0f9e7",
+  "opcao_a": "2027",
+  "opcao_b": "2030",
+  "opcao_c": "2033",
+  "opcao_d": "2040",
+  "opcoes": [
+   "2027",
+   "2030",
+   "2033",
+   "2040"
+  ],
+  "ordem": 18,
+  "pergunta": "Em que ano o ICMS e o ISS serão definitivamente extintos, com o novo sistema em vigor pleno?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "230d977e-e225-4159-8720-771f8ca81811",
+  "opcao_a": "Alíquota padrão, sem redução",
+  "opcao_b": "Alíquota reduzida em 30%",
+  "opcao_c": "Alíquota zero",
+  "opcao_d": "Alíquota dobrada, como forma de compensação",
+  "opcoes": [
+   "Alíquota padrão, sem redução",
+   "Alíquota reduzida em 30%",
+   "Alíquota zero",
+   "Alíquota dobrada, como forma de compensação"
+  ],
+  "ordem": 19,
+  "pergunta": "Qual é a alíquota de IBS e CBS aplicada aos itens da cesta básica nacional?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "8cdb305f-dd2e-4609-ae36-aab0d1bc52d9",
+  "opcao_a": "Um desconto para empresas exportadoras",
+  "opcao_b": "A devolução de parte do IBS/CBS pago por famílias de baixa renda em compras como energia, água e gás",
+  "opcao_c": "Um bônus fiscal para grandes indústrias",
+  "opcao_d": "A isenção total de impostos para o Simples Nacional",
+  "opcoes": [
+   "Um desconto para empresas exportadoras",
+   "A devolução de parte do IBS/CBS pago por famílias de baixa renda em compras como energia, água e gás",
+   "Um bônus fiscal para grandes indústrias",
+   "A isenção total de impostos para o Simples Nacional"
+  ],
+  "ordem": 20,
+  "pergunta": "O que é o mecanismo de \"cashback\" previsto na Reforma Tributária?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "fc891b4a-6a50-4f4d-b4d6-6a3a47469a4d",
+  "opcao_a": "A divisão do pagamento de salários em duas parcelas",
+  "opcao_b": "O recolhimento automático do imposto diretamente ao Fisco no momento do pagamento da compra",
+  "opcao_c": "Um sistema de parcelamento de dívidas tributárias antigas",
+  "opcao_d": "A divisão do lucro entre sócios de uma empresa",
+  "opcoes": [
+   "A divisão do pagamento de salários em duas parcelas",
+   "O recolhimento automático do imposto diretamente ao Fisco no momento do pagamento da compra",
+   "Um sistema de parcelamento de dívidas tributárias antigas",
+   "A divisão do lucro entre sócios de uma empresa"
+  ],
+  "ordem": 21,
+  "pergunta": "O que é o \"split payment\" introduzido pela Reforma Tributária?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-08-30T11:46:21.295612+00:00",
+  "criado_em": "2026-08-30T11:46:21.295612+00:00",
+  "id": "616499c9-e25a-4605-aec6-f0245bd86d40",
+  "opcao_a": "Fiscalizar apenas empresas do Simples Nacional",
+  "opcao_b": "Arrecadar, distribuir e uniformizar as regras do IBS entre Estados, Distrito Federal e Municípios",
+  "opcao_c": "Substituir o Congresso Nacional na criação de novas leis tributárias",
+  "opcao_d": "Administrar exclusivamente o Imposto de Renda",
+  "opcoes": [
+   "Fiscalizar apenas empresas do Simples Nacional",
+   "Arrecadar, distribuir e uniformizar as regras do IBS entre Estados, Distrito Federal e Municípios",
+   "Substituir o Congresso Nacional na criação de novas leis tributárias",
+   "Administrar exclusivamente o Imposto de Renda"
+  ],
+  "ordem": 22,
+  "pergunta": "Qual é a principal função do Comitê Gestor do IBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "8e81973e-0bec-47b0-b898-d190f9ebdacc"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "153e7c2a-26a2-40bd-bb12-87fff52ddf5d",
+  "opcao_a": "A Receita Federal isoladamente",
+  "opcao_b": "O Comitê Gestor do IBS",
+  "opcao_c": "Cada prefeitura, individualmente",
+  "opcao_d": "O Banco Central",
+  "opcoes": [
+   "A Receita Federal isoladamente",
+   "O Comitê Gestor do IBS",
+   "Cada prefeitura, individualmente",
+   "O Banco Central"
+  ],
+  "ordem": 1,
+  "pergunta": "Qual órgão é responsável por definir regras uniformes de fiscalização do IBS em todo o Brasil?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "a8948c89-3b61-4676-a6bb-7dbd2d1c9af0",
+  "opcao_a": "Porque elimina qualquer fiscalização",
+  "opcao_b": "Porque acaba com a necessidade de entender legislações diferentes em cada um dos 27 estados/DF",
+  "opcao_c": "Porque reduz o número de funcionários necessários pela metade",
+  "opcao_d": "Porque isenta a empresa de qualquer tributo",
+  "opcoes": [
+   "Porque elimina qualquer fiscalização",
+   "Porque acaba com a necessidade de entender legislações diferentes em cada um dos 27 estados/DF",
+   "Porque reduz o número de funcionários necessários pela metade",
+   "Porque isenta a empresa de qualquer tributo"
+  ],
+  "ordem": 2,
+  "pergunta": "Por que a uniformização das regras de fiscalização é uma vantagem para empresas multi-estaduais?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "d4c28c2e-7c26-447f-8316-909e3bbbe9ea",
+  "opcao_a": "Aumentar as multas durante a fase de testes",
+  "opcao_b": "Auxiliar contribuintes com dificuldades e reduzir autuações por erros formais na adaptação",
+  "opcao_c": "Substituir integralmente a fiscalização",
+  "opcao_d": "Eliminar a obrigação de pagar tributos em 2026",
+  "opcoes": [
+   "Aumentar as multas durante a fase de testes",
+   "Auxiliar contribuintes com dificuldades e reduzir autuações por erros formais na adaptação",
+   "Substituir integralmente a fiscalização",
+   "Eliminar a obrigação de pagar tributos em 2026"
+  ],
+  "ordem": 3,
+  "pergunta": "Qual é o objetivo do Programa Nacional de Conformidade Tributária?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "482c9cbc-4343-4cc5-aeae-05cf96d0cc5f",
+  "opcao_a": "Sim, totalmente",
+  "opcao_b": "Não — ele apoia a redução de erros involuntários, mas não elimina a obrigação tributária",
+  "opcao_c": "Sim, mas apenas para o Simples Nacional",
+  "opcao_d": "Não é possível saber",
+  "opcoes": [
+   "Sim, totalmente",
+   "Não — ele apoia a redução de erros involuntários, mas não elimina a obrigação tributária",
+   "Sim, mas apenas para o Simples Nacional",
+   "Não é possível saber"
+  ],
+  "ordem": 4,
+  "pergunta": "O programa de conformidade elimina a obrigação de pagar os tributos corretamente?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "88daf401-6b40-43ef-a54b-0c4e010c4759",
+  "opcao_a": "Falta de clientes",
+  "opcao_b": "Gestão de estoque e atualização de PDVs com produtos sob regras diferentes",
+  "opcao_c": "Proibição de vendas online",
+  "opcao_d": "Ausência de qualquer mudança",
+  "opcoes": [
+   "Falta de clientes",
+   "Gestão de estoque e atualização de PDVs com produtos sob regras diferentes",
+   "Proibição de vendas online",
+   "Ausência de qualquer mudança"
+  ],
+  "ordem": 5,
+  "pergunta": "Qual é o maior desafio do varejo na transição, segundo o treinamento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "519088f5-90fb-4d11-9c1c-aaf75e8766ed",
+  "opcao_a": "Aumento da cumulatividade tributária",
+  "opcao_b": "O fim do \"efeito cascata\", que hoje encarece cadeias produtivas longas",
+  "opcao_c": "Extinção de todos os créditos tributários",
+  "opcao_d": "Fim da fiscalização",
+  "opcoes": [
+   "Aumento da cumulatividade tributária",
+   "O fim do \"efeito cascata\", que hoje encarece cadeias produtivas longas",
+   "Extinção de todos os créditos tributários",
+   "Fim da fiscalização"
+  ],
+  "ordem": 6,
+  "pergunta": "Qual é uma oportunidade da reforma para a indústria?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "dbf4a8b2-b0c4-412d-a020-3626f3fe39c0",
+  "opcao_a": "Simples Nacional",
+  "opcao_b": "Zona Franca de Manaus",
+  "opcao_c": "Lucro Presumido",
+  "opcao_d": "MEI",
+  "opcoes": [
+   "Simples Nacional",
+   "Zona Franca de Manaus",
+   "Lucro Presumido",
+   "MEI"
+  ],
+  "ordem": 7,
+  "pergunta": "Qual regime mantém incentivos fiscais específicos mesmo com a redução do IPI a zero para os demais produtos?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "a7abe1c2-9e1a-4ef4-b341-e07a83f73f16",
+  "opcao_a": "Alíquota padrão",
+  "opcao_b": "Redução de 60%",
+  "opcao_c": "Alíquota zero",
+  "opcao_d": "Alíquota dobrada",
+  "opcoes": [
+   "Alíquota padrão",
+   "Redução de 60%",
+   "Alíquota zero",
+   "Alíquota dobrada"
+  ],
+  "ordem": 8,
+  "pergunta": "Qual alíquota de IBS/CBS é aplicada à cesta básica nacional?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "74e69a5d-0dd2-4a65-bd62-8881ad1b72db",
+  "opcao_a": "Treinar as equipes fiscal e financeira",
+  "opcao_b": "Achar que a reforma é \"só uma mudança de nome\" dos tributos antigos",
+  "opcao_c": "Revisar o fluxo de caixa considerando o split payment",
+  "opcao_d": "Acompanhar publicações do Comitê Gestor do IBS",
+  "opcoes": [
+   "Treinar as equipes fiscal e financeira",
+   "Achar que a reforma é \"só uma mudança de nome\" dos tributos antigos",
+   "Revisar o fluxo de caixa considerando o split payment",
+   "Acompanhar publicações do Comitê Gestor do IBS"
+  ],
+  "ordem": 9,
+  "pergunta": "Qual é um erro comum de compliance que o treinamento recomenda evitar?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "f3aed0b6-c7ac-4491-9ef8-8334e647cb8f",
+  "opcao_a": "Nenhuma ação é necessária",
+  "opcao_b": "Um responsável designado para acompanhar as próximas fases",
+  "opcao_c": "Apenas um comunicado interno único",
+  "opcao_d": "A contratação de uma nova sede",
+  "opcoes": [
+   "Nenhuma ação é necessária",
+   "Um responsável designado para acompanhar as próximas fases",
+   "Apenas um comunicado interno único",
+   "A contratação de uma nova sede"
+  ],
+  "ordem": 10,
+  "pergunta": "Segundo o checklist final, o que a empresa deve ter para acompanhar as próximas fases da transição (2027-2033)?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "8f2c6ec8-cc41-49a3-ae3a-2b7fdfe01893",
+  "opcao_a": "2027",
+  "opcao_b": "2030",
+  "opcao_c": "2033",
+  "opcao_d": "2040",
+  "opcoes": [
+   "2027",
+   "2030",
+   "2033",
+   "2040"
+  ],
+  "ordem": 11,
+  "pergunta": "Até que ano a implementação completa da Reforma Tributária está prevista, segundo a série de treinamentos?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:21:24.149025+00:00",
+  "criado_em": "2026-09-17T10:21:24.149025+00:00",
+  "id": "64e50cad-6623-4a04-a5e7-e4236472f1a3",
+  "opcao_a": "Marketing e vendas",
+  "opcao_b": "Compliance, fiscalização e cenários setoriais",
+  "opcao_c": "Recrutamento e seleção",
+  "opcao_d": "Gestão de estoque apenas",
+  "opcoes": [
+   "Marketing e vendas",
+   "Compliance, fiscalização e cenários setoriais",
+   "Recrutamento e seleção",
+   "Gestão de estoque apenas"
+  ],
+  "ordem": 12,
+  "pergunta": "Qual é o principal foco deste Módulo 4, o último da série?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "923a7369-94e3-4f91-9a61-dbe22e44158b"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "66836886-a260-4d0b-bb45-145c1a81682c",
+  "opcao_a": "Confidencialidade, Integridade e Disponibilidade",
+  "opcao_b": "Velocidade, Custo e Qualidade",
+  "opcao_c": "Backup, Firewall e Antivírus",
+  "opcao_d": "Senha, Login e Logout",
+  "opcoes": [
+   "Confidencialidade, Integridade e Disponibilidade",
+   "Velocidade, Custo e Qualidade",
+   "Backup, Firewall e Antivírus",
+   "Senha, Login e Logout"
+  ],
+  "ordem": 1,
+  "pergunta": "Quais são os três pilares da Segurança da Informação?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "fc132d0d-113d-417d-b0cb-c97d0fef7928",
+  "opcao_a": "6 caracteres",
+  "opcao_b": "8 caracteres",
+  "opcao_c": "12 caracteres",
+  "opcao_d": "20 caracteres",
+  "opcoes": [
+   "6 caracteres",
+   "8 caracteres",
+   "12 caracteres",
+   "20 caracteres"
+  ],
+  "ordem": 2,
+  "pergunta": "Quantos caracteres, no mínimo, uma senha forte deve ter segundo o treinamento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "1c2442f9-298c-43a5-b0cc-ec313571810a",
+  "opcao_a": "Um tipo de vírus que danifica o hardware",
+  "opcao_b": "Uma técnica de engenharia social para enganar e obter informações confidenciais",
+  "opcao_c": "Um programa de backup automático",
+  "opcao_d": "Um protocolo de rede seguro",
+  "opcoes": [
+   "Um tipo de vírus que danifica o hardware",
+   "Uma técnica de engenharia social para enganar e obter informações confidenciais",
+   "Um programa de backup automático",
+   "Um protocolo de rede seguro"
+  ],
+  "ordem": 3,
+  "pergunta": "O que é phishing?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "1a358ca0-0d75-485d-99c9-4309570dc195",
+  "opcao_a": "Remetente conhecido e assunto claro",
+  "opcao_b": "Urgência excessiva, como \"sua conta será bloqueada em 24 horas\"",
+  "opcao_c": "E-mail sem links ou anexos",
+  "opcao_d": "Assinatura padrão da empresa",
+  "opcoes": [
+   "Remetente conhecido e assunto claro",
+   "Urgência excessiva, como \"sua conta será bloqueada em 24 horas\"",
+   "E-mail sem links ou anexos",
+   "Assinatura padrão da empresa"
+  ],
+  "ordem": 4,
+  "pergunta": "Qual das opções abaixo é um sinal de alerta de e-mail de phishing?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "895fd7b3-26b9-4c7f-9118-bb16000f49c8",
+  "opcao_a": "Responder pedindo mais informações",
+  "opcao_b": "Encaminhar para colegas verificarem",
+  "opcao_c": "Não clicar em links, não abrir anexos e reportar ao time de TI",
+  "opcao_d": "Abrir o anexo em modo protegido",
+  "opcoes": [
+   "Responder pedindo mais informações",
+   "Encaminhar para colegas verificarem",
+   "Não clicar em links, não abrir anexos e reportar ao time de TI",
+   "Abrir o anexo em modo protegido"
+  ],
+  "ordem": 5,
+  "pergunta": "O que você deve fazer ao receber um e-mail suspeito?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "9d1de2a0-5d15-4a2f-b2ee-4e4519f9919c",
+  "opcao_a": "Porque são mais lentas",
+  "opcao_b": "Porque são vulneráveis a interceptação de dados (man-in-the-middle)",
+  "opcao_c": "Porque cobram taxa extra",
+  "opcao_d": "Porque não permitem uso de VPN",
+  "opcoes": [
+   "Porque são mais lentas",
+   "Porque são vulneráveis a interceptação de dados (man-in-the-middle)",
+   "Porque cobram taxa extra",
+   "Porque não permitem uso de VPN"
+  ],
+  "ordem": 6,
+  "pergunta": "Por que redes Wi-Fi públicas são consideradas arriscadas?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "353c631c-dfd4-4f37-9200-339d068739fa",
+  "opcao_a": "Nunca é necessário",
+  "opcao_b": "Apenas em casa",
+  "opcao_c": "Sempre que for acessar dados da empresa fora do escritório ou em rede pública",
+  "opcao_d": "Somente aos finais de semana",
+  "opcoes": [
+   "Nunca é necessário",
+   "Apenas em casa",
+   "Sempre que for acessar dados da empresa fora do escritório ou em rede pública",
+   "Somente aos finais de semana"
+  ],
+  "ordem": 7,
+  "pergunta": "Quando se deve usar VPN, segundo o treinamento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "a268aa87-2607-479d-a050-914a9d33a01c",
+  "opcao_a": "Deixar como está, se for rápido",
+  "opcao_b": "Bloquear a tela",
+  "opcao_c": "Desligar o monitor apenas",
+  "opcao_d": "Fechar só os aplicativos abertos",
+  "opcoes": [
+   "Deixar como está, se for rápido",
+   "Bloquear a tela",
+   "Desligar o monitor apenas",
+   "Fechar só os aplicativos abertos"
+  ],
+  "ordem": 8,
+  "pergunta": "O que fazer ao se ausentar do computador, mesmo que por pouco tempo?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "9a2ef80f-58ee-4571-b499-8d7c4093f6de",
+  "opcao_a": "Sim, desde que guardados na gaveta",
+  "opcao_b": "Sim, é a forma mais prática",
+  "opcao_c": "Não, senhas nunca devem ser anotadas de forma visível",
+  "opcao_d": "Só para sistemas pouco importantes",
+  "opcoes": [
+   "Sim, desde que guardados na gaveta",
+   "Sim, é a forma mais prática",
+   "Não, senhas nunca devem ser anotadas de forma visível",
+   "Só para sistemas pouco importantes"
+  ],
+  "ordem": 9,
+  "pergunta": "É uma prática segura anotar senhas em papéis ou post-its?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "1d87cec3-1f72-46ab-b961-fd925d39d0a8",
+  "opcao_a": "Somente o time de TI",
+  "opcao_b": "Cada colaborador da empresa",
+  "opcao_c": "Apenas a diretoria",
+  "opcao_d": "Somente o setor de compliance",
+  "opcoes": [
+   "Somente o time de TI",
+   "Cada colaborador da empresa",
+   "Apenas a diretoria",
+   "Somente o setor de compliance"
+  ],
+  "ordem": 10,
+  "pergunta": "Segundo o treinamento, quem é a \"primeira linha de defesa\" da segurança da informação?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "6513270e-269e-4d37-b2a7-4de452e6b438"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "fa529ba3-fe3b-4ada-bcf2-0724d953ee26",
+  "opcao_a": "Emissor, Mensagem, Canal, Receptor e Feedback",
+  "opcao_b": "Início, Meio, Fim, Revisão e Envio",
+  "opcao_c": "Voz, Tom, Gesto, Olhar e Postura",
+  "opcao_d": "Ideia, Rascunho, Texto, Revisão e Publicação",
+  "opcoes": [
+   "Emissor, Mensagem, Canal, Receptor e Feedback",
+   "Início, Meio, Fim, Revisão e Envio",
+   "Voz, Tom, Gesto, Olhar e Postura",
+   "Ideia, Rascunho, Texto, Revisão e Publicação"
+  ],
+  "ordem": 1,
+  "pergunta": "Quais são os 5 elementos do processo de comunicação apresentados no treinamento?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "4fd58dbe-7bdc-468b-bafb-2c68774b15d7",
+  "opcao_a": "Ouvir enquanto se faz outra tarefa",
+  "opcao_b": "Ouvir de forma completa e consciente, com interesse genuíno",
+  "opcao_c": "Esperar a vez de falar",
+  "opcao_d": "Repetir tudo o que o outro disse",
+  "opcoes": [
+   "Ouvir enquanto se faz outra tarefa",
+   "Ouvir de forma completa e consciente, com interesse genuíno",
+   "Esperar a vez de falar",
+   "Repetir tudo o que o outro disse"
+  ],
+  "ordem": 2,
+  "pergunta": "O que é escuta ativa?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "bfeaa155-1a28-47b3-a4e4-e25a15fc899e",
+  "opcao_a": "Passivo",
+  "opcao_b": "Agressivo",
+  "opcao_c": "Passivo-Agressivo",
+  "opcao_d": "Assertivo",
+  "opcoes": [
+   "Passivo",
+   "Agressivo",
+   "Passivo-Agressivo",
+   "Assertivo"
+  ],
+  "ordem": 3,
+  "pergunta": "Qual estilo de comunicação expressa opinião com respeito, sem agredir nem se calar?",
+  "resposta_correta": "d",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "7a86f7a2-43c7-4b9a-bd87-a86557b6fb7e",
+  "opcao_a": "Expressar a opinião diretamente",
+  "opcao_b": "Concordar na frente da pessoa e criticar pelas costas",
+  "opcao_c": "Impor a opinião sem respeitar o outro",
+  "opcao_d": "Evitar qualquer tipo de conflito",
+  "opcoes": [
+   "Expressar a opinião diretamente",
+   "Concordar na frente da pessoa e criticar pelas costas",
+   "Impor a opinião sem respeitar o outro",
+   "Evitar qualquer tipo de conflito"
+  ],
+  "ordem": 4,
+  "pergunta": "O que caracteriza a comunicação Passivo-Agressiva?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "842e7fc2-2954-4a6e-b12a-a1f6d42fddbb",
+  "opcao_a": "Determine uma data",
+  "opcao_b": "Descreva a situação objetivamente",
+  "opcao_c": "Delegue a responsabilidade",
+  "opcao_d": "Decida sozinho a solução",
+  "opcoes": [
+   "Determine uma data",
+   "Descreva a situação objetivamente",
+   "Delegue a responsabilidade",
+   "Decida sozinho a solução"
+  ],
+  "ordem": 5,
+  "pergunta": "No modelo DESC de feedback, o que significa a letra \"D\"?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "f3b7a50d-f373-4a53-b488-f87605e999f3",
+  "opcao_a": "Agradecer pela contribuição",
+  "opcao_b": "Pedir exemplos específicos",
+  "opcao_c": "Ficar na defensiva",
+  "opcao_d": "Refletir antes de responder",
+  "opcoes": [
+   "Agradecer pela contribuição",
+   "Pedir exemplos específicos",
+   "Ficar na defensiva",
+   "Refletir antes de responder"
+  ],
+  "ordem": 6,
+  "pergunta": "Ao receber um feedback, o que o treinamento recomenda evitar?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "b0a844e5-2587-4e6b-9c9b-cf35873be078",
+  "opcao_a": "Usar CAPS LOCK, que parece gritar",
+  "opcao_b": "Ter um assunto claro e objetivo",
+  "opcao_c": "Revisar antes de enviar",
+  "opcao_d": "Ter uma assinatura profissional",
+  "opcoes": [
+   "Usar CAPS LOCK, que parece gritar",
+   "Ter um assunto claro e objetivo",
+   "Revisar antes de enviar",
+   "Ter uma assinatura profissional"
+  ],
+  "ordem": 7,
+  "pergunta": "Qual das práticas abaixo é um erro comum em e-mails profissionais, segundo o treinamento?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "c215a82a-06ec-41ad-aa05-75438b0d590b",
+  "opcao_a": "Contato visual adequado",
+  "opcao_b": "Ruídos físicos, como barulho no ambiente",
+  "opcao_c": "Escuta ativa",
+  "opcao_d": "Comunicação assertiva",
+  "opcoes": [
+   "Contato visual adequado",
+   "Ruídos físicos, como barulho no ambiente",
+   "Escuta ativa",
+   "Comunicação assertiva"
+  ],
+  "ordem": 8,
+  "pergunta": "Cite uma barreira à comunicação mencionada no treinamento.",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "a49636a2-fa7f-4eab-8c4f-9b0687322e25",
+  "opcao_a": "\"Você\" (ex: Você me faz sentir...)",
+  "opcao_b": "\"Eles\"",
+  "opcao_c": "\"Eu\" (ex: Eu sinto que...)",
+  "opcao_d": "\"Nós\"",
+  "opcoes": [
+   "\"Você\" (ex: Você me faz sentir...)",
+   "\"Eles\"",
+   "\"Eu\" (ex: Eu sinto que...)",
+   "\"Nós\""
+  ],
+  "ordem": 9,
+  "pergunta": "Na comunicação assertiva, qual pronome deve-se priorizar ao expressar um sentimento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:26:34.379901+00:00",
+  "criado_em": "2026-09-18T02:26:34.379901+00:00",
+  "id": "d86f40f6-b239-43c7-974c-77a2dd02de92",
+  "opcao_a": "30%",
+  "opcao_b": "50%",
+  "opcao_c": "70%",
+  "opcao_d": "90%",
+  "opcoes": [
+   "30%",
+   "50%",
+   "70%",
+   "90%"
+  ],
+  "ordem": 10,
+  "pergunta": "Segundo o treinamento, qual percentual do tempo de trabalho envolve comunicação?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "d23f0824-128b-4f33-8c5c-7fd0a6a3a450"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "e883a1d4-5de0-4997-84b5-a81842d87208",
+  "opcao_a": "Contará apenas as células que contêm números.",
+  "opcao_b": "Contará todas as células que não estejam vazias, independentemente do tipo de conteúdo.",
+  "opcao_c": "Retornará um erro de valor (#VALOR!) por misturar tipos de dados.",
+  "opcao_d": "Contará apenas as células que contêm fórmulas aritméticas.",
+  "opcoes": [
+   "Contará apenas as células que contêm números.",
+   "Contará todas as células que não estejam vazias, independentemente do tipo de conteúdo.",
+   "Retornará um erro de valor (#VALOR!) por misturar tipos de dados.",
+   "Contará apenas as células que contêm fórmulas aritméticas."
+  ],
+  "ordem": 0,
+  "pergunta": "Ao utilizar a função CONT.VALORES(A1:A10), qual será o comportamento da ferramenta caso existam células com textos e outras com números no intervalo?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "3908f227-c59d-4916-9b0e-e76f2ac34446",
+  "opcao_a": "A função passará a procurar o valor em linhas em vez de colunas.",
+  "opcao_b": "A função exigirá que a primeira coluna da tabela esteja classificada e buscará uma correspondência aproximada.",
+  "opcao_c": "A função retornará erro se não encontrar exatamente o valor procurado na tabela.",
+  "opcao_d": "A função buscará automaticamente em todas as planilhas da pasta de trabalho.",
+  "opcoes": [
+   "A função passará a procurar o valor em linhas em vez de colunas.",
+   "A função exigirá que a primeira coluna da tabela esteja classificada e buscará uma correspondência aproximada.",
+   "A função retornará erro se não encontrar exatamente o valor procurado na tabela.",
+   "A função buscará automaticamente em todas as planilhas da pasta de trabalho."
+  ],
+  "ordem": 1,
+  "pergunta": "Na função PROCV(valor_procurado; tabela; coluna_resultado; [falso]), o que acontece se o argumento [falso] for omitido ou definido como VERDADEIRO?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "80b0c08b-c770-4420-8aa4-248c8857f9a4",
+  "opcao_a": "A PROCX requer que a tabela de busca seja uma Tabela Dinâmica.",
+  "opcao_b": "A PROCX utiliza obrigatoriamente um índice de coluna numérico como o PROCV.",
+  "opcao_c": "A PROCX utiliza intervalos de procura e retorno separados, oferecendo mais modernidade e flexibilidade.",
+  "opcao_d": "A PROCX só funciona em sentido horizontal, substituindo o PROCH.",
+  "opcoes": [
+   "A PROCX requer que a tabela de busca seja uma Tabela Dinâmica.",
+   "A PROCX utiliza obrigatoriamente um índice de coluna numérico como o PROCV.",
+   "A PROCX utiliza intervalos de procura e retorno separados, oferecendo mais modernidade e flexibilidade.",
+   "A PROCX só funciona em sentido horizontal, substituindo o PROCH."
+  ],
+  "ordem": 2,
+  "pergunta": "Qual é a principal diferença estrutural entre a função PROCV e a função PROCX mencionada no treinamento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "9cfc8652-3919-4242-a2ed-dbbd5464ecc2",
+  "opcao_a": "Tabela Dinâmica com filtros de data.",
+  "opcao_b": "Segmentação de dados por períodos.",
+  "opcao_c": "Formatação Condicional baseada em regras.",
+  "opcao_d": "Inserção de Gráfico de Linhas com tendências.",
+  "opcoes": [
+   "Tabela Dinâmica com filtros de data.",
+   "Segmentação de dados por períodos.",
+   "Formatação Condicional baseada em regras.",
+   "Inserção de Gráfico de Linhas com tendências."
+  ],
+  "ordem": 3,
+  "pergunta": "Um usuário deseja identificar rapidamente todas as datas de entrega vencidas em uma planilha. Qual recurso deve ser utilizado para automatizar a alteração visual dessas células?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "c2216b02-fc24-4d0b-89d4-88b1cfbf3360",
+  "opcao_a": "Os dados devem possuir obrigatoriamente pelo menos 1000 linhas.",
+  "opcao_b": "A fonte de dados deve conter cabeçalhos e recomenda-se evitar células vazias.",
+  "opcao_c": "A planilha de origem deve estar protegida com senha.",
+  "opcao_d": "Não é possível atualizar os dados após a tabela ser criada pela primeira vez.",
+  "opcoes": [
+   "Os dados devem possuir obrigatoriamente pelo menos 1000 linhas.",
+   "A fonte de dados deve conter cabeçalhos e recomenda-se evitar células vazias.",
+   "A planilha de origem deve estar protegida com senha.",
+   "Não é possível atualizar os dados após a tabela ser criada pela primeira vez."
+  ],
+  "ordem": 4,
+  "pergunta": "Sobre as Tabelas Dinâmicas, qual é uma condição fundamental mencionada para que os dados sejam processados corretamente?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "3d4882a5-ce5b-4a92-b1f5-1707da45e18a",
+  "opcao_a": "Alt + Seta",
+  "opcao_b": "Shift + Seta",
+  "opcao_c": "Ctrl + Seta",
+  "opcao_d": "Ctrl + Home",
+  "opcoes": [
+   "Alt + Seta",
+   "Shift + Seta",
+   "Ctrl + Seta",
+   "Ctrl + Home"
+  ],
+  "ordem": 5,
+  "pergunta": "Qual atalho de teclado é utilizado para navegar rapidamente até a última célula que contém dados na direção da seta pressionada?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "cda6c6fd-bd68-4167-a693-4036d17e4497",
+  "opcao_a": "Alt + =",
+  "opcao_b": "Ctrl + S",
+  "opcao_c": "F2",
+  "opcao_d": "Ctrl + Shift + L",
+  "opcoes": [
+   "Alt + =",
+   "Ctrl + S",
+   "F2",
+   "Ctrl + Shift + L"
+  ],
+  "ordem": 6,
+  "pergunta": "Para realizar uma 'AutoSoma' rápida de uma coluna de valores sem precisar digitar a fórmula manualmente, qual atalho deve ser utilizado?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "7e26f36a-8483-48b8-b32d-d3313a0b9965",
+  "opcao_a": "Gráfico de Dispersão",
+  "opcao_b": "Gráfico de Linhas",
+  "opcao_c": "Gráfico de Pizza",
+  "opcao_d": "Gráfico de Barras",
+  "opcoes": [
+   "Gráfico de Dispersão",
+   "Gráfico de Linhas",
+   "Gráfico de Pizza",
+   "Gráfico de Barras"
+  ],
+  "ordem": 7,
+  "pergunta": "Se você precisa comparar a participação de diferentes categorias em relação ao faturamento total da empresa (proporção), qual o gráfico mais indicado de acordo com as boas práticas?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "fd56a926-076b-4e36-bb23-13f55b06258e",
+  "opcao_a": "Pasta de Trabalho",
+  "opcao_b": "Faixa de Opções",
+  "opcao_c": "Conjunto de Células",
+  "opcao_d": "Interface de Dados",
+  "opcoes": [
+   "Pasta de Trabalho",
+   "Faixa de Opções",
+   "Conjunto de Células",
+   "Interface de Dados"
+  ],
+  "ordem": 8,
+  "pergunta": "Na hierarquia do Microsoft Excel, como é definido o arquivo que contém várias planilhas?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-04-08T16:36:00.409096+00:00",
+  "criado_em": "2026-04-08T16:36:00.409096+00:00",
+  "id": "78e4b98d-4787-493b-8a44-eb860726e25c",
+  "opcao_a": "F4",
+  "opcao_b": "F2",
+  "opcao_c": "F12",
+  "opcao_d": "F5",
+  "opcoes": [
+   "F4",
+   "F2",
+   "F12",
+   "F5"
+  ],
+  "ordem": 9,
+  "pergunta": "Ao editar uma célula diretamente, qual tecla de função permite entrar no modo de edição sem usar o mouse?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "36f675cc-81e7-4ef5-a8e2-5d940ed90475"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "9aea6429-b149-4e24-b192-b70442594052",
+  "opcao_a": "Continua embutido, sem separação",
+  "opcao_b": "Destacado \"por fora\", de forma transparente",
+  "opcao_c": "Removido completamente da nota fiscal",
+  "opcao_d": "Informado apenas em relatórios internos",
+  "opcoes": [
+   "Continua embutido, sem separação",
+   "Destacado \"por fora\", de forma transparente",
+   "Removido completamente da nota fiscal",
+   "Informado apenas em relatórios internos"
+  ],
+  "ordem": 1,
+  "pergunta": "Com a reforma, como o valor do imposto passa a ser exibido ao consumidor?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "cefe2a1f-727d-4349-9822-cb77f4de2c08",
+  "opcao_a": "Sim, sempre",
+  "opcao_b": "Não — depende da alíquota final de cada setor e de reduções específicas",
+  "opcao_c": "Sim, mas apenas para grandes empresas",
+  "opcao_d": "Não, os preços sempre sobem",
+  "opcoes": [
+   "Sim, sempre",
+   "Não — depende da alíquota final de cada setor e de reduções específicas",
+   "Sim, mas apenas para grandes empresas",
+   "Não, os preços sempre sobem"
+  ],
+  "ordem": 2,
+  "pergunta": "A Reforma Tributária, por si só, garante que os preços vão cair?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "597a1ecf-fcf0-4fec-b91e-e9e5efe09f07",
+  "opcao_a": "Porque mudam de idioma",
+  "opcao_b": "Porque muitos citam tributos que deixarão de existir, como ICMS e ISS",
+  "opcao_c": "Porque os contratos deixam de ter validade",
+  "opcao_d": "Isso não é necessário",
+  "opcoes": [
+   "Porque mudam de idioma",
+   "Porque muitos citam tributos que deixarão de existir, como ICMS e ISS",
+   "Porque os contratos deixam de ter validade",
+   "Isso não é necessário"
+  ],
+  "ordem": 3,
+  "pergunta": "Por que contratos comerciais precisam de revisão jurídica na reforma?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "149e259b-5d58-4705-b979-d04af47aebdd",
+  "opcao_a": "Parar de emitir notas até 2033",
+  "opcao_b": "Calcular apenas os tributos antigos",
+  "opcao_c": "Calcular tributos antigos e novos ao mesmo tempo",
+  "opcao_d": "Migrar automaticamente sem nenhuma configuração",
+  "opcoes": [
+   "Parar de emitir notas até 2033",
+   "Calcular apenas os tributos antigos",
+   "Calcular tributos antigos e novos ao mesmo tempo",
+   "Migrar automaticamente sem nenhuma configuração"
+  ],
+  "ordem": 4,
+  "pergunta": "Durante a transição (2026-2033), o que os sistemas de emissão de nota fiscal precisam fazer?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "78572976-3a12-417c-9a26-f88938703800",
+  "opcao_a": "Sim, obrigatoriamente a partir de 2027",
+  "opcao_b": "Não, podem continuar no regime unificado, mas podem optar por apurar \"por fora\" em situações específicas",
+  "opcao_c": "Sim, apenas empresas de serviços",
+  "opcao_d": "Não, estão isentas de qualquer tributo",
+  "opcoes": [
+   "Sim, obrigatoriamente a partir de 2027",
+   "Não, podem continuar no regime unificado, mas podem optar por apurar \"por fora\" em situações específicas",
+   "Sim, apenas empresas de serviços",
+   "Não, estão isentas de qualquer tributo"
+  ],
+  "ordem": 5,
+  "pergunta": "Empresas do Simples Nacional são obrigadas a migrar para o regime normal do IBS/CBS?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "7b8f2ab5-3451-4013-9675-f6ad325b55dd",
+  "opcao_a": "Porque paga mais impostos que as demais",
+  "opcao_b": "Porque gera menos crédito tributário para quem compra dela",
+  "opcao_c": "Porque não pode emitir nota fiscal",
+  "opcao_d": "Porque é proibida de vender para outras empresas",
+  "opcoes": [
+   "Porque paga mais impostos que as demais",
+   "Porque gera menos crédito tributário para quem compra dela",
+   "Porque não pode emitir nota fiscal",
+   "Porque é proibida de vender para outras empresas"
+  ],
+  "ordem": 6,
+  "pergunta": "Por que uma empresa do Simples Nacional pode ficar menos competitiva em vendas B2B?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "9c3a23cd-e67a-4b75-bc39-47249fc2d0a1",
+  "opcao_a": "Somente o setor público",
+  "opcao_b": "A indústria, que hoje tem mais dificuldade de aproveitar créditos em toda a cadeia",
+  "opcao_c": "Somente o setor financeiro",
+  "opcao_d": "Nenhum setor é beneficiado",
+  "opcoes": [
+   "Somente o setor público",
+   "A indústria, que hoje tem mais dificuldade de aproveitar créditos em toda a cadeia",
+   "Somente o setor financeiro",
+   "Nenhum setor é beneficiado"
+  ],
+  "ordem": 7,
+  "pergunta": "Qual setor tende a se beneficiar mais da não cumulatividade plena, segundo o treinamento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "e8c14743-7abe-4539-807d-1034d726c86b",
+  "opcao_a": "Gestão de estoque com produtos de tributação \"antiga\" e \"nova\", e atualização de PDVs",
+  "opcao_b": "Ausência total de qualquer mudança",
+  "opcao_c": "Fechamento obrigatório das lojas físicas",
+  "opcao_d": "Proibição de vendas online",
+  "opcoes": [
+   "Gestão de estoque com produtos de tributação \"antiga\" e \"nova\", e atualização de PDVs",
+   "Ausência total de qualquer mudança",
+   "Fechamento obrigatório das lojas físicas",
+   "Proibição de vendas online"
+  ],
+  "ordem": 8,
+  "pergunta": "Qual é um ponto de atenção específico do varejo na transição?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "a4a45eff-ccb5-43d9-9810-d60ea72991b9",
+  "opcao_a": "Porque não paga nenhum tributo hoje",
+  "opcao_b": "Porque a alíquota padrão do IBS+CBS pode ser diferente da alíquota de ISS praticada antes",
+  "opcao_c": "Porque será extinto pela reforma",
+  "opcao_d": "Porque não emite nota fiscal",
+  "opcoes": [
+   "Porque não paga nenhum tributo hoje",
+   "Porque a alíquota padrão do IBS+CBS pode ser diferente da alíquota de ISS praticada antes",
+   "Porque será extinto pela reforma",
+   "Porque não emite nota fiscal"
+  ],
+  "ordem": 9,
+  "pergunta": "Por que o setor de serviços exige atenção redobrada na precificação?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "1eb20109-a91c-4439-95ab-8b4d15b40aeb",
+  "opcao_a": "Nada, o processo é totalmente automático",
+  "opcao_b": "Receber treinamento e acompanhar as notas técnicas do Comitê Gestor do IBS",
+  "opcao_c": "Aguardar até 2033 para agir",
+  "opcao_d": "Contratar apenas uma nova ferramenta de e-mail",
+  "opcoes": [
+   "Nada, o processo é totalmente automático",
+   "Receber treinamento e acompanhar as notas técnicas do Comitê Gestor do IBS",
+   "Aguardar até 2033 para agir",
+   "Contratar apenas uma nova ferramenta de e-mail"
+  ],
+  "ordem": 10,
+  "pergunta": "Segundo o treinamento, o que a área fiscal e financeira precisa fazer durante a transição?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "b6246771-c845-4070-a377-1407e8e72789",
+  "opcao_a": "A precificação dos produtos e serviços",
+  "opcao_b": "O organograma da empresa",
+  "opcao_c": "O uniforme dos funcionários",
+  "opcao_d": "O horário de almoço",
+  "opcoes": [
+   "A precificação dos produtos e serviços",
+   "O organograma da empresa",
+   "O uniforme dos funcionários",
+   "O horário de almoço"
+  ],
+  "ordem": 11,
+  "pergunta": "O que este Módulo 2 recomenda revisar além dos contratos e sistemas?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:18:36.914904+00:00",
+  "criado_em": "2026-09-17T10:18:36.914904+00:00",
+  "id": "e39639be-7a60-4a91-b306-98a1c0093492",
+  "opcao_a": "Marketing digital",
+  "opcao_b": "Créditos tributários na prática e o funcionamento do split payment",
+  "opcao_c": "Gestão de recursos humanos",
+  "opcao_d": "Atendimento ao cliente",
+  "opcoes": [
+   "Marketing digital",
+   "Créditos tributários na prática e o funcionamento do split payment",
+   "Gestão de recursos humanos",
+   "Atendimento ao cliente"
+  ],
+  "ordem": 12,
+  "pergunta": "Qual tema o treinamento anuncia que será aprofundado no Módulo 3?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "92276658-1e27-41c0-8a6a-63ec24ede6a4"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "a2c68e45-ca04-479f-af15-b6ad2db3997f",
+  "opcao_a": "R$ 600,00",
+  "opcao_b": "R$ 800,00",
+  "opcao_c": "R$ 400,00",
+  "opcao_d": "R$ 200,00",
+  "opcoes": [
+   "R$ 600,00",
+   "R$ 800,00",
+   "R$ 400,00",
+   "R$ 200,00"
+  ],
+  "ordem": 1,
+  "pergunta": "No exemplo do treinamento, uma indústria compra insumos por R$ 1.000 e paga R$ 200 de tributo (20%). Ao vender o produto por R$ 3.000 (tributo de R$ 600), quanto ela efetivamente recolhe?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "f237e45a-cd02-45e1-9635-3d03551fd8f9",
+  "opcao_a": "O pagamento de qualquer tributo",
+  "opcao_b": "O efeito cascata, em que o tributo incide sobre tributo em cada etapa",
+  "opcao_c": "A emissão de notas fiscais",
+  "opcao_d": "A fiscalização das empresas",
+  "opcoes": [
+   "O pagamento de qualquer tributo",
+   "O efeito cascata, em que o tributo incide sobre tributo em cada etapa",
+   "A emissão de notas fiscais",
+   "A fiscalização das empresas"
+  ],
+  "ordem": 2,
+  "pergunta": "O que a não cumulatividade plena evita?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "7691b06f-6555-4bfe-b8c9-817af8be8831",
+  "opcao_a": "IBS",
+  "opcao_b": "CBS",
+  "opcao_c": "Imposto Seletivo",
+  "opcao_d": "Todos geram crédito igualmente",
+  "opcoes": [
+   "IBS",
+   "CBS",
+   "Imposto Seletivo",
+   "Todos geram crédito igualmente"
+  ],
+  "ordem": 3,
+  "pergunta": "Qual tributo da reforma NÃO gera direito a crédito nas etapas seguintes da cadeia?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "15bd448f-f261-49ed-be4c-5ce666c1494e",
+  "opcao_a": "Apenas insumos diretos de produção",
+  "opcao_b": "Compras pessoais dos sócios",
+  "opcao_c": "Insumos, serviços de apoio à atividade, ativo imobilizado e energia usados na operação",
+  "opcao_d": "Nenhuma compra gera crédito",
+  "opcoes": [
+   "Apenas insumos diretos de produção",
+   "Compras pessoais dos sócios",
+   "Insumos, serviços de apoio à atividade, ativo imobilizado e energia usados na operação",
+   "Nenhuma compra gera crédito"
+  ],
+  "ordem": 4,
+  "pergunta": "O que, em regra, gera crédito tributário no novo modelo?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "fe3c9c8f-2b85-4c1f-a8aa-ca51b98c67c2",
+  "opcao_a": "Ele é sempre perdido",
+  "opcao_b": "Pode ser objeto de ressarcimento em prazos definidos pela legislação",
+  "opcao_c": "Só pode ser usado após 20 anos",
+  "opcao_d": "É convertido automaticamente em multa",
+  "opcoes": [
+   "Ele é sempre perdido",
+   "Pode ser objeto de ressarcimento em prazos definidos pela legislação",
+   "Só pode ser usado após 20 anos",
+   "É convertido automaticamente em multa"
+  ],
+  "ordem": 5,
+  "pergunta": "O que acontece com o saldo de crédito tributário acumulado, segundo o treinamento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "973f7986-26b1-4ffc-870d-710920859634",
+  "opcao_a": "Um mês após o pagamento",
+  "opcao_b": "No momento em que a transação de pagamento é processada",
+  "opcao_c": "Apenas na declaração anual",
+  "opcao_d": "Nunca é separado automaticamente",
+  "opcoes": [
+   "Um mês após o pagamento",
+   "No momento em que a transação de pagamento é processada",
+   "Apenas na declaração anual",
+   "Nunca é separado automaticamente"
+  ],
+  "ordem": 6,
+  "pergunta": "No split payment, quando o valor do tributo é separado da compra?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "a7e6529b-ce76-49f4-b721-6e9ee7a46309",
+  "opcao_a": "O valor total da venda, sem descontos",
+  "opcao_b": "Apenas o valor do tributo",
+  "opcao_c": "O valor líquido, já sem a parte do tributo",
+  "opcao_d": "Nenhum valor até o fim do mês",
+  "opcoes": [
+   "O valor total da venda, sem descontos",
+   "Apenas o valor do tributo",
+   "O valor líquido, já sem a parte do tributo",
+   "Nenhum valor até o fim do mês"
+  ],
+  "ordem": 7,
+  "pergunta": "Após o split payment, o que a empresa vendedora recebe?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "988af3fb-d396-40d6-9c90-11ef256badf9",
+  "opcao_a": "Porque o tributo passa a ser recolhido automaticamente no pagamento, sem ficar temporariamente disponível para a empresa",
+  "opcao_b": "Porque elimina todos os custos da empresa",
+  "opcao_c": "Porque acaba com o uso de cartões de crédito",
+  "opcao_d": "Porque impede qualquer venda a prazo",
+  "opcoes": [
+   "Porque o tributo passa a ser recolhido automaticamente no pagamento, sem ficar temporariamente disponível para a empresa",
+   "Porque elimina todos os custos da empresa",
+   "Porque acaba com o uso de cartões de crédito",
+   "Porque impede qualquer venda a prazo"
+  ],
+  "ordem": 8,
+  "pergunta": "Por que o split payment exige um replanejamento do fluxo de caixa das empresas?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "effddeea-a842-4c19-b96f-74adfaf55496",
+  "opcao_a": "Ela deixa de existir",
+  "opcao_b": "Ganha novos campos para registrar IBS, CBS e Imposto Seletivo separadamente",
+  "opcao_c": "Passa a ser feita manualmente em papel",
+  "opcao_d": "Não sofre nenhuma alteração",
+  "opcoes": [
+   "Ela deixa de existir",
+   "Ganha novos campos para registrar IBS, CBS e Imposto Seletivo separadamente",
+   "Passa a ser feita manualmente em papel",
+   "Não sofre nenhuma alteração"
+  ],
+  "ordem": 9,
+  "pergunta": "O que muda na Escrituração Fiscal Digital (EFD) com a reforma?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "8c5c715f-8c74-4c1e-a7e9-e06f59b44e92",
+  "opcao_a": "Apenas os tributos novos",
+  "opcao_b": "Apenas os tributos antigos",
+  "opcao_c": "Tributos antigos (ICMS, ISS, PIS, Cofins) e novos (IBS, CBS) ao mesmo tempo",
+  "opcao_d": "Nenhum tributo, pois a escrituração é suspensa",
+  "opcoes": [
+   "Apenas os tributos novos",
+   "Apenas os tributos antigos",
+   "Tributos antigos (ICMS, ISS, PIS, Cofins) e novos (IBS, CBS) ao mesmo tempo",
+   "Nenhum tributo, pois a escrituração é suspensa"
+  ],
+  "ordem": 10,
+  "pergunta": "Durante a transição, o que a escrituração fiscal precisa conciliar?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "cca2a92b-03a5-4cc1-857a-40b22188287e",
+  "opcao_a": "Ignorar as publicações do Comitê Gestor do IBS",
+  "opcao_b": "Mapear produtos/serviços e suas alíquotas no novo modelo, e treinar a equipe",
+  "opcao_c": "Aguardar 2033 para tomar qualquer ação",
+  "opcao_d": "Demitir a equipe fiscal",
+  "opcoes": [
+   "Ignorar as publicações do Comitê Gestor do IBS",
+   "Mapear produtos/serviços e suas alíquotas no novo modelo, e treinar a equipe",
+   "Aguardar 2033 para tomar qualquer ação",
+   "Demitir a equipe fiscal"
+  ],
+  "ordem": 11,
+  "pergunta": "Qual das opções abaixo faz parte do checklist recomendado para o setor contábil/fiscal?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-17T10:19:33.190172+00:00",
+  "criado_em": "2026-09-17T10:19:33.190172+00:00",
+  "id": "1a4f44f9-a651-4445-b9f3-635cf88c422b",
+  "opcao_a": "Apenas estagiários",
+  "opcao_b": "Profissionais de contabilidade, fiscal, financeiro e áreas correlatas",
+  "opcao_c": "Somente a diretoria comercial",
+  "opcao_d": "Apenas o setor de marketing",
+  "opcoes": [
+   "Apenas estagiários",
+   "Profissionais de contabilidade, fiscal, financeiro e áreas correlatas",
+   "Somente a diretoria comercial",
+   "Apenas o setor de marketing"
+  ],
+  "ordem": 12,
+  "pergunta": "Qual é o público recomendado para este Módulo 3, segundo o treinamento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "ae97ba94-d0ed-482f-8f6d-05584ef8aa38"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "23a5ef88-ef02-490b-bfde-fc1586ce03f9",
+  "opcao_a": "20%",
+  "opcao_b": "45%",
+  "opcao_c": "68%",
+  "opcao_d": "90%",
+  "opcoes": [
+   "20%",
+   "45%",
+   "68%",
+   "90%"
+  ],
+  "ordem": 1,
+  "pergunta": "Segundo o treinamento, qual percentual de clientes abandona uma empresa por mau atendimento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "31dec4f4-df2a-4b79-bc8e-80b36f0e2289",
+  "opcao_a": "2 vezes mais caro",
+  "opcao_b": "5 vezes mais caro",
+  "opcao_c": "O custo é o mesmo",
+  "opcao_d": "10 vezes mais barato",
+  "opcoes": [
+   "2 vezes mais caro",
+   "5 vezes mais caro",
+   "O custo é o mesmo",
+   "10 vezes mais barato"
+  ],
+  "ordem": 2,
+  "pergunta": "Quanto mais caro é conquistar um cliente novo em comparação a manter um cliente atual?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "072a98d2-3606-4efc-9fb8-5c0dd37ee915",
+  "opcao_a": "Rapidez, Preço, Marketing e Vendas",
+  "opcao_b": "Comunicação, Empatia, Paciência e Conhecimento",
+  "opcao_c": "Silêncio, Formalidade, Distância e Agilidade",
+  "opcao_d": "Tecnologia, Scripts, Metas e Supervisão",
+  "opcoes": [
+   "Rapidez, Preço, Marketing e Vendas",
+   "Comunicação, Empatia, Paciência e Conhecimento",
+   "Silêncio, Formalidade, Distância e Agilidade",
+   "Tecnologia, Scripts, Metas e Supervisão"
+  ],
+  "ordem": 3,
+  "pergunta": "Quais são as 4 habilidades essenciais do atendente excelente citadas no treinamento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "804c25d6-4aff-4cd1-b678-bc8d40783f0a",
+  "opcao_a": "Solução, Acolhimento, Identificação, Conclusão",
+  "opcao_b": "Acolhimento, Identificação, Solução, Conclusão, Acompanhamento",
+  "opcao_c": "Identificação, Conclusão, Acolhimento, Solução",
+  "opcao_d": "Conclusão, Solução, Identificação, Acolhimento",
+  "opcoes": [
+   "Solução, Acolhimento, Identificação, Conclusão",
+   "Acolhimento, Identificação, Solução, Conclusão, Acompanhamento",
+   "Identificação, Conclusão, Acolhimento, Solução",
+   "Conclusão, Solução, Identificação, Acolhimento"
+  ],
+  "ordem": 4,
+  "pergunta": "Qual é a ordem correta das etapas do atendimento?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "53740902-9620-4f0d-8380-84a03d93fd4c",
+  "opcao_a": "Lead (Conduzir a venda)",
+  "opcao_b": "Listen (Escutar)",
+  "opcao_c": "Late (Atrasar a resposta)",
+  "opcao_d": "Limit (Limitar o atendimento)",
+  "opcoes": [
+   "Lead (Conduzir a venda)",
+   "Listen (Escutar)",
+   "Late (Atrasar a resposta)",
+   "Limit (Limitar o atendimento)"
+  ],
+  "ordem": 5,
+  "pergunta": "No método LEAD para lidar com reclamações, o que significa o \"L\"?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "d58dcdb4-6b44-4806-8b5a-b3ee4265bb31",
+  "opcao_a": "Apologize (Desculpar-se)",
+  "opcao_b": "Avoid (Evitar o cliente)",
+  "opcao_c": "Assume (Assumir a culpa do cliente)",
+  "opcao_d": "Alert (Alertar o supervisor)",
+  "opcoes": [
+   "Apologize (Desculpar-se)",
+   "Avoid (Evitar o cliente)",
+   "Assume (Assumir a culpa do cliente)",
+   "Alert (Alertar o supervisor)"
+  ],
+  "ordem": 6,
+  "pergunta": "No método LEAD, o que significa o \"A\"?",
+  "resposta_correta": "a",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "bd6b881a-e8f6-40bd-8f97-7044218e0b7b",
+  "opcao_a": "Responder com o mesmo tom",
+  "opcao_b": "Manter a calma e focar na solução",
+  "opcao_c": "Encerrar o atendimento imediatamente",
+  "opcao_d": "Ignorar as reclamações",
+  "opcoes": [
+   "Responder com o mesmo tom",
+   "Manter a calma e focar na solução",
+   "Encerrar o atendimento imediatamente",
+   "Ignorar as reclamações"
+  ],
+  "ordem": 7,
+  "pergunta": "Como o treinamento recomenda lidar com um cliente do perfil \"Agressivo\"?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "a997f351-754a-49cd-a5cf-edfa5a9196f0",
+  "opcao_a": "\"Como posso ajudá-lo hoje?\"",
+  "opcao_b": "\"Vou resolver isso para você\"",
+  "opcao_c": "\"Essa é a política da empresa\"",
+  "opcao_d": "\"Entendo sua situação...\"",
+  "opcoes": [
+   "\"Como posso ajudá-lo hoje?\"",
+   "\"Vou resolver isso para você\"",
+   "\"Essa é a política da empresa\"",
+   "\"Entendo sua situação...\""
+  ],
+  "ordem": 8,
+  "pergunta": "Qual frase o treinamento recomenda EVITAR no atendimento?",
+  "resposta_correta": "c",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "844a7034-e77f-4e48-90a6-ec179556585e",
+  "opcao_a": "Atender sempre pelo mesmo canal",
+  "opcao_b": "Oferecer a mesma qualidade de atendimento em qualquer canal usado",
+  "opcao_c": "Repetir sempre o mesmo script",
+  "opcao_d": "Consistir em nunca transferir o cliente",
+  "opcoes": [
+   "Atender sempre pelo mesmo canal",
+   "Oferecer a mesma qualidade de atendimento em qualquer canal usado",
+   "Repetir sempre o mesmo script",
+   "Consistir em nunca transferir o cliente"
+  ],
+  "ordem": 9,
+  "pergunta": "O que é o \"Princípio da Consistência\" no atendimento multicanal?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ },
+ {
+  "atualizado_em": "2026-09-18T02:24:31.425847+00:00",
+  "criado_em": "2026-09-18T02:24:31.425847+00:00",
+  "id": "e0cfab4c-eaef-44d2-93bf-6d016bae4b5b",
+  "opcao_a": "Como um problema a ser evitado",
+  "opcao_b": "Como uma oportunidade e feedback gratuito para melhorar",
+  "opcao_c": "Como responsabilidade exclusiva do supervisor",
+  "opcao_d": "Como algo que não deve ser documentado",
+  "opcoes": [
+   "Como um problema a ser evitado",
+   "Como uma oportunidade e feedback gratuito para melhorar",
+   "Como responsabilidade exclusiva do supervisor",
+   "Como algo que não deve ser documentado"
+  ],
+  "ordem": 10,
+  "pergunta": "Segundo o treinamento, como uma reclamação de cliente deve ser encarada?",
+  "resposta_correta": "b",
+  "tipo": "quiz",
+  "treinamento_id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf"
+ }
+]

@@ -296,7 +296,7 @@ async function fetchDashboardData({
           tipo: "sem_conclusao",
           titulo: `${t.titulo} sem nenhuma conclusão`,
           detalhe: `${regs.length} participantes inscritos há mais de 14 dias`,
-          link: `/treinamento/${t.id}`,
+          link: `/admin/treinamentos/editar/${t.id}`,
         });
       });
       const reprovados = userAttempts.filter(a => !a.aprovado);
@@ -626,7 +626,7 @@ export default function Dashboard() {
                       <tr
                         key={t.id}
                         className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/treinamento/${t.id}`)}
+                        onClick={() => navigate(`/admin/treinamentos/editar/${t.id}`)}
                       >
                         <td className="px-6 py-3">
                           <div className="font-medium leading-tight line-clamp-1">{t.titulo}</div>

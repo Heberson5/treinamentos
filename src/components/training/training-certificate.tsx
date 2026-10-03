@@ -1,6 +1,7 @@
 import { useState, useRef, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSystemBranding } from "@/hooks/use-system-branding"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Award, Download, Share, Calendar, User, CheckCircle, BookOpen, Loader2 } from "lucide-react"
 import { useBrazilianDate } from "@/hooks/use-brazilian-date"
@@ -27,7 +28,11 @@ interface TrainingCertificateProps {
   userDepartment?: string
 }
 
-export function TrainingCertificate({ training, userProgress, userName, userCompany = "Sauberlich System", userDepartment, trigger }: TrainingCertificateProps) {
+// Nota da avaliação (0 a 10) no formato brasileiro, ex.: 8,5
+const formatNota = (nota: number) => nota.toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+
+export function TrainingCertificate({ training, userProgress, userName, userCompany, userDepartment, trigger }: TrainingCertificateProps) {
+  const { systemNameFull: plataforma } = useSystemBranding()
   const [isOpen, setIsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const certificateRef = useRef<HTMLDivElement>(null)
@@ -185,13 +190,13 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       pdf.text('TEMPO DEDICADO', pageWidth / 2, statsY + 12, { align: 'center' })
 
       // Score (if available)
-      if (userProgress.score) {
+      if (userProgress.score != null) {
         pdf.setFillColor(168, 85, 247) // Purple
         pdf.circle(pageWidth / 2 + statsSpacing, statsY, 2, 'F')
         pdf.setFontSize(18)
         pdf.setFont('helvetica', 'bold')
         pdf.setTextColor(168, 85, 247)
-        pdf.text(`${userProgress.score}%`, pageWidth / 2 + statsSpacing, statsY + 6, { align: 'center' })
+        pdf.text(formatNota(userProgress.score), pageWidth / 2 + statsSpacing, statsY + 6, { align: 'center' })
         pdf.setFontSize(8)
         pdf.setTextColor(100, 100, 100)
         pdf.text('NOTA FINAL', pageWidth / 2 + statsSpacing, statsY + 12, { align: 'center' })
@@ -220,7 +225,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       pdf.setFontSize(11)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(50, 50, 50)
-      pdf.text('Sauberlich System', pageWidth / 2, footerY, { align: 'center' })
+      pdf.text(plataforma, pageWidth / 2, footerY, { align: 'center' })
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(100, 100, 100)
@@ -239,7 +244,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
           pdf.setFontSize(8)
           pdf.setFont('helvetica', 'normal')
           pdf.setTextColor(150, 150, 150)
-          pdf.text(`Dept: ${userDepartment}`, pageWidth - 30, footerY + 4, { align: 'right' })
+          pdf.text(`Departamento: ${userDepartment}`, pageWidth - 30, footerY + 4, { align: 'right' })
         }
       }
 
@@ -258,7 +263,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
     if (navigator.share) {
       navigator.share({
         title: `Certificado - ${training.titulo}`,
-        text: `Concluí o treinamento "${training.titulo}" na plataforma Sauberlich System!`,
+        text: `Concluí o treinamento "${training.titulo}" na plataforma ${plataforma}!`,
         url: window.location.href
       })
     } else {
@@ -373,9 +378,9 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
                     </p>
                     <p className="text-xs text-slate-500 uppercase tracking-wide">Tempo Dedicado</p>
                   </div>
-                  {userProgress.score && (
+                  {userProgress.score != null && (
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">{userProgress.score}%</p>
+                      <p className="text-2xl font-bold text-purple-600">{formatNota(userProgress.score)}</p>
                       <p className="text-xs text-slate-500 uppercase tracking-wide">Nota Final</p>
                     </div>
                   )}
@@ -391,7 +396,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
                   
                   <div className="text-center">
                     <div className="border-t border-slate-300 pt-2 px-16">
-                      <p className="font-semibold text-slate-700">Sauberlich System</p>
+                      <p className="font-semibold text-slate-700">{plataforma}</p>
                       <p className="text-xs text-slate-500">Plataforma de Treinamentos</p>
                     </div>
                   </div>
@@ -404,7 +409,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
                       </>
                     )}
                     {userDepartment && (
-                      <p className="text-xs text-slate-400 mt-1">Dept: {userDepartment}</p>
+                      <p className="text-xs text-slate-400 mt-1">Departamento: {userDepartment}</p>
                     )}
                   </div>
                 </div>

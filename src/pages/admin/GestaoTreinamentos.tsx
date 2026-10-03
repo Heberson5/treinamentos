@@ -632,11 +632,11 @@ export default function GestaoTreinamentos() {
                           {training.categoria || "Geral"} · {nivelLabel(training.nivel || "iniciante")}
                         </p>
                       </div>
-                      <RowMenu training={training} />
+                      {RowMenu({ training })}
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <StatusPill publicado={training.publicado} />
-                      <Origem training={training} />
+                      {Origem({ training })}
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
@@ -701,7 +701,7 @@ export default function GestaoTreinamentos() {
                         <td className="px-3 py-3 text-right tabular-nums">{s.inscritos}</td>
                         <td className="px-3 py-3"><ProgressBar value={s.taxa} /></td>
                         <td className="px-3 py-3 whitespace-nowrap text-muted-foreground">{formatUpdated(training)}</td>
-                        <td className="px-3 py-3 text-right"><RowMenu training={training} /></td>
+                        <td className="px-3 py-3 text-right">{RowMenu({ training })}</td>
                       </tr>
                     )
                   })}
@@ -733,7 +733,7 @@ export default function GestaoTreinamentos() {
                         <span className="truncate">{s.inscritos} inscritos · {s.taxa}%</span>
                       </div>
                     </div>
-                    <RowMenu training={training} />
+                    {RowMenu({ training })}
                   </li>
                 )
               })}

@@ -93,6 +93,7 @@ import {
   Table2,
   CircleCheck,
   ImagePlus,
+  CircleHelp,
 } from "lucide-react";
 import { useAIRewrite } from "@/hooks/use-ai-rewrite";
 import { useAuth } from "@/contexts/auth-context";
@@ -213,6 +214,52 @@ interface Empresa {
   nome: string;
   nome_fantasia: string | null;
 }
+
+// Definidos fora do componente do editor: dentro dele, a cada alteração o React
+// recriaria os botões e o primeiro clique depois de digitar se perdia.
+function ToolbarButton({
+  label,
+  onClick,
+  disabled,
+  active,
+  children,
+  keepFocus,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  children: ReactNode;
+  keepFocus?: boolean;
+}) {
+  return (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        onMouseDown={(e) => keepFocus && e.preventDefault()}
+        onClick={onClick}
+        className={cn(
+          "grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors",
+          "hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
+          active && "bg-foreground text-background hover:bg-foreground hover:text-background"
+        )}
+      >
+        {children}
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom">{label}</TooltipContent>
+  </Tooltip>
+  );
+}
+
+function ToolbarDivider() {
+  return <span className="mx-1 h-5 w-px shrink-0 bg-border" />;
+}
+
+
 
 export function ModernTrainingEditor({
   initialData,
@@ -1323,44 +1370,6 @@ export function ModernTrainingEditor({
     addBlock(activeSection, type, activeBlockIndex >= 0 ? activeBlockIndex : undefined);
   };
 
-  const ToolbarButton = ({
-    label,
-    onClick,
-    disabled,
-    active,
-    children,
-    keepFocus,
-  }: {
-    label: string;
-    onClick: () => void;
-    disabled?: boolean;
-    active?: boolean;
-    children: ReactNode;
-    keepFocus?: boolean;
-  }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={label}
-          disabled={disabled}
-          onMouseDown={(e) => keepFocus && e.preventDefault()}
-          onClick={onClick}
-          className={cn(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors",
-            "hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
-            active && "bg-foreground text-background hover:bg-foreground hover:text-background"
-          )}
-        >
-          {children}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{label}</TooltipContent>
-    </Tooltip>
-  );
-
-  const ToolbarDivider = () => <span className="mx-1 h-5 w-px shrink-0 bg-border" />;
-
   const displaySectionTitle = (title: string) => title.replace(/^Seção\s+\d+\s*:\s*/i, "") || "Sem título";
 
   return (
@@ -1418,6 +1427,21 @@ export function ModernTrainingEditor({
             <Eye className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:inline">Pré-visualizar</span>
           </Button>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden h-9 w-9 text-muted-foreground md:inline-flex"
+                onClick={() => window.open("/ajuda?tela=/admin/treinamentos/editar", "_blank", "noopener")}
+                aria-label="Ajuda do editor"
+              >
+                <CircleHelp className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Ajuda do editor (abre em outra aba)</TooltipContent>
+          </Tooltip>
 
           {!bodyOverride && (
             <Tooltip>

@@ -1,6 +1,6 @@
 // src/pages/TrainingPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useTraining } from "@/contexts/training-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,11 @@ export default function TrainingPage() {
       // alguns navegadores bloqueiam; usuário pode clicar Play
     });
   }, [videoUrl]);
+
+  // Treinamentos do banco (id UUID) são estudados na tela de estudo
+  if (!training && /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(normalizedId)) {
+    return <Navigate to={`/executar-treinamento/${normalizedId}`} replace />;
+  }
 
   if (!training) {
     return (

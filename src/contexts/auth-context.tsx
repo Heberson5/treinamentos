@@ -84,6 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar_url: perfil?.avatar_url
       };
 
+      // Usuário inativado pelo administrador não acessa a plataforma
+      // (o histórico dele continua guardado). Master nunca é bloqueado aqui.
+      if (userData.role !== "master" && perfil?.ativo === false) {
+        setBlockedMessage("Seu acesso está inativo. Fale com o administrador da sua empresa.");
+        await supabase.auth.signOut();
+        currentUserIdRef.current = null;
+        setUser(null);
+        return;
+      }
+
       // Master não é bloqueado por status de empresa (gerencia todas as empresas)
       if (userData.role !== "master" && userData.empresa_id) {
         const { data: empresa } = await supabase

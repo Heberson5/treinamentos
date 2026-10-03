@@ -470,8 +470,8 @@ export default function Catalogo() {
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Por {training.instrutor}
+                  <span className="truncate text-muted-foreground">
+                    {training.instrutor && training.instrutor !== "Não definido" ? `Por ${training.instrutor}` : training.categoria}
                   </span>
                   <span className="flex items-center gap-1 text-muted-foreground">
                     <Users className="h-4 w-4" />

@@ -1,7 +1,8 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, GraduationCap, BookOpen, Calendar, FileText, Settings } from "lucide-react";
+import { LayoutDashboard, GraduationCap, BookOpen, Calendar, FileText, Settings, LifeBuoy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
+import { useNavigation, AJUDA_URL } from "@/components/layout/use-navigation";
 
 interface MobileNavItem {
   label: string;
@@ -17,21 +18,27 @@ const items: MobileNavItem[] = [
   { label: "Agenda", url: "/calendario", icon: Calendar, roles: ["master", "admin", "instrutor", "usuario"] },
   { label: "Relatórios", url: "/relatorios", icon: FileText, roles: ["master", "admin", "instrutor"] },
   { label: "Config.", url: "/admin/configuracoes", icon: Settings, roles: ["master"] },
+  // Para quem tem menos atalhos sobra espaço para a Ajuda; os demais usam o "?" do topo
+  { label: "Ajuda", url: "/ajuda", icon: LifeBuoy, roles: ["usuario"] },
 ];
 
 export function MobileBottomNav() {
   const location = useLocation();
   const { user } = useAuth();
   const role = user?.role || "usuario";
+  const { helpItem } = useNavigation();
 
   // Usuário comum não tem Dashboard: "Meus treinamentos" já é o início dele.
-  const visible = items.filter((it) => it.roles.includes(role)).slice(0, 5);
+  const visible = items
+    .filter((it) => it.roles.includes(role) && (it.url !== AJUDA_URL || helpItem))
+    .map((it) => (it.url === AJUDA_URL && helpItem ? { ...it, label: helpItem.title } : it))
+    .slice(0, 5);
 
   return (
     <nav
       aria-label="Navegação principal"
       className={cn(
-        "md:hidden fixed bottom-0 inset-x-0 z-40",
+        "print:hidden md:hidden fixed bottom-0 inset-x-0 z-40",
         "bg-card/95 backdrop-blur-md border-t border-border shadow-[0_-4px_16px_rgba(16,24,40,0.04)]",
         "pb-[env(safe-area-inset-bottom)]"
       )}

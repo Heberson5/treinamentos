@@ -17,7 +17,8 @@ import {
   EyeOff,
   Award,
   Lock,
-  Star
+  Star,
+  CircleHelp,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -1888,6 +1889,9 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
   const minProgress = Math.min(1, timer.activeTime / minSeconds);
   const visitedCount = [...visitedSections].filter((i) => i !== current && i < totalSections).length;
   const precisaAvaliacao = hasQuiz && !quizApproved;
+  // Prova em andamento: some o cronômetro e o botão do topo. Depois de aprovado,
+  // a tela volta ao normal para o aluno poder clicar em Concluir.
+  const emProva = examMode && !!id && hasQuiz && !quizApproved;
 
   const goToSection = (index: number) => {
     setCurrentSection(index);
@@ -1928,12 +1932,24 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-sm font-semibold sm:text-[15px]">{training.titulo}</h1>
             <p className="truncate text-xs text-muted-foreground">
-              {examMode ? "Avaliação em andamento" : totalSections > 1 ? `Seção ${current + 1} de ${totalSections}` : training.categoria || "Treinamento"}
+              {emProva ? "Avaliação em andamento" : totalSections > 1 ? `Seção ${current + 1} de ${totalSections}` : training.categoria || "Treinamento"}
             </p>
           </div>
 
+          {/* Ajuda abre em outra aba para não interromper o estudo (nunca durante a avaliação) */}
+          {!emProva && (
+            <button
+              type="button"
+              onClick={() => window.open("/ajuda?tela=/executar-treinamento", "_blank", "noopener")}
+              title="Ajuda (abre em outra aba)"
+              aria-label="Ajuda"
+              className="hidden h-10 w-10 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground sm:grid"
+            >
+              <CircleHelp className="h-[18px] w-[18px]" />
+            </button>
+          )}
           {/* Cronômetro: exibido apenas na tela de treinamento, não na avaliação */}
-          {!examMode && (
+          {!emProva && (
             <div
               className={cn(
                 "flex h-10 items-center gap-2.5 rounded-full border pl-1.5 pr-2 sm:pr-3.5",
@@ -1950,16 +1966,16 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
               </div>
             </div>
           )}
-          {!examMode && acaoPrincipal}
+          {!emProva && acaoPrincipal}
         </div>
-        {!examMode && totalSections > 1 && (
+        {!emProva && totalSections > 1 && (
           <div className="h-0.5 bg-muted">
             <div className="h-full bg-primary transition-all duration-300" style={{ width: `${((current + 1) / totalSections) * 100}%` }} />
           </div>
         )}
       </header>
 
-      {!examMode && !timer.isPageVisible && (
+      {!emProva && !timer.isPageVisible && (
         <div className="flex items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[13px] font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
           <Pause className="h-3.5 w-3.5" />
           Contador pausado — volte para esta tela para continuar contando o tempo.
@@ -1968,7 +1984,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
 
       <div className="flex">
         {/* Índice de seções (desktop) */}
-        {!examMode && totalSections > 1 && (
+        {!emProva && totalSections > 1 && (
           <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-[300px] shrink-0 overflow-y-auto border-r bg-muted/30 p-5 lg:block">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Conteúdo · {visitedCount} de {totalSections} lidas
@@ -2012,7 +2028,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
         <main className="min-w-0 flex-1">
           <article className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
             {/* Modo Avaliação: mostra somente o quiz */}
-            {examMode && id && hasQuiz && !quizApproved ? (
+            {emProva ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

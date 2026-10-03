@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Bell, LogOut, Settings, User, Building2, Camera, X, ChevronRight, ChevronDown } from "lucide-react"
+import { Bell, LogOut, Settings, User, Building2, Camera, X, ChevronRight, ChevronDown, CircleHelp, LifeBuoy, KeyRound } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAuth } from "@/contexts/auth-context"
@@ -37,7 +37,9 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { validarArquivoImagem } from "@/lib/utils"
 import { useLocation, useNavigate } from "react-router-dom"
-import { useBreadcrumbs } from "@/components/layout/use-navigation"
+import { useBreadcrumbs, useNavigation, AJUDA_URL } from "@/components/layout/use-navigation"
+import { TrocarSenhaDialog } from "@/components/auth/trocar-senha-dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface HeaderProps {
   onLogout?: () => void
@@ -59,7 +61,10 @@ export function Header({ onLogout }: HeaderProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const breadcrumbs = useBreadcrumbs(location.pathname)
+  const { helpItem } = useNavigation()
+  const pathname = location.pathname
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isSenhaOpen, setIsSenhaOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -190,7 +195,7 @@ export function Header({ onLogout }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70 text-foreground flex items-center justify-between gap-2 px-2 sm:px-6 lg:px-8">
+    <header className="print:hidden sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70 text-foreground flex items-center justify-between gap-2 px-2 sm:px-6 lg:px-8">
       <div className="flex items-center gap-2 min-w-0 flex-shrink">
         <SidebarTrigger className="md:hidden" />
         {breadcrumbs.length > 0 && (
@@ -281,6 +286,25 @@ export function Header({ onLogout }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {helpItem && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 text-muted-foreground"
+                aria-label="Ajuda desta tela"
+                onClick={() =>
+                  navigate(pathname.startsWith(AJUDA_URL) ? AJUDA_URL : `${AJUDA_URL}?tela=${encodeURIComponent(pathname)}`)
+                }
+              >
+                <CircleHelp className="h-[18px] w-[18px]" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Ajuda desta tela</TooltipContent>
+          </Tooltip>
+        )}
+
         <ThemeToggle />
 
         {/* Menu do usuário */}
@@ -317,6 +341,12 @@ export function Header({ onLogout }: HeaderProps) {
               <DropdownMenuItem onClick={() => navigate("/admin/configuracoes")}>
                 <Settings className="mr-2 h-4 w-4" />
                 Configurações
+              </DropdownMenuItem>
+            )}
+            {helpItem && (
+              <DropdownMenuItem onClick={() => navigate(AJUDA_URL)}>
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                {helpItem.title}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -388,6 +418,16 @@ export function Header({ onLogout }: HeaderProps) {
               </div>
             </div>
 
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Senha</p>
+                <p className="text-xs text-muted-foreground">Troque a senha usada para entrar</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setIsSenhaOpen(true)}>
+                <KeyRound className="mr-2 h-4 w-4" /> Alterar senha
+              </Button>
+            </div>
+
             {/* Alerts toggle */}
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div>
@@ -404,6 +444,7 @@ export function Header({ onLogout }: HeaderProps) {
           </div>
         </DialogContent>
       </Dialog>
+      <TrocarSenhaDialog open={isSenhaOpen} onOpenChange={setIsSenhaOpen} motivo="voluntaria" />
     </header>
   )
 }

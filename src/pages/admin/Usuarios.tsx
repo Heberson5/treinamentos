@@ -943,7 +943,7 @@ export default function Usuarios() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <UserAvatar usuario={usuario} />
+                            {UserAvatar({ usuario })}
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="truncate font-medium">{usuario.nome}</span>
@@ -955,14 +955,14 @@ export default function Usuarios() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3"><PapelPill papel={usuario.papel} /></td>
+                        <td className="px-3 py-3">{PapelPill({ papel: usuario.papel })}</td>
                         <td className="px-3 py-3">
                           <div className="max-w-[220px] truncate">{usuario.empresa_nome || "—"}</div>
                           <div className="max-w-[220px] truncate text-xs text-muted-foreground">
                             {[usuario.departamento_nome, usuario.cargo].filter(Boolean).join(" · ") || "—"}
                           </div>
                         </td>
-                        <td className="px-3 py-3"><StatusDot usuario={usuario} /></td>
+                        <td className="px-3 py-3">{StatusDot({ usuario })}</td>
                         <td className="px-3 py-3">
                           {prog ? (
                             <div className="flex items-center gap-2.5">
@@ -977,7 +977,7 @@ export default function Usuarios() {
                             <span className="text-xs text-muted-foreground">Nenhum iniciado</span>
                           )}
                         </td>
-                        <td className="px-3 py-3"><UserActions usuario={usuario} /></td>
+                        <td className="px-3 py-3">{UserActions({ usuario })}</td>
                       </tr>
                     )
                   })}
@@ -989,16 +989,16 @@ export default function Usuarios() {
             <ul className="divide-y md:hidden">
               {usuariosPaginados.map((usuario) => (
                 <li key={usuario.id} className="flex items-center gap-3 px-3 py-3">
-                  <UserAvatar usuario={usuario} size="h-10 w-10" />
+                  {UserAvatar({ usuario: usuario, size: "h-10 w-10" })}
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{usuario.nome}</div>
                     <div className="truncate text-xs text-muted-foreground">{usuario.email}</div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                      <PapelPill papel={usuario.papel} />
-                      {usuario.status !== "ativo" && <StatusDot usuario={usuario} />}
+                      {PapelPill({ papel: usuario.papel })}
+                      {usuario.status !== "ativo" && StatusDot({ usuario })}
                     </div>
                   </div>
-                  <UserActions usuario={usuario} />
+                  {UserActions({ usuario })}
                 </li>
               ))}
             </ul>

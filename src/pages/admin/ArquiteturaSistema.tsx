@@ -52,6 +52,7 @@ const defaultMenuItems: MenuItemConfig[] = [
   { id: "catalogo", title: "Catálogo", url: "/catalogo", icon: "BookOpen", visible: true, order: 3, section: "main" },
   { id: "relatorios", title: "Relatórios", url: "/relatorios", icon: "FileText", visible: true, order: 4, section: "main" },
   { id: "calendario", title: "Calendário", url: "/calendario", icon: "Calendar", visible: true, order: 5, section: "main" },
+  { id: "ajuda", title: "Ajuda", url: "/ajuda", icon: "LifeBuoy", visible: true, order: 6, section: "main" },
   { id: "executivo", title: "Dashboard Executivo", url: "/admin/executivo", icon: "Sparkles", visible: true, order: 1, section: "admin" },
   { id: "treinamentos", title: "Gestão de Treinamentos", url: "/admin/treinamentos", icon: "BookOpen", visible: true, order: 2, section: "admin" },
   { id: "usuarios", title: "Usuários", url: "/admin/usuarios", icon: "Users", visible: true, order: 3, section: "admin" },
