@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PageHeader } from "@/components/layout/page-header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
@@ -12,6 +13,7 @@ import {
   Save,
   Eye,
   Palette,
+  MousePointerClick,
   ArrowLeft,
   Loader2,
   FileText,
@@ -396,81 +398,80 @@ export default function LandingPageEditor() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Palette className="h-6 w-6 text-primary" />
-              Editor Visual da Landing Page
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Arraste, reordene e edite as seções visualmente
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePreview}>
-            <Eye className="mr-1.5 h-4 w-4" />
-            Pré-visualizar
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-            Salvar
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Editor da Landing Page"
+        description="Monte a página de divulgação: arraste, reordene e edite as seções"
+        className="mb-0"
+        actions={
+          <>
+            <Button variant="outline" onClick={handlePreview}>
+              <Eye className="mr-2 h-4 w-4" />
+              Pré-visualizar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Salvar
+            </Button>
+          </>
+        }
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="visual">
-            <Layers className="h-4 w-4 mr-1.5" />
+        <TabsList className="h-auto max-w-full justify-start overflow-x-auto [scrollbar-width:none]">
+          <TabsTrigger value="visual" className="shrink-0">
+            <Layers className="mr-1.5 h-4 w-4" />
             Editor Visual
           </TabsTrigger>
-          <TabsTrigger value="terms">
-            <FileText className="h-4 w-4 mr-1.5" />
+          <TabsTrigger value="terms" className="shrink-0">
+            <FileText className="mr-1.5 h-4 w-4" />
             Termos de Uso
           </TabsTrigger>
-          <TabsTrigger value="about">
-            <Info className="h-4 w-4 mr-1.5" />
+          <TabsTrigger value="about" className="shrink-0">
+            <Info className="mr-1.5 h-4 w-4" />
             Sobre Nós
           </TabsTrigger>
-          <TabsTrigger value="brand">
-            <PanelLeft className="h-4 w-4 mr-1.5" />
+          <TabsTrigger value="brand" className="shrink-0">
+            <PanelLeft className="mr-1.5 h-4 w-4" />
             Marca & CSS
           </TabsTrigger>
         </TabsList>
 
         {/* Visual Editor */}
         <TabsContent value="visual" className="mt-4">
-          <div className="grid grid-cols-12 gap-4" style={{ minHeight: "70vh" }}>
-            {/* Left Panel - Section List */}
-            <div className="col-span-3">
-              <Card className="sticky top-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Seções</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[55vh]">
-                    <VisualSectionEditor
-                      sections={sections}
-                      onSectionsChange={setSections}
-                      selectedSectionId={selectedSectionId}
-                      onSelectSection={setSelectedSectionId}
-                    />
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="grid gap-4 lg:grid-cols-[236px_minmax(0,1fr)] xl:grid-cols-[236px_minmax(0,1fr)_280px]">
+            {/* Seções */}
+            <Card className="h-fit overflow-hidden lg:sticky lg:top-20">
+              <div className="border-b px-4 py-3">
+                <h2 className="text-sm font-semibold">Seções</h2>
+                <p className="text-xs text-muted-foreground">Arraste para reordenar</p>
+              </div>
+              <ScrollArea className="h-[60vh]">
+                <div className="p-3">
+                  <VisualSectionEditor
+                    sections={sections}
+                    onSectionsChange={setSections}
+                    selectedSectionId={selectedSectionId}
+                    onSelectSection={setSelectedSectionId}
+                  />
+                </div>
+              </ScrollArea>
+            </Card>
 
-            {/* Center - Live Preview */}
-            <div className="col-span-6">
-              <div className="sticky top-4">
-                <ScrollArea className="h-[75vh] rounded-xl border">
+            {/* Prévia */}
+            <div className="min-w-0 lg:sticky lg:top-20 lg:h-fit">
+              <div className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2">
+                  <span className="flex gap-1" aria-hidden>
+                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
+                  </span>
+                  <span className="mx-auto truncate rounded-md bg-background px-3 py-0.5 text-[11px] text-muted-foreground">
+                    Página inicial · prévia ao vivo
+                  </span>
+                </div>
+                <ScrollArea className="h-[72vh]">
                   <LandingPreview
                     sections={sections}
                     selectedSectionId={selectedSectionId}
@@ -482,28 +483,30 @@ export default function LandingPageEditor() {
               </div>
             </div>
 
-            {/* Right Panel - Property Editor */}
-            <div className="col-span-3">
-              <Card className="sticky top-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Propriedades</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[55vh]">
-                    {selectedSection ? (
-                      <SectionPropertyEditor
-                        section={selectedSection}
-                        onUpdate={(data) => updateSectionData(selectedSection.id, data)}
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        Selecione uma seção para editar suas propriedades
-                      </p>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Propriedades */}
+            <Card className="h-fit overflow-hidden lg:col-span-2 xl:sticky xl:top-20 xl:col-span-1">
+              <div className="border-b px-4 py-3">
+                <h2 className="text-sm font-semibold">Propriedades</h2>
+                <p className="text-xs text-muted-foreground">
+                  {selectedSection ? "Campos da seção selecionada" : "Nenhuma seção selecionada"}
+                </p>
+              </div>
+              <ScrollArea className="xl:h-[60vh]">
+                <div className="p-4">
+                  {selectedSection ? (
+                    <SectionPropertyEditor
+                      section={selectedSection}
+                      onUpdate={(data) => updateSectionData(selectedSection.id, data)}
+                    />
+                  ) : (
+                    <div className="py-8 text-center">
+                      <MousePointerClick className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">Selecione uma seção para editar suas propriedades</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </Card>
           </div>
         </TabsContent>
 

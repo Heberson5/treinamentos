@@ -97,7 +97,7 @@ module.exports = [
     url: "/admin/permissoes",
     marcas: [
       { n: 1, alvo: (p) => p.getByRole("button", { name: /Novo Papel/ }) },
-      { n: 2, alvo: (p) => p.getByText("Administrador").first().locator("xpath=ancestor::div[contains(@class,'rounded')][1]") },
+      { n: 2, alvo: (p) => p.locator("li").filter({ hasText: "Administrador" }).first() },
     ],
   },
   {
@@ -106,8 +106,7 @@ module.exports = [
     url: "/admin/permissoes",
     viewport: { width: 1366, height: 1400 },
     antes: async (p) => {
-      const card = p.getByText("Instrutor", { exact: true }).first().locator("xpath=ancestor::div[contains(@class,'rounded')][1]")
-      await card.locator("button:has(svg.lucide-pencil), button:has(svg.lucide-edit), button:has(svg.lucide-square-pen), button:has(svg.lucide-edit-3), button:has(svg.lucide-pen), button:has(svg.lucide-pen-line)").first().click()
+      await p.getByRole("button", { name: "Editar Instrutor" }).click()
       await p.waitForTimeout(800)
     },
     recorte: (p) => p.getByRole("dialog"),
@@ -185,7 +184,7 @@ module.exports = [
     marcas: [
       { n: 1, alvo: (p) => p.getByRole("button", { name: /Novo Pagamento/ }) },
       { n: 2, alvo: (p) => p.getByText("Total Recebido").locator("xpath=ancestor::div[contains(@class,'rounded')][1]") },
-      { n: 3, alvo: (p) => p.getByText("Filtros").first().locator("xpath=ancestor::div[contains(@class,'rounded')][1]") },
+      { n: 3, alvo: (p) => p.getByPlaceholder("Buscar empresa ou referência...").locator("xpath=ancestor::div[contains(@class,'border-b')][1]") },
     ],
   },
   {

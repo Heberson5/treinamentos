@@ -1,25 +1,15 @@
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  Check, 
-  Users, 
-  Pencil, 
-  X, 
-  Save,
-  EyeOff,
-  Shield,
-  Settings2,
-  Infinity,
-  Calendar,
-  Percent
-} from "lucide-react"
+import { Check, Users, Pencil, X, Save, EyeOff, Infinity, CalendarClock, Percent } from "lucide-react"
+import { PageHeader } from "@/components/layout/page-header"
+import { MetricStrip, SettingsSection, InfoNote, StatusPill } from "@/components/layout/settings"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -35,6 +25,8 @@ import {
 } from "@/components/ui/tabs"
 import { usePlans, ICONES_PLANOS, Plano, RECURSOS_SISTEMA, RecursoPlano, RecursoId } from "@/contexts/plans-context"
 import { toast } from "@/hooks/use-toast"
+
+const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function Planos() {
   const { planos, atualizarPlano, recursosSistema, descontoAnual, atualizarDescontoAnual, calcularPrecoAnual } = usePlans()
@@ -117,216 +109,185 @@ export default function Planos() {
     return plano.recursos.filter(r => r.habilitado).length
   }
 
+  const ativos = planos.filter((p) => p.ativo)
+  const popular = planos.find((p) => p.popular && p.ativo)
+  const precos = ativos.map((p) => p.preco)
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Configuração de Planos</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie os planos, valores, recursos e permissões. As alterações são refletidas automaticamente na página inicial.
-          </p>
-        </div>
-        <Badge variant="outline" className="gap-2">
-          <Shield className="h-4 w-4" />
-          Acesso Master
-        </Badge>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Planos"
+        description="Preços, limites e recursos de cada plano. As alterações aparecem automaticamente na página inicial."
+      />
 
-      {/* Alerta sobre planos inativos */}
-      <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <EyeOff className="h-5 w-5 text-amber-600 mt-0.5" />
-            <div>
-              <p className="font-medium text-amber-800 dark:text-amber-200">Sobre planos desativados</p>
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                Quando um plano é desativado, ele não aparece mais na página inicial de divulgação, 
-                mas as empresas que já estão com esse plano continuam funcionando normalmente.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <MetricStrip
+        items={[
+          { label: "Planos ativos", value: ativos.length, hint: `de ${planos.length} cadastrados` },
+          { label: "Mais popular", value: popular?.nome || "—", hint: popular ? `${brl(popular.preco)}${popular.periodo}` : "Nenhum destacado" },
+          {
+            label: "Faixa de preço",
+            value: precos.length ? brl(Math.min(...precos)) : "—",
+            hint: precos.length > 1 ? `até ${brl(Math.max(...precos))}` : undefined,
+          },
+          {
+            label: "Desconto anual",
+            value: descontoAnual.habilitado ? `${descontoAnual.percentual}%` : "Desligado",
+            tom: descontoAnual.habilitado ? "sucesso" : "neutro",
+            hint: descontoAnual.habilitado ? "aplicado na página inicial" : undefined,
+          },
+        ]}
+      />
 
-      {/* Alerta sobre recursos */}
-      <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Settings2 className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="font-medium text-blue-800 dark:text-blue-200">Recursos integrados com permissões</p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Os recursos configurados aqui são vinculados às permissões do sistema. Por exemplo, 
-                certificados ilimitados só estão disponíveis nos planos Premium e Enterprise, 
-                enquanto os planos Básico e Plus possuem limites mensais.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Configuração de Desconto Anual */}
-      <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-green-600 mt-0.5" />
-              <div className="space-y-2">
-                <p className="font-medium text-green-800 dark:text-green-200">Desconto para Pagamento Anual</p>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  Configure o percentual de desconto para clientes que optarem pelo pagamento anual. 
-                  Este desconto será aplicado automaticamente na página de divulgação.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="percentualDesconto" className="text-sm whitespace-nowrap">Desconto:</Label>
-                <div className="relative w-20">
-                  <Input
-                    id="percentualDesconto"
-                    type="number"
-                    min={0}
-                    max={50}
-                    value={descontoAnual.percentual}
-                    onChange={(e) => atualizarDescontoAnual({ percentual: Math.min(50, Math.max(0, parseInt(e.target.value) || 0)) })}
-                    className="pr-7"
-                    disabled={!descontoAnual.habilitado}
-                  />
-                  <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-              <Switch
-                checked={descontoAnual.habilitado}
-                onCheckedChange={(checked) => {
-                  atualizarDescontoAnual({ habilitado: checked })
-                  toast({
-                    title: checked ? "Desconto anual habilitado" : "Desconto anual desabilitado",
-                    description: checked 
-                      ? `Desconto de ${descontoAnual.percentual}% será exibido na página inicial.`
-                      : "A opção de pagamento anual foi removida da página inicial."
-                  })
-                }}
+      <SettingsSection
+        icon={CalendarClock}
+        title="Desconto para Pagamento Anual"
+        description="Percentual aplicado automaticamente para quem escolhe pagar por ano na página de divulgação."
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="relative w-24">
+              <Input
+                id="percentualDesconto"
+                type="number"
+                min={0}
+                max={50}
+                value={descontoAnual.percentual}
+                onChange={(e) => atualizarDescontoAnual({ percentual: Math.min(50, Math.max(0, parseInt(e.target.value) || 0)) })}
+                className="h-9 pr-8 text-right tabular-nums"
+                disabled={!descontoAnual.habilitado}
+                aria-label="Percentual de desconto"
               />
+              <Percent className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             </div>
+            <Switch
+              checked={descontoAnual.habilitado}
+              aria-label="Desconto anual ativo"
+              onCheckedChange={(checked) => {
+                atualizarDescontoAnual({ habilitado: checked })
+                toast({
+                  title: checked ? "Desconto anual habilitado" : "Desconto anual desabilitado",
+                  description: checked
+                    ? `Desconto de ${descontoAnual.percentual}% será exibido na página inicial.`
+                    : "A opção de pagamento anual foi removida da página inicial.",
+                })
+              }}
+            />
           </div>
-          
-          {descontoAnual.habilitado && (
-            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-700">
-              <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">Prévia dos valores com desconto:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {planos.filter(p => p.ativo).map(plano => {
+        }
+        contentClassName="p-0"
+      >
+        {descontoAnual.habilitado && ativos.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+                  <th className="px-5 py-2.5 text-left font-medium">Plano</th>
+                  <th className="px-3 py-2.5 text-right font-medium">12 × mensal</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Anual com desconto</th>
+                  <th className="px-5 py-2.5 text-right font-medium">Economia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ativos.map((plano) => {
                   const { precoAnual, precoComDesconto, economia } = calcularPrecoAnual(plano.preco)
                   return (
-                    <div key={plano.id} className="p-3 bg-white dark:bg-green-900/30 rounded-lg">
-                      <p className="font-medium text-sm">{plano.nome}</p>
-                      <p className="text-xs text-muted-foreground line-through">
-                        R$ {precoAnual.toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-lg font-bold text-green-600">
-                        R$ {precoComDesconto.toFixed(2).replace('.', ',')}
-                      </p>
-                      <p className="text-xs text-green-600">
-                        Economia: R$ {economia.toFixed(2).replace('.', ',')}
-                      </p>
-                    </div>
+                    <tr key={plano.id} className="border-b last:border-0">
+                      <td className="px-5 py-2.5 font-medium">{plano.nome}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground line-through">{brl(precoAnual)}</td>
+                      <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{brl(precoComDesconto)}</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{brl(economia)}</td>
+                    </tr>
                   )
                 })}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </SettingsSection>
 
-      {/* Planos Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <InfoNote icon={EyeOff}>
+        Plano desativado deixa de aparecer na página inicial, mas as empresas que já estão nele continuam funcionando normalmente.
+        Os recursos marcados em cada plano liberam as funções correspondentes do sistema.
+      </InfoNote>
+
+      {/* Planos */}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {planos.map((plano) => {
           const IconComponent = getIconComponent(plano.icon)
-          const recursosHabilitados = plano.recursos.filter(r => r.habilitado)
-          
+          const recursosHabilitados = plano.recursos.filter((r) => r.habilitado)
+
           return (
-            <Card 
-              key={plano.id} 
-              className={`relative ${!plano.ativo ? 'opacity-60 border-dashed' : ''} ${plano.popular ? 'border-primary shadow-lg' : ''}`}
+            <Card
+              key={plano.id}
+              className={cn(
+                "flex flex-col",
+                !plano.ativo && "border-dashed bg-muted/20",
+                plano.popular && plano.ativo && "border-primary/60 ring-1 ring-primary/30",
+              )}
             >
-              {plano.popular && plano.ativo && (
-                <Badge className="absolute -top-3 left-4 bg-primary">
-                  Mais Popular
-                </Badge>
-              )}
-
-              {!plano.ativo && (
-                <Badge variant="secondary" className="absolute -top-3 left-4">
-                  Desativado
-                </Badge>
-              )}
-              
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-full ${plano.cor} text-white`}>
-                      <IconComponent className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{plano.nome}</CardTitle>
-                      <p className="text-2xl font-bold mt-1">
-                        R$ {plano.preco.toFixed(2).replace('.', ',')}
-                        <span className="text-sm font-normal text-muted-foreground">{plano.periodo}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={plano.ativo}
-                      onCheckedChange={() => handleToggleAtivo(plano)}
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(plano)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <CardDescription className="mt-2">{plano.descricao}</CardDescription>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">
-                    {plano.id === "enterprise" 
-                      ? `${plano.limiteUsuarios} usuários + pacotes adicionais` 
-                      : `Até ${plano.limiteUsuarios} usuários`}
+              <div className="flex items-start justify-between gap-3 p-5 pb-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white", plano.cor, !plano.ativo && "opacity-50")}>
+                    <IconComponent className="h-5 w-5" />
                   </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="h-4 w-4" />
-                  <span>{getRecursosHabilitadosCount(plano)} recursos habilitados</span>
-                </div>
-
-                {plano.id === "enterprise" && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-sm">
-                    <p className="font-medium text-amber-800 dark:text-amber-200">Pacotes Adicionais</p>
-                    <p className="text-amber-700 dark:text-amber-300">
-                      R$ {plano.precoPacoteAdicional?.toFixed(2).replace('.', ',')}/mês por pacote de {plano.usuariosPorPacote} usuários
-                    </p>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold">{plano.nome}</h3>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <StatusPill tom={plano.ativo ? "sucesso" : "neutro"}>{plano.ativo ? "Ativo" : "Desativado"}</StatusPill>
+                      {plano.popular && plano.ativo && <StatusPill tom="primario">Mais Popular</StatusPill>}
+                    </div>
                   </div>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0" onClick={() => handleEdit(plano)} aria-label={`Editar ${plano.nome}`}>
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Editar
+                </Button>
+              </div>
+
+              <div className="px-5">
+                <p className="text-[28px] font-semibold leading-none tracking-tight tabular-nums">
+                  {brl(plano.preco)}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">{plano.periodo}</span>
+                </p>
+                {plano.descricao && <p className="mt-2 text-sm text-muted-foreground">{plano.descricao}</p>}
+              </div>
+
+              <div className="mt-4 flex-1 space-y-3 border-t px-5 py-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  {plano.id === "enterprise"
+                    ? `${plano.limiteUsuarios} usuários + pacotes adicionais`
+                    : `Até ${plano.limiteUsuarios} usuários`}
+                </div>
+                {plano.id === "enterprise" && (
+                  <p className="text-xs text-muted-foreground">
+                    Pacote adicional: {brl(plano.precoPacoteAdicional || 0)}/mês a cada {plano.usuariosPorPacote} usuários
+                  </p>
                 )}
-                
-                <ul className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {recursosHabilitados.map((recurso) => (
-                    <li key={recurso.recursoId} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>{recurso.descricaoCustomizada || recursosSistema.find(r => r.id === recurso.recursoId)?.nome}</span>
-                      {recurso.limite !== undefined && (
-                        <Badge variant="secondary" className="text-xs ml-auto">
-                          Limite: {recurso.limite}
-                        </Badge>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    {getRecursosHabilitadosCount(plano)} {getRecursosHabilitadosCount(plano) === 1 ? "recurso incluído" : "recursos incluídos"}
+                  </p>
+                  <ul className="max-h-44 space-y-1.5 overflow-y-auto">
+                    {recursosHabilitados.map((recurso) => (
+                      <li key={recurso.recursoId} className="flex items-start gap-2 text-sm">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <span className="min-w-0 flex-1">
+                          {recurso.descricaoCustomizada || recursosSistema.find((r) => r.id === recurso.recursoId)?.nome}
+                        </span>
+                        {recurso.limite !== undefined && (
+                          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">até {recurso.limite}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-5 py-3">
+                <Label htmlFor={`ativo-${plano.id}`} className="text-[13px] text-muted-foreground">
+                  Visível na página inicial
+                </Label>
+                <Switch id={`ativo-${plano.id}`} checked={plano.ativo} onCheckedChange={() => handleToggleAtivo(plano)} />
+              </div>
             </Card>
           )
         })}
@@ -349,7 +310,7 @@ export default function Planos() {
             </TabsList>
 
             <TabsContent value="geral" className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome do Plano</Label>
                   <Input
@@ -379,7 +340,7 @@ export default function Planos() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="limiteUsuarios">Limite de Usuários Base</Label>
                   <Input
@@ -401,7 +362,7 @@ export default function Planos() {
               </div>
 
               {editandoPlano?.id === "enterprise" && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-1 gap-4 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="precoPacote">Preço do Pacote Adicional (R$)</Label>
                     <Input
@@ -424,7 +385,7 @@ export default function Planos() {
                 </div>
               )}
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="popular"
@@ -452,8 +413,8 @@ export default function Planos() {
 
                   return (
                     <div key={categoria.id} className="space-y-3">
-                      <h3 className="font-semibold text-lg border-b pb-2">{categoria.nome}</h3>
-                      <div className="space-y-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{categoria.nome}</h3>
+                      <div className="divide-y rounded-lg border">
                         {recursosCategoria.map(recurso => {
                           const recursoPlano = getRecursoFromForm(recurso.id)
                           const habilitado = recursoPlano?.habilitado ?? false
@@ -461,7 +422,7 @@ export default function Planos() {
                           const descricaoCustomizada = recursoPlano?.descricaoCustomizada || ""
 
                           return (
-                            <div key={recurso.id} className="p-4 border rounded-lg space-y-3">
+                            <div key={recurso.id} className={cn("space-y-3 p-4", habilitado && "bg-primary/[0.03]")}>
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-3">
                                   <Checkbox
@@ -477,7 +438,7 @@ export default function Planos() {
                                   </div>
                                 </div>
                                 {habilitado && (
-                                  <Badge variant={limite === undefined ? "default" : "secondary"}>
+                                  <StatusPill tom={limite === undefined ? "primario" : "neutro"}>
                                     {limite === undefined ? (
                                       <span className="flex items-center gap-1">
                                         <Infinity className="h-3 w-3" /> Ilimitado
@@ -485,12 +446,12 @@ export default function Planos() {
                                     ) : (
                                       `Limite: ${limite}`
                                     )}
-                                  </Badge>
+                                  </StatusPill>
                                 )}
                               </div>
 
                               {habilitado && (
-                                <div className="pl-7 grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 pl-7 sm:grid-cols-2">
                                   <div className="space-y-2">
                                     <Label className="text-sm">Limite (deixe vazio para ilimitado)</Label>
                                     <Input

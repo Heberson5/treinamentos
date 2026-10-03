@@ -92,7 +92,7 @@ async function capturar(browser, item, conversor) {
     hasTouch: celular,
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
-    colorScheme: "light",
+    colorScheme: item.escuro ? "dark" : "light",
   })
   try {
   const page = await context.newPage()

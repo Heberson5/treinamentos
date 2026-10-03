@@ -158,8 +158,8 @@ export function VisualSectionEditor({
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         className={cn(
-                          "flex items-center gap-1.5 p-2.5 rounded-lg border bg-card transition-all cursor-pointer text-sm",
-                          selectedSectionId === section.id && "ring-2 ring-primary border-primary bg-primary/5",
+                          "flex cursor-pointer items-center gap-1.5 rounded-lg border bg-card px-2 py-2 text-sm transition-colors hover:bg-muted/50",
+                          selectedSectionId === section.id && "border-primary/60 bg-primary/5 ring-1 ring-primary/40",
                           snapshot.isDragging && "shadow-lg",
                           !section.visible && "opacity-40"
                         )}
@@ -177,6 +177,8 @@ export function VisualSectionEditor({
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
+                            aria-label={section.visible ? "Esconder seção" : "Mostrar seção"}
+                            title={section.visible ? "Esconder" : "Mostrar"}
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleVisibility(section.id)
@@ -192,7 +194,9 @@ export function VisualSectionEditor({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              aria-label="Remover seção"
+                              title="Remover"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 removeSection(section.id)
@@ -214,7 +218,7 @@ export function VisualSectionEditor({
       </DragDropContext>
 
       <div className="border-t pt-3">
-        <p className="text-xs text-muted-foreground mb-2 font-medium">Adicionar seção</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Adicionar seção</p>
         <div className="grid grid-cols-2 gap-1.5">
           {addableSections.map((type) => {
             const config = SECTION_LABELS[type]
@@ -224,11 +228,11 @@ export function VisualSectionEditor({
                 key={type}
                 variant="outline"
                 size="sm"
-                className="justify-start text-xs h-8 px-2"
+                className="h-8 justify-start px-2 text-xs font-normal"
                 onClick={() => addSection(type)}
+                title={`Adicionar ${config?.label}`}
               >
-                <Plus className="h-3 w-3 mr-1 shrink-0" />
-                <Icon className="h-3 w-3 mr-1 shrink-0" />
+                <Icon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="truncate">{config?.label}</span>
               </Button>
             )

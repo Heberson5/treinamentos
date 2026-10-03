@@ -239,7 +239,7 @@ module.exports = [
     chave: "adm-integracoes-ia",
     como: A,
     url: "/admin/integracoes",
-    antes: async (p) => { await p.getByRole("tab", { name: "IA" }).click(); await p.waitForTimeout(600) },
+    antes: async (p) => { await p.getByRole("tab", { name: /^IA/ }).click(); await p.waitForTimeout(600) },
     viewport: { width: 1366, height: 1000 },
   },
 ]

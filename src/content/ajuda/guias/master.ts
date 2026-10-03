@@ -102,10 +102,10 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Veja os planos",
         texto:
-          "Em **Sistema → Planos**, cada plano aparece em um cartão com preço, limite de usuários e recursos incluídos. O que você muda aqui aparece na página inicial de divulgação e nas permissões do sistema.",
+          "Em **Sistema → Planos**, o topo resume quantos planos estão ativos, o mais popular, a faixa de preço e o desconto anual. Logo abaixo ficam o desconto anual e os cartões dos planos, com preço, limite de usuários e recursos incluídos. O que você muda aqui aparece na página inicial de divulgação e nas permissões do sistema.",
         pontos: [
-          "**Desconto para Pagamento Anual:** defina o percentual e ligue ou desligue. A prévia mostra o valor anual com desconto de cada plano.",
-          "Cada cartão tem o interruptor de **ativo** e o lápis para editar. O selo **Mais Popular** destaca um plano.",
+          "**Desconto para Pagamento Anual:** defina o percentual e ligue ou desligue. A tabela mostra o valor anual com desconto e a economia de cada plano.",
+          "Cada cartão tem o botão **Editar** e, no rodapé, o interruptor **Visível na página inicial** (plano ativo). O selo **Mais Popular** destaca um plano.",
         ],
         print: "mast-planos",
         aviso: "Planos desativados somem da página de divulgação, mas as empresas que já estão neles continuam funcionando normalmente.",
@@ -113,7 +113,7 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Edite um plano",
         texto:
-          "Clique no lápis do plano. Na aba **Informações Gerais**, ajuste nome, preço, descrição, limite de usuários base e período; marque **Marcar como Popular** e **Plano Ativo** conforme necessário. Confirme em **Salvar Alterações**.",
+          "Clique em **Editar** no cartão do plano. Na aba **Informações Gerais**, ajuste nome, preço, descrição, limite de usuários base e período; marque **Marcar como Popular** e **Plano Ativo** conforme necessário. Confirme em **Salvar Alterações**.",
         print: "mast-plano-editar",
       },
       {
@@ -138,17 +138,17 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Conheça os papéis",
         texto:
-          "Em **Sistema → Permissões**, você vê os papéis da plataforma (Master, Administrador, Instrutor e Usuário), quantas pessoas usam cada um e quantas permissões cada papel tem. As permissões valem para todas as empresas.",
+          "Em **Sistema → Permissões**, o topo resume os papéis, os usuários e as permissões disponíveis. Abaixo, cada papel (Master, Administrador, Instrutor e Usuário) aparece em uma linha com quantas pessoas o usam e quantas permissões tem. Com **Todas as empresas** selecionado no topo, as permissões valem para todas as empresas.",
         pontos: [
           "**Novo Papel:** cria um papel personalizado.",
-          "Cartão do papel: usuários, permissões ativas, interruptor de ativo, lápis para editar e lixeira para excluir.",
+          "Linha do papel: usuários, barra de permissões ativas, olho para ativar ou desativar, **Editar** e lixeira para excluir.",
         ],
         print: "mast-permissoes",
       },
       {
         titulo: "Edite as permissões de um papel",
         texto:
-          "Clique no lápis. Ajuste nome, cor e descrição e, em **Permissões**, navegue pelas abas (Treinamentos, Catálogo, Usuários, Relatórios, Departamentos, Empresas, Integrações, Sistema e Financeiro). Ligue ou desligue cada permissão e clique em **Atualizar**.",
+          "Clique em **Editar** na linha do papel. Ajuste nome, cor e descrição e, em **Permissões**, navegue pelas abas — cada uma mostra quantas permissões estão ligadas (Treinamentos, Catálogo, Usuários, Relatórios, Departamentos, Empresas, Integrações, Sistema e Financeiro). Ligue ou desligue cada permissão e clique em **Atualizar**.",
         print: "mast-permissao-editar",
         dica: "A permissão **Upload de Vídeo** (marcada com o selo Master) só pode ser concedida por você. Sem ela, instrutores só informam vídeos por link.",
         aviso: "Mudar permissões afeta todas as pessoas daquele papel em todas as empresas. Só é possível excluir um papel que não tenha usuários.",
@@ -171,9 +171,9 @@ export const guiasMaster: Guia[] = [
         texto:
           "Em **Sistema → Configurações**, a aba **Geral** guarda nome, e-mail de contato, telefone, fuso horário e endereço. O e-mail e o telefone aparecem para os administradores no quadro “Ainda com dúvida?” da Central de Ajuda.",
         pontos: [
-          "As abas: Geral, Email, Notificações, Segurança, Auditoria e Backup.",
+          "O menu à esquerda (no celular, a faixa no topo) leva às seções: Geral, Email, Notificações, Segurança, Auditoria e Backup.",
           "**Email de Contato** (e telefone): é o contato de suporte mostrado na Ajuda.",
-          "Clique em **Salvar** para gravar. Só o Master consegue alterar estas configurações.",
+          "Clique em **Salvar**, no rodapé do quadro, para gravar. Só o Master consegue alterar estas configurações.",
         ],
         print: "mast-config-geral",
       },
@@ -192,7 +192,7 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Defina as regras de segurança",
         texto:
-          "Na aba **Segurança**, defina o tamanho mínimo da senha e se ela exige maiúscula, número e caractere especial. Configure também o tempo de inatividade para desconectar a pessoa automaticamente, se a sessão termina ao fechar o navegador e quantas tentativas erradas de login levam ao bloqueio. Cada bloco tem o seu botão de salvar.",
+          "Na aba **Segurança**, defina o tamanho mínimo da senha e se ela exige maiúscula, número e caractere especial. Configure também o tempo de inatividade para desconectar a pessoa automaticamente, se a sessão termina ao fechar o navegador e quantas tentativas erradas de login levam ao bloqueio. Cada quadro tem o seu botão de salvar no rodapé.",
         print: "mast-config-seguranca",
       },
       {
@@ -204,9 +204,9 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Faça e restaure backups",
         texto:
-          "Na aba **Backup**, escolha o destino, mantenha o backup automático diário ligado e use **Gerar backup agora** ou **Gerar Backup** para baixar um arquivo completo dos dados. Para voltar a um arquivo antigo, use **Selecionar Arquivo** em Restaurar Backup.",
+          "Na aba **Backup**, escolha o destino e use **Gerar backup agora** para baixar um arquivo com os dados principais (empresas, usuários, treinamentos, categorias e departamentos). Clique em **Salvar configuração** para gravar o destino escolhido.",
         print: "mast-config-backup",
-        aviso: "Restaurar um backup substitui os dados atuais. Faça isso apenas quando tiver certeza e, de preferência, depois de gerar um backup novo.",
+        aviso: "Restaurar um backup substitui os dados atuais. Por segurança, a restauração é feita pelo suporte técnico direto no servidor, a partir do arquivo gerado aqui. Gere um backup novo antes de pedir.",
       },
     ],
   },
@@ -224,9 +224,9 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Organize os menus",
         texto:
-          "Em **Sistema → Arquitetura do Sistema**, a aba **Menus** lista os itens de cada seção. Arraste para reordenar ou mover entre seções e use o lápis para renomear. Depois, clique em **Salvar Alterações**.",
+          "Em **Sistema → Arquitetura do Sistema**, a seção **Menus** lista os itens de cada grupo (Menu Principal, Administração e Master), com o ícone e o endereço de cada um. Arraste para reordenar ou mover entre seções e use o lápis para renomear. Depois, clique em **Salvar Alterações**.",
         pontos: [
-          "As abas: Menus, Sistema, Campos e Relatórios PDF.",
+          "O menu à esquerda leva às seções: Menus, Sistema, Campos e Relatórios PDF.",
           "Cada item tem uma alça para arrastar e um lápis para renomear.",
           "**Salvar Alterações:** grava a nova organização.",
         ],
@@ -306,11 +306,11 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Acompanhe os pagamentos",
         texto:
-          "Em **Sistema → Financeiro**, os cartões mostram o total recebido, o valor pendente, o valor em atraso e quantas empresas estão bloqueadas. Os gráficos mostram o faturamento por mês e a divisão por situação. Abaixo, filtre a lista por empresa, referência, situação e período.",
+          "Em **Sistema → Financeiro**, o topo mostra o total recebido, o valor pendente, o valor em atraso e quantas empresas estão bloqueadas. O gráfico mostra o que foi recebido em cada um dos últimos seis meses, e o quadro ao lado divide o valor cobrado por situação. Abaixo, filtre a lista por empresa, referência, situação e período de vencimento.",
         pontos: [
           "**Novo Pagamento:** registra uma cobrança.",
           "Resumo de valores recebidos, pendentes, em atraso e empresas bloqueadas.",
-          "Filtros por empresa, situação e datas.",
+          "Barra de filtros: busca, situação e período de vencimento.",
         ],
         print: "mast-financeiro",
       },
@@ -323,7 +323,7 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Confirme, bloqueie e desbloqueie",
         texto:
-          "Na coluna **Ações** da lista: o botão com o visto marca o pagamento como **pago**; num pagamento **atrasado**, o botão de bloqueio suspende o acesso da empresa (motivo “Pagamento em atraso”); para uma empresa já bloqueada, o botão de cadeado aberto libera o acesso de novo.",
+          "Na coluna **Ações** da lista: **Pago** marca o pagamento como pago; num pagamento **atrasado**, **Bloquear** suspende o acesso da empresa (motivo “Pagamento em atraso”); para uma empresa já bloqueada, **Desbloquear** libera o acesso de novo.",
         aviso: "Enquanto a empresa estiver bloqueada, ninguém dela consegue entrar na plataforma. Master não é afetado.",
       },
       {

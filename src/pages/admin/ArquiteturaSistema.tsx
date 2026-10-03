@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { 
-  Settings2, Layout, Menu, FileText, Palette, Eye, Save,
-  GripVertical, LayoutGrid, Columns, Type, Pencil, Check, X, Globe
+import {
+  Layout, Menu, FileText, Eye, Save, GripVertical, LayoutGrid, Pencil, Check, X, Globe,
 } from "lucide-react"
+import { PageHeader } from "@/components/layout/page-header"
+import { SettingsTabs, SettingsSection, SettingRow, SettingList, Field, InfoNote } from "@/components/layout/settings"
+import { iconMap } from "@/components/layout/use-navigation"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
@@ -333,349 +333,318 @@ export default function ArquiteturaSistema() {
     if (e.key === "Escape") cancelEdit()
   }
 
-  const renderMenuSection = (section: string, title: string) => {
+  const renderMenuSection = (section: string, title: string, descricao: string) => {
     const items = menuItems.filter(m => m.section === section).sort((a, b) => a.order - b.order)
     const isOverThisSection = dragOverSection === section
 
     return (
       <div
-        className={`space-y-1 p-3 rounded-lg border-2 border-dashed transition-colors ${
-          isOverThisSection && dragItem?.section !== section
-            ? "border-primary bg-primary/5"
-            : "border-transparent"
-        }`}
+        className={cn(
+          "rounded-xl border bg-card transition-colors",
+          isOverThisSection && dragItem?.section !== section && "border-primary ring-2 ring-primary/20",
+        )}
         onDragOver={(e) => handleSectionDragOver(e, section)}
         onDrop={(e) => handleSectionDrop(e, section)}
       >
-        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2">{title}</h3>
-        {items.map((item, index) => {
-          const showDropIndicator = dragOverSection === section && dragOverIndex === index && dragItem?.id !== item.id
-          return (
-            <div key={item.id}>
-              {showDropIndicator && (
-                <div className="h-1 bg-primary rounded-full mx-2 my-1 transition-all" />
-              )}
-              <div
-                draggable
-                onDragStart={(e) => handleDragStart(e, item)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, section, index)}
-                onDrop={(e) => handleDrop(e, section, index)}
-                className={`flex items-center justify-between p-2 sm:p-3 border rounded-lg bg-card cursor-grab active:cursor-grabbing transition-all ${
-                  dragItem?.id === item.id ? "opacity-50" : ""
-                }`}
-              >
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="flex items-baseline justify-between gap-3 border-b px-4 py-3">
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{descricao}</p>
+          </div>
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {items.length} {items.length === 1 ? "item" : "itens"}
+          </span>
+        </div>
+        <div className="p-2">
+          {items.map((item, index) => {
+            const showDropIndicator = dragOverSection === section && dragOverIndex === index && dragItem?.id !== item.id
+            const Icone = iconMap[item.icon] || LayoutGrid
+            return (
+              <div key={item.id}>
+                {showDropIndicator && <div className="mx-2 my-0.5 h-0.5 rounded-full bg-primary" />}
+                <div
+                  draggable={editingItemId !== item.id}
+                  onDragStart={(e) => handleDragStart(e, item)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, section, index)}
+                  onDrop={(e) => handleDrop(e, section, index)}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/60",
+                    editingItemId === item.id ? "bg-muted/60" : "cursor-grab active:cursor-grabbing",
+                    dragItem?.id === item.id && "opacity-50",
+                  )}
+                >
+                  <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground" aria-hidden />
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border bg-background text-muted-foreground">
+                    <Icone className="h-4 w-4" />
+                  </span>
                   {editingItemId === item.id ? (
-                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <div className="flex min-w-0 flex-1 items-center gap-1">
                       <Input
                         ref={editInputRef}
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
                         onKeyDown={handleEditKeyDown}
-                        className="h-7 text-sm"
+                        className="h-8 text-sm"
+                        aria-label="Novo nome do item"
                       />
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={confirmEdit}>
-                        <Check className="h-3 w-3 text-green-600" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={confirmEdit} aria-label="Confirmar nome">
+                        <Check className="h-4 w-4 text-emerald-600" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={cancelEdit}>
-                        <X className="h-3 w-3 text-red-500" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={cancelEdit} aria-label="Cancelar">
+                        <X className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </div>
                   ) : (
                     <>
-                      <span className="text-xs sm:text-sm font-medium truncate">{item.title}</span>
-                      <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">{sectionLabels[item.section]}</Badge>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{item.title}</div>
+                        <div className="truncate font-mono text-[11.5px] text-muted-foreground">{item.url}</div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-muted-foreground opacity-70 hover:opacity-100 group-hover:opacity-100"
+                        onClick={() => startEditing(item)}
+                        aria-label={`Renomear ${item.title}`}
+                        title="Renomear"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                     </>
                   )}
                 </div>
-                {editingItemId !== item.id && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    onClick={() => startEditing(item)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                )}
               </div>
+            )
+          })}
+          {/* Área para soltar no fim da seção */}
+          {items.length > 0 && dragItem && (
+            <div
+              className={cn(
+                "mt-1 h-9 rounded-lg border-2 border-dashed transition-colors",
+                dragOverSection === section && dragOverIndex === items.length ? "border-primary bg-primary/5" : "border-transparent",
+              )}
+              onDragOver={(e) => handleDragOver(e, section, items.length)}
+              onDrop={(e) => handleDrop(e, section, items.length)}
+            />
+          )}
+          {items.length === 0 && (
+            <div className="rounded-lg border border-dashed p-5 text-center text-sm text-muted-foreground">
+              Arraste itens para esta seção
             </div>
-          )
-        })}
-        {/* Drop zone at end of section */}
-        {items.length > 0 && dragItem && (
-          <div
-            className={`h-8 rounded-lg border-2 border-dashed transition-colors ${
-              dragOverSection === section && dragOverIndex === items.length
-                ? "border-primary bg-primary/10"
-                : "border-transparent"
-            }`}
-            onDragOver={(e) => handleDragOver(e, section, items.length)}
-            onDrop={(e) => handleDrop(e, section, items.length)}
-          />
-        )}
-        {items.length === 0 && (
-          <div className="p-4 text-center text-sm text-muted-foreground border rounded-lg border-dashed">
-            Arraste itens para esta seção
-          </div>
-        )}
+          )}
+        </div>
       </div>
     )
   }
 
-  const renderFieldSection = (table: string, title: string) => {
+  const renderFieldSection = (table: string, title: string, description: string) => {
     const fields = fieldConfigs.filter(f => f.table === table).sort((a, b) => a.order - b.order)
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Configure a visibilidade e obrigatoriedade dos campos</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
+      <Card className="overflow-hidden">
+        <div className="border-b px-5 py-4">
+          <h2 className="text-[15px] font-semibold">{title}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+              <th className="px-5 py-2.5 text-left font-medium">Campo</th>
+              <th className="w-28 px-3 py-2.5 text-center font-medium">Visível</th>
+              <th className="w-28 px-3 py-2.5 text-center font-medium">Obrigatório</th>
+            </tr>
+          </thead>
+          <tbody>
             {fields.map((field) => (
-              <div key={field.id} className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
-                <span className="text-xs sm:text-sm font-medium">{field.label}</span>
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Label className="text-[10px] sm:text-xs text-muted-foreground">Visível</Label>
-                    <Switch checked={field.visible} onCheckedChange={() => toggleFieldVisibility(field.id)} />
-                  </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Label className="text-[10px] sm:text-xs text-muted-foreground">Obrigatório</Label>
-                    <Switch checked={field.required} onCheckedChange={() => toggleFieldRequired(field.id)} />
-                  </div>
-                </div>
-              </div>
+              <tr key={field.id} className="border-b last:border-0">
+                <td className="px-5 py-3 font-medium">{field.label}</td>
+                <td className="px-3 py-3 text-center">
+                  <Switch checked={field.visible} onCheckedChange={() => toggleFieldVisibility(field.id)} aria-label={`${field.label} visível`} />
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <Switch checked={field.required} onCheckedChange={() => toggleFieldRequired(field.id)} aria-label={`${field.label} obrigatório`} />
+                </td>
+              </tr>
             ))}
-          </div>
-        </CardContent>
+          </tbody>
+        </table>
       </Card>
     )
   }
 
+  const botaoSalvar = (
+    <Button onClick={saveConfig}>
+      <Save className="mr-2 h-4 w-4" /> Salvar Alterações
+    </Button>
+  )
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <Settings2 className="h-6 w-6 sm:h-8 sm:w-8" /> Arquitetura do Sistema
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Personalize menus, campos, layouts e estrutura do sistema
-          </p>
-        </div>
-        <Button onClick={saveConfig}>
-          <Save className="mr-2 h-4 w-4" /> Salvar Alterações
-        </Button>
-      </div>
+      <PageHeader
+        title="Arquitetura do Sistema"
+        description="Organize os menus, a identidade da plataforma, os campos dos formulários e o layout dos relatórios"
+        actions={botaoSalvar}
+      />
 
-      <Tabs defaultValue="menus" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
-          <TabsTrigger value="menus" className="text-xs sm:text-sm"><Menu className="mr-1 h-4 w-4" /> Menus</TabsTrigger>
-          <TabsTrigger value="sistema" className="text-xs sm:text-sm"><Globe className="mr-1 h-4 w-4" /> Sistema</TabsTrigger>
-          <TabsTrigger value="campos" className="text-xs sm:text-sm"><LayoutGrid className="mr-1 h-4 w-4" /> Campos</TabsTrigger>
-          <TabsTrigger value="relatorios" className="text-xs sm:text-sm"><FileText className="mr-1 h-4 w-4" /> Relatórios PDF</TabsTrigger>
-        </TabsList>
-
-        {/* Menus Tab */}
-        <TabsContent value="menus" className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Menu className="h-5 w-5" /> Organização dos Menus
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Clique e arraste os itens para reordenar ou mover entre seções. Clique no ícone de lápis para renomear.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {renderMenuSection("main", "Menu Principal")}
-              <Separator />
-              {renderMenuSection("admin", "Administração")}
-              <Separator />
-              {renderMenuSection("master", "Master")}
-            </CardContent>
-          </Card>
+      <SettingsTabs
+        abas={[
+          { value: "menus", label: "Menus", icon: Menu, hint: "Ordem e nomes" },
+          { value: "sistema", label: "Sistema", icon: Globe, hint: "Nome, favicon e logo" },
+          { value: "campos", label: "Campos", icon: LayoutGrid, hint: "Formulários" },
+          { value: "relatorios", label: "Relatórios PDF", icon: FileText, hint: "Layout de impressão" },
+        ]}
+      >
+        {/* Menus */}
+        <TabsContent value="menus" className="mt-0 space-y-4">
+          <InfoNote>
+            Arraste os itens para reordenar ou mover entre seções e use o lápis para renomear. As mudanças valem para todas as empresas
+            depois de <strong className="font-medium text-foreground">Salvar Alterações</strong>; cada pessoa continua vendo só o que o papel dela permite.
+          </InfoNote>
+          {renderMenuSection("main", "Menu Principal", "Itens para todos os usuários")}
+          {renderMenuSection("admin", "Administração", "Itens de gestão para administradores")}
+          {renderMenuSection("master", "Master", "Itens exclusivos do Master")}
         </TabsContent>
 
-        {/* Sistema Tab - moved from Configurações */}
-        <TabsContent value="sistema" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Identidade do Sistema</CardTitle>
-              <CardDescription>Configure o nome, ícone da aba do navegador e logo da barra lateral</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Nome do Sistema</Label>
-                  <Input value={nomeSistema} onChange={(e) => setNomeSistema(e.target.value)} placeholder="Portal Treinamentos" />
-                  <p className="text-xs text-muted-foreground">Aparece na aba do navegador e cabeçalho</p>
+        {/* Sistema */}
+        <TabsContent value="sistema" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Identidade do Sistema"
+            description="Nome, ícone da aba do navegador e logo da barra lateral."
+            footer={
+              <Button onClick={handleSaveSistema} disabled={loading}>
+                <Save className="mr-2 h-4 w-4" /> {loading ? "Salvando..." : "Salvar Configurações do Sistema"}
+              </Button>
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Nome do Sistema" htmlFor="arq-nome" hint="Aparece na aba do navegador e no cabeçalho.">
+                <Input id="arq-nome" value={nomeSistema} onChange={(e) => setNomeSistema(e.target.value)} placeholder="Portal Treinamentos" />
+              </Field>
+              <Field label="URL do Favicon (ícone da aba)" htmlFor="arq-favicon" hint="PNG ou ICO, recomendado 32×32 px.">
+                <div className="flex gap-2">
+                  <Input id="arq-favicon" value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://exemplo.com/favicon.png" />
+                  {faviconUrl && <img src={faviconUrl} alt="Favicon" className="h-10 w-10 shrink-0 rounded-md border object-contain p-1" />}
                 </div>
-                <div className="space-y-2">
-                  <Label>URL do Favicon (ícone da aba)</Label>
-                  <div className="flex gap-2">
-                    <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://exemplo.com/favicon.png" />
-                    {faviconUrl && <img src={faviconUrl} alt="Favicon" className="h-10 w-10 object-contain border rounded" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground">PNG ou ICO, recomendado 32x32px</p>
-                </div>
-              </div>
+              </Field>
+            </div>
+            <Field label="URL da Logo (barra lateral)" htmlFor="arq-logo" hint="PNG ou SVG; aparece no topo do menu lateral.">
+              <Input id="arq-logo" value={logoSidebarUrl} onChange={(e) => setLogoSidebarUrl(e.target.value)} placeholder="https://exemplo.com/logo.png" />
+            </Field>
 
-              <div className="space-y-2">
-                <Label>URL da Logo (barra lateral)</Label>
-                <div className="flex gap-4 items-start">
-                  <div className="flex-1">
-                    <Input value={logoSidebarUrl} onChange={(e) => setLogoSidebarUrl(e.target.value)} placeholder="https://exemplo.com/logo.png" />
-                    <p className="text-xs text-muted-foreground mt-1">PNG ou SVG, aparecerá na parte superior dos menus</p>
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <p className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Eye className="h-3.5 w-3.5" /> Pré-visualização
+              </p>
+              <div className="flex max-w-xs items-center gap-3 rounded-lg border bg-card p-3">
+                {logoSidebarUrl ? (
+                  <img src={logoSidebarUrl} alt="Logo" className="h-9 w-9 rounded-lg object-contain" />
+                ) : (
+                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
+                    <Layout className="h-4 w-4" />
                   </div>
-                  {logoSidebarUrl && (
-                    <div className="border rounded-lg p-2 bg-card">
-                      <img src={logoSidebarUrl} alt="Logo sidebar" className="h-12 w-12 object-contain" />
-                    </div>
-                  )}
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-semibold leading-5">{nomeSistema || "Portal Treinamentos"}</p>
+                  <p className="text-xs text-muted-foreground">Treinamentos</p>
                 </div>
               </div>
-
-              {/* Preview */}
-              <div className="border rounded-lg p-4 bg-muted/30">
-                <h4 className="font-medium mb-3 flex items-center gap-2"><Eye className="h-4 w-4" /> Pré-visualização</h4>
-                <div className="flex items-center gap-3 p-3 bg-card rounded-lg border">
-                  {logoSidebarUrl ? (
-                    <img src={logoSidebarUrl} alt="Logo" className="h-8 w-8 object-contain" />
-                  ) : (
-                    <div className="h-8 w-8 bg-primary/20 rounded flex items-center justify-center">
-                      <Layout className="h-4 w-4 text-primary" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-bold">{nomeSistema || "Portal Treinamentos"}</p>
-                    <p className="text-xs text-muted-foreground">Treinamentos</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSaveSistema} disabled={loading} className="bg-gradient-primary">
-                  <Save className="mr-2 h-4 w-4" /> {loading ? "Salvando..." : "Salvar Configurações do Sistema"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SettingsSection>
         </TabsContent>
 
-        {/* Campos Tab */}
-        <TabsContent value="campos" className="space-y-6">
-          {renderFieldSection("treinamentos", "Campos de Treinamentos")}
-          {renderFieldSection("perfis", "Campos de Usuários")}
+        {/* Campos */}
+        <TabsContent value="campos" className="mt-0 space-y-6">
+          {renderFieldSection("treinamentos", "Campos de Treinamentos", "Escolha quais campos aparecem no cadastro de treinamentos e quais são obrigatórios.")}
+          {renderFieldSection("perfis", "Campos de Usuários", "Escolha quais campos aparecem no cadastro de usuários e quais são obrigatórios.")}
+          <div className="flex justify-end">{botaoSalvar}</div>
         </TabsContent>
 
-        {/* Relatórios PDF Tab */}
-        <TabsContent value="relatorios" className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <FileText className="h-5 w-5" /> Layout dos Relatórios PDF
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Configure a aparência dos relatórios gerados em PDF
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Orientação</Label>
-                  <Select
-                    value={reportLayout.orientation}
-                    onValueChange={(v) => setReportLayout({ ...reportLayout, orientation: v as any })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="portrait">Retrato</SelectItem>
-                      <SelectItem value="landscape">Paisagem</SelectItem>
-                    </SelectContent>
-                  </Select>
+        {/* Relatórios PDF */}
+        <TabsContent value="relatorios" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Layout dos relatórios PDF"
+            description="Aparência dos relatórios gerados em PDF."
+            footer={botaoSalvar}
+          >
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Orientação">
+                    <Select
+                      value={reportLayout.orientation}
+                      onValueChange={(v) => setReportLayout({ ...reportLayout, orientation: v as any })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="portrait">Retrato</SelectItem>
+                        <SelectItem value="landscape">Paisagem</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Tamanho da fonte" htmlFor="pdf-fonte">
+                    <Input
+                      id="pdf-fonte"
+                      type="number"
+                      value={reportLayout.fontSize}
+                      onChange={(e) => setReportLayout({ ...reportLayout, fontSize: Number(e.target.value) })}
+                      min={8}
+                      max={16}
+                    />
+                  </Field>
                 </div>
-                <div className="space-y-2">
-                  <Label>Tamanho da Fonte</Label>
-                  <Input
-                    type="number"
-                    value={reportLayout.fontSize}
-                    onChange={(e) => setReportLayout({ ...reportLayout, fontSize: Number(e.target.value) })}
-                    min={8}
-                    max={16}
-                  />
-                </div>
+                <Field label="Cor do cabeçalho" htmlFor="pdf-cor">
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="pdf-cor"
+                      type="color"
+                      value={reportLayout.headerColor}
+                      onChange={(e) => setReportLayout({ ...reportLayout, headerColor: e.target.value })}
+                      className="h-10 w-14 cursor-pointer rounded-md border bg-background p-1"
+                    />
+                    <span className="font-mono text-sm text-muted-foreground">{reportLayout.headerColor}</span>
+                  </div>
+                </Field>
+                <SettingList className="rounded-lg border px-4 [&>*]:py-3 [&>*:first-child]:pt-3 [&>*:last-child]:pb-3">
+                  <SettingRow label="Exibir logo" htmlFor="pdf-logo">
+                    <Switch id="pdf-logo" checked={reportLayout.showLogo} onCheckedChange={(v) => setReportLayout({ ...reportLayout, showLogo: v })} />
+                  </SettingRow>
+                  <SettingRow label="Exibir data" htmlFor="pdf-data">
+                    <Switch id="pdf-data" checked={reportLayout.showDate} onCheckedChange={(v) => setReportLayout({ ...reportLayout, showDate: v })} />
+                  </SettingRow>
+                  <SettingRow label="Exibir número da página" htmlFor="pdf-pagina">
+                    <Switch id="pdf-pagina" checked={reportLayout.showPageNumbers} onCheckedChange={(v) => setReportLayout({ ...reportLayout, showPageNumbers: v })} />
+                  </SettingRow>
+                </SettingList>
               </div>
 
-              <div className="space-y-2">
-                <Label>Cor do Cabeçalho</Label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={reportLayout.headerColor}
-                    onChange={(e) => setReportLayout({ ...reportLayout, headerColor: e.target.value })}
-                    className="h-10 w-20 rounded border cursor-pointer"
-                  />
-                  <span className="text-sm text-muted-foreground">{reportLayout.headerColor}</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Exibir Logo</Label>
-                  <Switch
-                    checked={reportLayout.showLogo}
-                    onCheckedChange={(v) => setReportLayout({ ...reportLayout, showLogo: v })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Exibir Data</Label>
-                  <Switch
-                    checked={reportLayout.showDate}
-                    onCheckedChange={(v) => setReportLayout({ ...reportLayout, showDate: v })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Exibir Número da Página</Label>
-                  <Switch
-                    checked={reportLayout.showPageNumbers}
-                    onCheckedChange={(v) => setReportLayout({ ...reportLayout, showPageNumbers: v })}
-                  />
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="border rounded-lg p-4 bg-muted/30">
-                <h4 className="font-medium mb-3 flex items-center gap-2"><Eye className="h-4 w-4" /> Pré-visualização</h4>
+              {/* Pré-visualização */}
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Eye className="h-3.5 w-3.5" /> Pré-visualização
+                </p>
                 <div
-                  className={`border rounded-lg bg-white text-black overflow-hidden ${
-                    reportLayout.orientation === "landscape" ? "w-full max-w-md" : "w-48"
-                  }`}
-                >
-                  <div className="p-2 text-white text-[10px] font-bold" style={{ backgroundColor: reportLayout.headerColor }}>
-                    {reportLayout.showLogo && "🏢 "}Relatório de Treinamentos
-                    {reportLayout.showDate && <span className="float-right">{new Date().toLocaleDateString("pt-BR")}</span>}
-                  </div>
-                  <div className="p-3">
-                    <div className="space-y-1">
-                      <div className="h-2 bg-gray-200 rounded w-3/4" style={{ fontSize: reportLayout.fontSize }}></div>
-                      <div className="h-2 bg-gray-200 rounded w-1/2"></div>
-                      <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-                    </div>
-                  </div>
-                  {reportLayout.showPageNumbers && (
-                    <div className="text-center text-[8px] text-gray-400 pb-1">Página 1 de 1</div>
+                  className={cn(
+                    "mx-auto overflow-hidden rounded-md border bg-white text-black shadow-sm",
+                    reportLayout.orientation === "landscape" ? "aspect-[1.414/1] w-full" : "aspect-[1/1.414] w-40",
                   )}
+                >
+                  <div className="flex items-center justify-between px-2 py-1.5 text-[9px] font-semibold text-white" style={{ backgroundColor: reportLayout.headerColor }}>
+                    <span className="truncate">{reportLayout.showLogo && "▣ "}Relatório de Treinamentos</span>
+                    {reportLayout.showDate && <span className="shrink-0 font-normal opacity-90">{new Date().toLocaleDateString("pt-BR")}</span>}
+                  </div>
+                  <div className="space-y-1.5 p-2.5">
+                    <div className="h-1.5 w-3/4 rounded bg-gray-200" />
+                    <div className="h-1.5 w-1/2 rounded bg-gray-200" />
+                    <div className="h-1.5 w-2/3 rounded bg-gray-200" />
+                    <div className="h-1.5 w-5/6 rounded bg-gray-200" />
+                  </div>
+                  {reportLayout.showPageNumbers && <div className="pb-1 text-center text-[7px] text-gray-400">Página 1 de 1</div>}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SettingsSection>
         </TabsContent>
-      </Tabs>
+      </SettingsTabs>
     </div>
   )
 }

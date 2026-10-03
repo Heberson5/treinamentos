@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,12 +9,14 @@ import { Switch } from "@/components/ui/switch"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel,
 } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TabsContent } from "@/components/ui/tabs"
+import { PageHeader } from "@/components/layout/page-header"
 import {
-  Settings, Save, Upload, Mail, Bell, Shield, Database, Server, Key,
-  Download, RefreshCw, AlertTriangle, CheckCircle, FileText, Search, Calendar as CalendarIcon, Cloud, HardDrive,
+  SettingsTabs, SettingsSection, SettingRow, SettingList, Field, InfoNote, StatusPill, type Tom,
+} from "@/components/layout/settings"
+import {
+  Save, Mail, Bell, Shield, Database, Building2, Send, RotateCcw,
+  Download, RefreshCw, AlertTriangle, FileText, Search, Cloud, HardDrive,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
@@ -185,6 +187,7 @@ export default function Configuracoes() {
     smtpSenha: "",
     smtpTls: true,
     emailRemetente: "noreply@portaltreinamentos.com",
+    emailTemplateHtml: DEFAULT_EMAIL_TEMPLATE,
     notificacoesEmail: true,
     notificacoesPush: true,
     notificacoesConclusao: true,
@@ -425,14 +428,13 @@ export default function Configuracoes() {
     }
   }
 
-  const getAcaoColor = (acao: string) => {
+  const tomDaAcao = (acao: string): Tom => {
     switch (acao) {
-      case "criar": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-      case "editar": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-      case "excluir": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-      case "login": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-      case "logout": return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-      default: return "bg-gray-100 text-gray-800"
+      case "criar": return "sucesso"
+      case "editar": return "primario"
+      case "excluir": return "perigo"
+      case "login": return "alerta"
+      default: return "neutro"
     }
   }
 
@@ -446,462 +448,379 @@ export default function Configuracoes() {
   const updateBackupCfg = (patch: Partial<typeof config.backupConfig>) =>
     setConfig({ ...config, backupConfig: { ...config.backupConfig, ...patch } })
 
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
-          <p className="text-muted-foreground mt-2">Configure aspectos gerais, segurança e notificações</p>
-        </div>
-        {user?.role !== "master" && (
-          <Badge variant="destructive" className="flex items-center gap-2">
-            <Shield className="h-3 w-3" /> Acesso Restrito
-          </Badge>
-        )}
-      </div>
+  const somenteLeitura = user?.role !== "master"
 
-      {user?.role !== "master" && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-              <AlertTriangle className="h-4 w-4" />
-              <p className="text-sm">Apenas usuários Master podem alterar as configurações.</p>
-            </div>
-          </CardContent>
-        </Card>
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Configurações"
+        description="Contato, e-mail, notificações, segurança, auditoria e backup da plataforma"
+        actions={somenteLeitura ? <StatusPill tom="alerta">Somente leitura</StatusPill> : undefined}
+      />
+
+      {somenteLeitura && (
+        <InfoNote tom="alerta" icon={AlertTriangle}>
+          Apenas usuários Master podem alterar as configurações. Você pode consultar os valores atuais.
+        </InfoNote>
       )}
 
-      <Tabs defaultValue="geral" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1">
-          <TabsTrigger value="geral" className="text-xs sm:text-sm">Geral</TabsTrigger>
-          <TabsTrigger value="email" className="text-xs sm:text-sm">Email</TabsTrigger>
-          <TabsTrigger value="notificacoes" className="text-xs sm:text-sm">Notificações</TabsTrigger>
-          <TabsTrigger value="seguranca" className="text-xs sm:text-sm">Segurança</TabsTrigger>
-          <TabsTrigger value="auditoria" className="text-xs sm:text-sm">Auditoria</TabsTrigger>
-          <TabsTrigger value="backup" className="text-xs sm:text-sm">Backup</TabsTrigger>
-        </TabsList>
-
+      <SettingsTabs
+        abas={[
+          { value: "geral", label: "Geral", icon: Building2, hint: "Contato e fuso horário" },
+          { value: "email", label: "Email", icon: Mail, hint: "Servidor e modelo" },
+          { value: "notificacoes", label: "Notificações", icon: Bell, hint: "O que é avisado" },
+          { value: "seguranca", label: "Segurança", icon: Shield, hint: "Senhas e sessão" },
+          { value: "auditoria", label: "Auditoria", icon: FileText, hint: "Histórico de ações" },
+          { value: "backup", label: "Backup", icon: Database, hint: "Cópias dos dados" },
+        ]}
+      >
         {/* Geral */}
-        <TabsContent value="geral" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Informações da Empresa</CardTitle>
-              <CardDescription>Configure as informações básicas da sua organização</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome da Empresa</Label>
-                  <Input value={config.nomeEmpresa} onChange={(e) => setConfig({...config, nomeEmpresa: e.target.value})} disabled={user?.role !== "master"} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email de Contato</Label>
-                  <Input type="email" value={config.emailContato} onChange={(e) => setConfig({...config, emailContato: e.target.value})} disabled={user?.role !== "master"} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Telefone</Label>
-                  <Input value={config.telefoneContato} onChange={(e) => setConfig({...config, telefoneContato: e.target.value})} disabled={user?.role !== "master"} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fuso Horário</Label>
-                  <Select value={config.timezone} onValueChange={(v) => setConfig({...config, timezone: v})} disabled={user?.role !== "master"}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-80">
-                      {TIMEZONE_GROUPS.map((g) => (
-                        <SelectGroup key={g.group}>
-                          <SelectLabel>{g.group}</SelectLabel>
-                          {g.options.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Endereço</Label>
-                <Textarea value={config.endereco} onChange={(e) => setConfig({...config, endereco: e.target.value})} disabled={user?.role !== "master"} rows={2} />
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => handleSave("gerais")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
-                  <Save className="mr-2 h-4 w-4" /> {loading ? "Salvando..." : "Salvar"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="geral" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Informações da empresa"
+            description="Dados exibidos como contato de suporte, inclusive no quadro “Ainda com dúvida?” da Central de Ajuda."
+            footer={
+              <Button onClick={() => handleSave("gerais")} disabled={loading || somenteLeitura}>
+                <Save className="mr-2 h-4 w-4" /> {loading ? "Salvando..." : "Salvar"}
+              </Button>
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Nome da empresa" htmlFor="cfg-nome">
+                <Input id="cfg-nome" value={config.nomeEmpresa} onChange={(e) => setConfig({ ...config, nomeEmpresa: e.target.value })} disabled={somenteLeitura} />
+              </Field>
+              <Field label="Email de Contato" htmlFor="emailContato">
+                <Input id="emailContato" type="email" value={config.emailContato} onChange={(e) => setConfig({ ...config, emailContato: e.target.value })} disabled={somenteLeitura} />
+              </Field>
+              <Field label="Telefone" htmlFor="cfg-telefone">
+                <Input id="cfg-telefone" value={config.telefoneContato} onChange={(e) => setConfig({ ...config, telefoneContato: e.target.value })} disabled={somenteLeitura} />
+              </Field>
+              <Field label="Fuso horário">
+                <Select value={config.timezone} onValueChange={(v) => setConfig({ ...config, timezone: v })} disabled={somenteLeitura}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    {TIMEZONE_GROUPS.map((g) => (
+                      <SelectGroup key={g.group}>
+                        <SelectLabel>{g.group}</SelectLabel>
+                        {g.options.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            <Field label="Endereço" htmlFor="cfg-endereco">
+              <Textarea id="cfg-endereco" value={config.endereco} onChange={(e) => setConfig({ ...config, endereco: e.target.value })} disabled={somenteLeitura} rows={2} />
+            </Field>
+          </SettingsSection>
         </TabsContent>
 
         {/* Email */}
-        <TabsContent value="email" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Configurações SMTP</CardTitle>
-              <CardDescription>Configure o servidor de email</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Servidor SMTP</Label><Input value={config.smtpHost} onChange={(e) => setConfig({...config, smtpHost: e.target.value})} disabled={user?.role !== "master"} /></div>
-                <div className="space-y-2"><Label>Porta</Label><Input type="number" value={config.smtpPort} onChange={(e) => setConfig({...config, smtpPort: parseInt(e.target.value)})} disabled={user?.role !== "master"} /></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Usuário SMTP</Label><Input value={config.smtpUsuario} onChange={(e) => setConfig({...config, smtpUsuario: e.target.value})} disabled={user?.role !== "master"} /></div>
-                <div className="space-y-2"><Label>Senha SMTP</Label><Input type="password" value={config.smtpSenha} onChange={(e) => setConfig({...config, smtpSenha: e.target.value})} disabled={user?.role !== "master"} /></div>
-              </div>
-              <div className="space-y-2"><Label>Email Remetente</Label><Input type="email" value={config.emailRemetente} onChange={(e) => setConfig({...config, emailRemetente: e.target.value})} disabled={user?.role !== "master"} /></div>
-              <div className="flex items-center space-x-2">
-                <Switch checked={config.smtpTls} onCheckedChange={(v) => setConfig({...config, smtpTls: v})} disabled={user?.role !== "master"} />
-                <Label>Usar TLS/SSL</Label>
-              </div>
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={handleTestEmail} disabled={testingEmail || user?.role !== "master"}>
-                  <Mail className="mr-2 h-4 w-4" /> {testingEmail ? "Enviando..." : "Testar Email"}
+        <TabsContent value="email" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Servidor de envio (SMTP)"
+            description="Usado para mandar e-mails de acesso, lembretes e avisos."
+            footer={
+              <>
+                <Button variant="outline" onClick={handleTestEmail} disabled={testingEmail || somenteLeitura} className="mr-auto">
+                  <Send className="mr-2 h-4 w-4" /> {testingEmail ? "Enviando..." : "Testar Email"}
                 </Button>
-                <Button onClick={() => handleSave("email")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
+                <Button onClick={() => handleSave("email")} disabled={loading || somenteLeitura}>
                   <Save className="mr-2 h-4 w-4" /> Salvar
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </>
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_140px]">
+              <Field label="Servidor SMTP" htmlFor="smtp-host">
+                <Input id="smtp-host" value={config.smtpHost} onChange={(e) => setConfig({ ...config, smtpHost: e.target.value })} placeholder="smtp.seuprovedor.com" disabled={somenteLeitura} />
+              </Field>
+              <Field label="Porta" htmlFor="smtp-porta">
+                <Input id="smtp-porta" type="number" value={config.smtpPort} onChange={(e) => setConfig({ ...config, smtpPort: parseInt(e.target.value) })} disabled={somenteLeitura} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Usuário SMTP" htmlFor="smtp-usuario">
+                <Input id="smtp-usuario" value={config.smtpUsuario} onChange={(e) => setConfig({ ...config, smtpUsuario: e.target.value })} autoComplete="off" disabled={somenteLeitura} />
+              </Field>
+              <Field label="Senha SMTP" htmlFor="smtp-senha">
+                <Input id="smtp-senha" type="password" value={config.smtpSenha} onChange={(e) => setConfig({ ...config, smtpSenha: e.target.value })} autoComplete="new-password" disabled={somenteLeitura} />
+              </Field>
+            </div>
+            <Field label="Email remetente" htmlFor="smtp-remetente" hint="Endereço que aparece como remetente das mensagens.">
+              <Input id="smtp-remetente" type="email" value={config.emailRemetente} onChange={(e) => setConfig({ ...config, emailRemetente: e.target.value })} placeholder="nao-responda@suaempresa.com" disabled={somenteLeitura} />
+            </Field>
+            <SettingRow label="Usar TLS/SSL" description="Conexão criptografada com o servidor. Recomendado." htmlFor="smtp-tls" className="rounded-lg border px-4 py-3 first:pt-3 last:pb-3">
+              <Switch id="smtp-tls" checked={config.smtpTls} onCheckedChange={(v) => setConfig({ ...config, smtpTls: v })} disabled={somenteLeitura} />
+            </SettingRow>
+          </SettingsSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Modelo de E-mail (HTML)</CardTitle>
-              <CardDescription>
-                Modelo usado nas comunicações automáticas do sistema (ex: e-mail de credenciais de acesso após pagamento).
-                Use a tag <code>{"{corpo}"}</code> para o conteúdo específico de cada e-mail, e as tags{" "}
-                <code>{"{NOME_SISTEMA}"}</code>, <code>{"{NOME_EMPRESA}"}</code>, <code>{"{ANO}"}</code>,{" "}
-                <code>{"{LINK_WHATSAPP}"}</code>, <code>{"{LINK_INSTAGRAM}"}</code>, <code>{"{LINK_FACEBOOK}"}</code>,{" "}
-                <code>{"{LINK_YOUTUBE}"}</code>, <code>{"{LINK_LINKEDIN}"}</code> e <code>{"{LINK_SITE}"}</code>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                value={config.emailTemplateHtml}
-                onChange={(e) => setConfig({ ...config, emailTemplateHtml: e.target.value })}
-                disabled={user?.role !== "master"}
-                rows={16}
-                className="font-mono text-xs"
-              />
-              <div className="flex justify-between">
+          <SettingsSection
+            title="Modelo de e-mail (HTML)"
+            description="Moldura usada em todas as comunicações automáticas. O conteúdo de cada mensagem entra no lugar da tag {corpo}."
+            footer={
+              <>
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  className="mr-auto"
                   onClick={() => setConfig({ ...config, emailTemplateHtml: DEFAULT_EMAIL_TEMPLATE })}
-                  disabled={user?.role !== "master"}
+                  disabled={somenteLeitura}
                 >
-                  Restaurar modelo padrão
+                  <RotateCcw className="mr-2 h-4 w-4" /> Restaurar modelo padrão
                 </Button>
-                <Button onClick={() => handleSave("email")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
+                <Button onClick={() => handleSave("email")} disabled={loading || somenteLeitura}>
                   <Save className="mr-2 h-4 w-4" /> Salvar
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </>
+            }
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {["{corpo}", "{NOME_SISTEMA}", "{NOME_EMPRESA}", "{ANO}", "{LINK_WHATSAPP}", "{LINK_INSTAGRAM}", "{LINK_FACEBOOK}", "{LINK_YOUTUBE}", "{LINK_LINKEDIN}", "{LINK_SITE}"].map((tag) => (
+                <code key={tag} className="rounded-md border bg-muted/50 px-1.5 py-0.5 font-mono text-[11.5px] text-muted-foreground">
+                  {tag}
+                </code>
+              ))}
+            </div>
+            <Textarea
+              value={config.emailTemplateHtml}
+              onChange={(e) => setConfig({ ...config, emailTemplateHtml: e.target.value })}
+              disabled={somenteLeitura}
+              rows={16}
+              spellCheck={false}
+              className="bg-muted/30 font-mono text-xs leading-5"
+            />
+          </SettingsSection>
         </TabsContent>
 
         {/* Notificações */}
-        <TabsContent value="notificacoes" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5" /> Preferências de Notificações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+        <TabsContent value="notificacoes" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Preferências de notificações"
+            description="Escolha quais avisos a plataforma envia."
+            footer={
+              <Button onClick={() => handleSave("notificações")} disabled={loading || somenteLeitura}>
+                <Save className="mr-2 h-4 w-4" /> Salvar
+              </Button>
+            }
+          >
+            <SettingList>
               {[
                 { label: "Notificações por Email", desc: "Enviar notificações via email", key: "notificacoesEmail" as const },
                 { label: "Notificações Push", desc: "Notificações em tempo real no navegador", key: "notificacoesPush" as const },
                 { label: "Conclusão de Treinamentos", desc: "Notificar quando um treinamento for concluído", key: "notificacoesConclusao" as const },
                 { label: "Lembretes de Treinamento", desc: "Lembrar usuários sobre pendências", key: "notificacoesLembrete" as const },
-              ].map(item => (
-                <div key={item.key} className="flex items-center justify-between">
-                  <div><h4 className="font-medium">{item.label}</h4><p className="text-sm text-muted-foreground">{item.desc}</p></div>
-                  <Switch checked={config[item.key]} onCheckedChange={(v) => setConfig({...config, [item.key]: v})} disabled={user?.role !== "master"} />
-                </div>
+              ].map((item) => (
+                <SettingRow key={item.key} label={item.label} description={item.desc} htmlFor={`notif-${item.key}`}>
+                  <Switch id={`notif-${item.key}`} checked={config[item.key]} onCheckedChange={(v) => setConfig({ ...config, [item.key]: v })} disabled={somenteLeitura} />
+                </SettingRow>
               ))}
-              <div className="flex justify-end">
-                <Button onClick={() => handleSave("notificações")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
-                  <Save className="mr-2 h-4 w-4" /> Salvar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </SettingList>
+          </SettingsSection>
         </TabsContent>
 
         {/* Segurança */}
-        <TabsContent value="seguranca" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Políticas de Senha</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Comprimento mínimo da senha</Label>
-                  <Input type="number" value={config.senhaMinLength} onChange={(e) => setConfig({...config, senhaMinLength: parseInt(e.target.value)})} disabled={user?.role !== "master"} min={6} max={32} />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Requisitos de Senha</h4>
-                {[
-                  { label: "Exigir letra maiúscula", key: "senhaRequerMaiuscula" as const },
-                  { label: "Exigir número", key: "senhaRequerNumero" as const },
-                  { label: "Exigir caractere especial", key: "senhaRequerEspecial" as const },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between">
-                    <Label>{item.label}</Label>
-                    <Switch checked={config[item.key]} onCheckedChange={(v) => setConfig({...config, [item.key]: v})} disabled={user?.role !== "master"} />
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => handleSave("senhas")} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
-                  <Save className="mr-2 h-4 w-4" /> Salvar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="seguranca" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Políticas de senha"
+            description="Regras exigidas ao criar ou trocar uma senha."
+            footer={
+              <Button onClick={() => handleSave("senhas")} disabled={loading || somenteLeitura}>
+                <Save className="mr-2 h-4 w-4" /> Salvar
+              </Button>
+            }
+          >
+            <Field label="Comprimento mínimo da senha" htmlFor="senha-min" hint="Entre 6 e 32 caracteres." className="max-w-[220px]">
+              <Input id="senha-min" type="number" value={config.senhaMinLength} onChange={(e) => setConfig({ ...config, senhaMinLength: parseInt(e.target.value) })} disabled={somenteLeitura} min={6} max={32} />
+            </Field>
+            <SettingList className="rounded-lg border px-4 [&>*]:py-3 [&>*:first-child]:pt-3 [&>*:last-child]:pb-3">
+              {[
+                { label: "Exigir letra maiúscula", key: "senhaRequerMaiuscula" as const },
+                { label: "Exigir número", key: "senhaRequerNumero" as const },
+                { label: "Exigir caractere especial", key: "senhaRequerEspecial" as const },
+              ].map((item) => (
+                <SettingRow key={item.key} label={item.label} htmlFor={`senha-${item.key}`}>
+                  <Switch id={`senha-${item.key}`} checked={config[item.key]} onCheckedChange={(v) => setConfig({ ...config, [item.key]: v })} disabled={somenteLeitura} />
+                </SettingRow>
+              ))}
+            </SettingList>
+          </SettingsSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" /> Sessão e Logoff Automático</CardTitle>
-              <CardDescription>Define quando o usuário será desconectado automaticamente</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tempo de inatividade para logoff (minutos)</Label>
-                  <Input type="number" min={1} max={480} value={config.sessionTimeoutMin} onChange={(e) => setConfig({...config, sessionTimeoutMin: parseInt(e.target.value) || 30})} disabled={user?.role !== "master"} />
-                  <p className="text-xs text-muted-foreground">Após este período sem mouse/teclado, o usuário é desconectado.</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Logoff ao fechar o navegador</Label>
-                  <p className="text-xs text-muted-foreground">Encerra a sessão automaticamente quando a aba/janela é fechada.</p>
-                </div>
-                <Switch checked={config.logoffOnClose} onCheckedChange={(v) => setConfig({...config, logoffOnClose: v})} disabled={user?.role !== "master"} />
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={persistSeguranca} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
-                  <Save className="mr-2 h-4 w-4" /> Salvar sessão
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <SettingsSection
+            title="Sessão e logoff automático"
+            description="Define quando o usuário será desconectado automaticamente."
+            footer={
+              <Button onClick={persistSeguranca} disabled={loading || somenteLeitura}>
+                <Save className="mr-2 h-4 w-4" /> Salvar sessão
+              </Button>
+            }
+          >
+            <Field label="Tempo de inatividade para logoff (minutos)" htmlFor="sessao-min" hint="Após este período sem mouse ou teclado, o usuário é desconectado." className="max-w-sm">
+              <Input id="sessao-min" type="number" min={1} max={480} value={config.sessionTimeoutMin} onChange={(e) => setConfig({ ...config, sessionTimeoutMin: parseInt(e.target.value) || 30 })} disabled={somenteLeitura} />
+            </Field>
+            <SettingRow label="Logoff ao fechar o navegador" description="Encerra a sessão automaticamente quando a aba ou janela é fechada." htmlFor="sessao-fechar" className="rounded-lg border px-4 py-3 first:pt-3 last:pb-3">
+              <Switch id="sessao-fechar" checked={config.logoffOnClose} onCheckedChange={(v) => setConfig({ ...config, logoffOnClose: v })} disabled={somenteLeitura} />
+            </SettingRow>
+          </SettingsSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Bloqueio por Tentativas de Login</CardTitle>
-              <CardDescription>
-                Após o número máximo de tentativas, o usuário só poderá entrar novamente após redefinir a senha ou aguardar o período de bloqueio.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tentativas máximas de login</Label>
-                  <Input type="number" min={3} max={20} value={config.tentativasLoginMax} onChange={(e) => setConfig({...config, tentativasLoginMax: parseInt(e.target.value) || 5})} disabled={user?.role !== "master"} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Período de bloqueio (horas)</Label>
-                  <Input type="number" min={1} max={168} value={config.bloqueioHoras} onChange={(e) => setConfig({...config, bloqueioHoras: parseInt(e.target.value) || 24})} disabled={user?.role !== "master"} />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={persistSeguranca} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
-                  <Save className="mr-2 h-4 w-4" /> Salvar bloqueio
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <SettingsSection
+            title="Bloqueio por tentativas de login"
+            description="Após o número máximo de tentativas, o usuário só entra de novo depois de redefinir a senha ou aguardar o período de bloqueio."
+            footer={
+              <Button onClick={persistSeguranca} disabled={loading || somenteLeitura}>
+                <Save className="mr-2 h-4 w-4" /> Salvar bloqueio
+              </Button>
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-xl">
+              <Field label="Tentativas máximas de login" htmlFor="login-tentativas">
+                <Input id="login-tentativas" type="number" min={3} max={20} value={config.tentativasLoginMax} onChange={(e) => setConfig({ ...config, tentativasLoginMax: parseInt(e.target.value) || 5 })} disabled={somenteLeitura} />
+              </Field>
+              <Field label="Período de bloqueio (horas)" htmlFor="login-bloqueio">
+                <Input id="login-bloqueio" type="number" min={1} max={168} value={config.bloqueioHoras} onChange={(e) => setConfig({ ...config, bloqueioHoras: parseInt(e.target.value) || 24 })} disabled={somenteLeitura} />
+              </Field>
+            </div>
+          </SettingsSection>
         </TabsContent>
 
         {/* Auditoria */}
-        <TabsContent value="auditoria" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Log de Auditoria</CardTitle>
-              <CardDescription>Registro detalhado de todas as ações realizadas no sistema</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2 items-end">
-                <div className="space-y-1">
-                  <Label className="text-xs flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> De</Label>
-                  <Input type="date" value={auditDataInicio} onChange={(e) => setAuditDataInicio(e.target.value)} className="w-[160px]" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> Até</Label>
-                  <Input type="date" value={auditDataFim} onChange={(e) => setAuditDataFim(e.target.value)} className="w-[160px]" />
-                </div>
-                <Button variant="outline" size="sm" onClick={() => { setAuditDataInicio(todayIso()); setAuditDataFim(todayIso()) }}>
-                  Hoje
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setAuditDataInicio(""); setAuditDataFim("") }}>
-                  Limpar
-                </Button>
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Buscar por usuário, ação ou menu..." value={auditSearch} onChange={(e) => setAuditSearch(e.target.value)} className="pl-10" />
-                </div>
-                <Button variant="outline" onClick={loadAuditLogs} disabled={auditLoading}>
-                  <RefreshCw className={`h-4 w-4 ${auditLoading ? 'animate-spin' : ''}`} />
-                </Button>
+        <TabsContent value="auditoria" className="mt-0 space-y-6">
+          <Card className="overflow-hidden">
+            <div className="border-b px-5 py-4">
+              <h2 className="text-[15px] font-semibold">Log de auditoria</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">Registro das ações realizadas no sistema (até 500 por consulta).</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 p-3 sm:px-4">
+              <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input className="h-9 pl-9" placeholder="Buscar por usuário, ação ou menu..." value={auditSearch} onChange={(e) => setAuditSearch(e.target.value)} />
               </div>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="audit-de" className="text-xs text-muted-foreground">De</Label>
+                <Input id="audit-de" type="date" value={auditDataInicio} onChange={(e) => setAuditDataInicio(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="audit-ate" className="text-xs text-muted-foreground">Até</Label>
+                <Input id="audit-ate" type="date" value={auditDataFim} onChange={(e) => setAuditDataFim(e.target.value)} className="h-9 w-[150px]" />
+              </div>
+              <Button variant="outline" size="sm" className="h-9" onClick={() => { setAuditDataInicio(todayIso()); setAuditDataFim(todayIso()) }}>
+                Hoje
+              </Button>
+              <Button variant="ghost" size="sm" className="h-9 text-muted-foreground" onClick={() => { setAuditDataInicio(""); setAuditDataFim("") }}>
+                Limpar
+              </Button>
+              <Button variant="ghost" size="icon" className="ml-auto h-9 w-9" onClick={() => loadAuditLogs()} disabled={auditLoading} aria-label="Atualizar">
+                <RefreshCw className={`h-4 w-4 ${auditLoading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
 
-              <div className="rounded-lg border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data/Hora</TableHead>
-                      <TableHead>Usuário</TableHead>
-                      <TableHead>Ação</TableHead>
-                      <TableHead>Menu</TableHead>
-                      <TableHead>Local</TableHead>
-                      <TableHead>Descrição</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAuditLogs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          {auditLoading ? "Carregando..." : "Nenhum registro de auditoria no período selecionado"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAuditLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell className="text-xs whitespace-nowrap">
-                            {new Date(log.criado_em).toLocaleDateString('pt-BR')} {new Date(log.criado_em).toLocaleTimeString('pt-BR')}
-                          </TableCell>
-                          <TableCell className="font-medium text-sm">{log.usuario_nome}</TableCell>
-                          <TableCell>
-                            <Badge className={getAcaoColor(log.acao)}>{log.acao}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm capitalize">{log.menu}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{log.local || "-"}</TableCell>
-                          <TableCell className="text-sm max-w-[300px] truncate">{log.descricao}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            {filteredAuditLogs.length === 0 ? (
+              <div className="p-12 text-center">
+                <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  {auditLoading ? "Carregando..." : "Nenhum registro de auditoria no período selecionado."}
+                </p>
               </div>
-            </CardContent>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+                      <th className="px-4 py-2.5 text-left font-medium">Data/Hora</th>
+                      <th className="px-3 py-2.5 text-left font-medium">Usuário</th>
+                      <th className="px-3 py-2.5 text-left font-medium">Ação</th>
+                      <th className="px-3 py-2.5 text-left font-medium">Menu</th>
+                      <th className="px-3 py-2.5 text-left font-medium">Local</th>
+                      <th className="px-3 py-2.5 text-left font-medium">Descrição</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAuditLogs.map((log) => (
+                      <tr key={log.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="whitespace-nowrap px-4 py-2.5 text-xs tabular-nums text-muted-foreground">
+                          {new Date(log.criado_em).toLocaleDateString("pt-BR")} {new Date(log.criado_em).toLocaleTimeString("pt-BR")}
+                        </td>
+                        <td className="px-3 py-2.5 font-medium">{log.usuario_nome}</td>
+                        <td className="px-3 py-2.5">
+                          <StatusPill tom={tomDaAcao(log.acao)} className="capitalize">{log.acao}</StatusPill>
+                        </td>
+                        <td className="px-3 py-2.5 capitalize">{log.menu}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">{log.local || "—"}</td>
+                        <td className="max-w-[320px] truncate px-3 py-2.5" title={log.descricao}>{log.descricao}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
         {/* Backup */}
-        <TabsContent value="backup" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Cloud className="h-5 w-5" /> Destino do Backup</CardTitle>
-              <CardDescription>Escolha onde os arquivos de backup serão armazenados</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Destino</Label>
-                  <Select value={config.backupDestino} onValueChange={(v) => setConfig({...config, backupDestino: v})} disabled={user?.role !== "master"}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="local"><div className="flex items-center gap-2"><HardDrive className="h-4 w-4" /> Local (download)</div></SelectItem>
-                      <SelectItem value="cloud"><div className="flex items-center gap-2"><Cloud className="h-4 w-4" /> Supabase Storage</div></SelectItem>
-                      <SelectItem value="gdrive">Google Drive</SelectItem>
-                      <SelectItem value="dropbox">Dropbox</SelectItem>
-                      <SelectItem value="s3">Amazon S3 / Compatível</SelectItem>
-                      <SelectItem value="ftp">FTP / SFTP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Pasta / Bucket de destino</Label>
-                  <Input
-                    value={config.backupConfig.pasta || ""}
-                    onChange={(e) => updateBackupCfg({ pasta: e.target.value })}
-                    placeholder={config.backupDestino === "s3" ? "meu-bucket/backups" : "/backups"}
-                    disabled={user?.role !== "master"}
-                  />
-                </div>
-              </div>
-
-              {config.backupDestino !== "local" && config.backupDestino !== "cloud" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>URL / Endpoint</Label>
-                    <Input
-                      value={config.backupConfig.url || ""}
-                      onChange={(e) => updateBackupCfg({ url: e.target.value })}
-                      placeholder="https://..."
-                      disabled={user?.role !== "master"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Token / Credencial</Label>
-                    <Input
-                      type="password"
-                      value={config.backupConfig.token || ""}
-                      onChange={(e) => updateBackupCfg({ token: e.target.value })}
-                      placeholder="Chave de acesso"
-                      disabled={user?.role !== "master"}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Backup automático diário</Label>
-                  <p className="text-xs text-muted-foreground">Gera o arquivo todos os dias às 03:00.</p>
-                </div>
-                <Switch checked={config.backupAutomatico} onCheckedChange={(v) => setConfig({...config, backupAutomatico: v})} disabled={user?.role !== "master"} />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handleBackup} disabled={loading || user?.role !== "master"}>
+        <TabsContent value="backup" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Destino do backup"
+            description="Gere um arquivo com os dados principais e escolha onde ele deve ser guardado."
+            footer={
+              <>
+                <Button variant="outline" onClick={handleBackup} disabled={loading || somenteLeitura} className="mr-auto">
                   <Download className="mr-2 h-4 w-4" /> {loading ? "Gerando..." : "Gerar backup agora"}
                 </Button>
-                <Button onClick={persistBackup} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
+                <Button onClick={persistBackup} disabled={loading || somenteLeitura}>
                   <Save className="mr-2 h-4 w-4" /> Salvar configuração
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </>
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Destino">
+                <Select value={config.backupDestino} onValueChange={(v) => setConfig({ ...config, backupDestino: v })} disabled={somenteLeitura}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="local"><div className="flex items-center gap-2"><HardDrive className="h-4 w-4" /> Local (download)</div></SelectItem>
+                    <SelectItem value="cloud"><div className="flex items-center gap-2"><Cloud className="h-4 w-4" /> Supabase Storage</div></SelectItem>
+                    <SelectItem value="gdrive">Google Drive</SelectItem>
+                    <SelectItem value="dropbox">Dropbox</SelectItem>
+                    <SelectItem value="s3">Amazon S3 / Compatível</SelectItem>
+                    <SelectItem value="ftp">FTP / SFTP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Pasta / bucket de destino" htmlFor="backup-pasta">
+                <Input
+                  id="backup-pasta"
+                  value={config.backupConfig.pasta || ""}
+                  onChange={(e) => updateBackupCfg({ pasta: e.target.value })}
+                  placeholder={config.backupDestino === "s3" ? "meu-bucket/backups" : "/backups"}
+                  disabled={somenteLeitura}
+                />
+              </Field>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" /> Backup Manual</CardTitle></CardHeader>
-              <CardContent className="text-center py-6">
-                <Database className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground mb-4">Backup completo dos dados</p>
-                <Button onClick={handleBackup} disabled={loading || user?.role !== "master"} className="bg-gradient-primary">
-                  <Download className="mr-2 h-4 w-4" /> {loading ? "Gerando..." : "Gerar Backup"}
-                </Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Upload className="h-5 w-5" /> Restaurar Backup</CardTitle></CardHeader>
-              <CardContent className="text-center py-6">
-                <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground mb-4">Restaurar dados de backup</p>
-                <Button variant="outline" disabled={user?.role !== "master"}>
-                  <Upload className="mr-2 h-4 w-4" /> Selecionar Arquivo
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-          <Card>
-            <CardHeader><CardTitle>Status do Sistema</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="text-center"><CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2" /><p className="font-medium">Online</p><p className="text-sm text-muted-foreground">Funcionando</p></div>
-                <div className="text-center"><Database className="mx-auto h-8 w-8 text-blue-500 mb-2" /><p className="font-medium">Último Backup</p><p className="text-sm text-muted-foreground">Hoje, 03:00</p></div>
-                <div className="text-center"><Server className="mx-auto h-8 w-8 text-purple-500 mb-2" /><p className="font-medium">Versão</p><p className="text-sm text-muted-foreground">v2.1.0</p></div>
+            {config.backupDestino !== "local" && config.backupDestino !== "cloud" && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field label="URL / endpoint" htmlFor="backup-url">
+                  <Input id="backup-url" value={config.backupConfig.url || ""} onChange={(e) => updateBackupCfg({ url: e.target.value })} placeholder="https://..." disabled={somenteLeitura} />
+                </Field>
+                <Field label="Token / credencial" htmlFor="backup-token">
+                  <Input id="backup-token" type="password" value={config.backupConfig.token || ""} onChange={(e) => updateBackupCfg({ token: e.target.value })} placeholder="Chave de acesso" autoComplete="new-password" disabled={somenteLeitura} />
+                </Field>
               </div>
-            </CardContent>
-          </Card>
+            )}
+
+          </SettingsSection>
+
+          <SettingsSection
+            title="Restaurar backup"
+            description="Voltar os dados a partir de um arquivo gerado nesta tela."
+          >
+            <InfoNote tom="alerta" icon={AlertTriangle}>
+              A restauração substitui os dados atuais. Por segurança, ela é feita pelo suporte técnico diretamente no servidor, a partir do arquivo de backup. Gere um backup novo antes de pedir a restauração.
+            </InfoNote>
+          </SettingsSection>
         </TabsContent>
-      </Tabs>
+      </SettingsTabs>
     </div>
   )
 }

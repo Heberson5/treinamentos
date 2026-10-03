@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Plus, Search, Edit3, Trash2, Shield, Users, Lock,
-  Unlock, Crown, UserCheck, User, Eye, EyeOff
-} from "lucide-react"
+import { Plus, Search, Edit3, Trash2, Shield, Lock, Crown, UserCheck, User, Eye, EyeOff } from "lucide-react"
+import { PageHeader } from "@/components/layout/page-header"
+import { MetricStrip, StatusPill, Field } from "@/components/layout/settings"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
@@ -233,8 +232,11 @@ export default function Permissoes() {
     enabled: !!user,
   })
 
-  const setRoles = (updater: (prev: Role[]) => Role[]) => {
-    queryClient.setQueryData<Role[]>([PERMISSOES_ROLES_QUERY_KEY, empresaId], (prev) => updater(prev || []))
+  // Aceita a lista nova ou uma função que recebe a lista atual
+  const setRoles = (next: Role[] | ((prev: Role[]) => Role[])) => {
+    queryClient.setQueryData<Role[]>([PERMISSOES_ROLES_QUERY_KEY, empresaId], (prev) =>
+      typeof next === "function" ? next(prev || []) : next
+    )
   }
 
   const [searchTerm, setSearchTerm] = useState("")
@@ -410,278 +412,250 @@ export default function Permissoes() {
 
   const totalUsuarios = visibleRoles.reduce((acc, r) => acc + r.usuariosCount, 0)
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Gestão de Papéis</h1>
-          <p className="text-muted-foreground mt-2">
-            Configure papéis e suas permissões no sistema
-          </p>
-        </div>
-        
-        <Dialog open={isCreateRoleOpen} onOpenChange={(open) => {
-          setIsCreateRoleOpen(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Papel
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingRole ? "Editar Papel" : "Criar Novo Papel"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingRole ? "Atualize as informações e permissões do papel." : "Configure um novo papel com suas respectivas permissões."}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome do Papel *</Label>
-                  <Input
-                    id="nome"
-                    value={newRole.nome}
-                    onChange={(e) => setNewRole({...newRole, nome: e.target.value})}
-                    placeholder="Ex: Gerente"
-                    disabled={editingRole?.isMasterRole}
+  const dialogoPapel = (
+    <Dialog open={isCreateRoleOpen} onOpenChange={(open) => {
+      setIsCreateRoleOpen(open)
+      if (!open) resetForm()
+    }}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Papel
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editingRole ? "Editar Papel" : "Criar Novo Papel"}</DialogTitle>
+          <DialogDescription>
+            {editingRole ? "Atualize as informações e permissões do papel." : "Configure um novo papel com suas respectivas permissões."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="min-w-0 space-y-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Field label="Nome do Papel *" htmlFor="nome" className="min-w-0">
+              <Input
+                id="nome"
+                value={newRole.nome}
+                onChange={(e) => setNewRole({ ...newRole, nome: e.target.value })}
+                placeholder="Ex: Gerente"
+                disabled={editingRole?.isMasterRole}
+              />
+            </Field>
+            <Field label="Cor do Papel" className="min-w-0">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {coresDisponiveis.map((cor) => (
+                  <button
+                    key={cor.value}
+                    type="button"
+                    onClick={() => setNewRole({ ...newRole, cor: cor.value })}
+                    className={cn(
+                      "h-7 w-7 rounded-full ring-offset-2 ring-offset-background transition-all",
+                      newRole.cor === cor.value ? "ring-2 ring-foreground/60" : "hover:scale-110",
+                    )}
+                    style={{ backgroundColor: cor.hex }}
+                    title={cor.label}
+                    aria-label={`Cor ${cor.label}`}
+                    aria-pressed={newRole.cor === cor.value}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Cor do Papel</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {coresDisponiveis.map((cor) => (
-                      <button
-                        key={cor.value}
-                        type="button"
-                        onClick={() => setNewRole({...newRole, cor: cor.value})}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          newRole.cor === cor.value ? "border-foreground scale-110 ring-2 ring-offset-2 ring-foreground/30" : "border-transparent hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: cor.hex }}
-                        title={cor.label}
-                      />
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição</Label>
-                <Textarea
-                  id="descricao"
-                  value={newRole.descricao}
-                  onChange={(e) => setNewRole({...newRole, descricao: e.target.value})}
-                  placeholder="Descrição das responsabilidades do papel"
-                  rows={2}
-                />
-              </div>
-              
-              <div className="space-y-4">
-                <Label>Permissões</Label>
-                <Tabs defaultValue={categorias[0]} className="w-full">
-                  <TabsList className="flex flex-wrap h-auto gap-1">
-                    {categorias.map((categoria) => (
-                      <TabsTrigger key={categoria} value={categoria} className="text-xs">
-                        {categoria}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {categorias.map((categoria) => (
-                    <TabsContent key={categoria} value={categoria} className="space-y-2">
-                      {permissoesDoDialogo
-                        .filter(p => p.categoria === categoria)
-                        .map((permission) => {
-                          const isLocked = editingRole?.isMasterRole && permission.id === "system.permissions"
-                          return (
-                            <div key={permission.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-medium text-sm">{permission.nome}</h4>
-                                  {isLocked && (
-                                    <Badge variant="outline" className="text-[10px]">
-                                      <Lock className="h-2 w-2 mr-1" /> Obrigatório
-                                    </Badge>
-                                  )}
-                                  {permission.masterOnly && (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      <Crown className="h-2 w-2 mr-1" /> Master
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground">{permission.descricao}</p>
+            </Field>
+          </div>
+
+          <Field label="Descrição" htmlFor="descricao">
+            <Textarea
+              id="descricao"
+              value={newRole.descricao}
+              onChange={(e) => setNewRole({ ...newRole, descricao: e.target.value })}
+              placeholder="Descrição das responsabilidades do papel"
+              rows={2}
+            />
+          </Field>
+
+          <div className="min-w-0 space-y-2">
+            <div className="flex items-baseline justify-between">
+              <Label className="text-[13px] font-medium">Permissões</Label>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {newRole.permissoes.filter((id) => permissoesDoDialogo.some((p) => p.id === id)).length} de {permissoesDoDialogo.length} ativas
+              </span>
+            </div>
+            <Tabs defaultValue={categorias[0]} className="w-full min-w-0">
+              <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 [scrollbar-width:none]">
+                {categorias.map((categoria) => {
+                  const daCategoria = permissoesDoDialogo.filter((p) => p.categoria === categoria)
+                  const ativas = daCategoria.filter((p) => newRole.permissoes.includes(p.id)).length
+                  return (
+                    <TabsTrigger key={categoria} value={categoria} className="shrink-0 gap-1.5 text-xs">
+                      {categoria}
+                      <span className="tabular-nums text-[10.5px] text-muted-foreground">{ativas}/{daCategoria.length}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+
+              {categorias.map((categoria) => (
+                <TabsContent key={categoria} value={categoria} className="mt-3">
+                  <div className="divide-y rounded-lg border">
+                    {permissoesDoDialogo
+                      .filter((p) => p.categoria === categoria)
+                      .map((permission) => {
+                        const isLocked = editingRole?.isMasterRole && permission.id === "system.permissions"
+                        const marcado = newRole.permissoes.includes(permission.id)
+                        return (
+                          <div key={permission.id} className={cn("flex items-center justify-between gap-4 px-4 py-3", marcado && "bg-primary/[0.03]")}>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-sm font-medium">{permission.nome}</span>
+                                {isLocked && (
+                                  <StatusPill tom="neutro"><Lock className="h-3 w-3" /> Obrigatório</StatusPill>
+                                )}
+                                {permission.masterOnly && (
+                                  <StatusPill tom="alerta"><Crown className="h-3 w-3" /> Master</StatusPill>
+                                )}
                               </div>
-                              <Switch
-                                checked={newRole.permissoes.includes(permission.id)}
-                                onCheckedChange={() => togglePermission(permission.id)}
-                                disabled={isLocked}
-                              />
+                              <p className="mt-0.5 text-xs text-muted-foreground">{permission.descricao}</p>
                             </div>
-                          )
-                        })}
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={editingRole ? handleUpdateRole : handleCreateRole} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                {editingRole ? "Atualizar" : "Criar Papel"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <Shield className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Papéis</p>
-                <p className="text-2xl font-bold">{visibleRoles.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                <Unlock className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Papéis Ativos</p>
-                <p className="text-2xl font-bold">{visibleRoles.filter(r => r.ativo).length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <Users className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Usuários</p>
-                <p className="text-2xl font-bold">{isLoading ? "..." : totalUsuarios}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                <Lock className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Permissões</p>
-                <p className="text-2xl font-bold">{visiblePermissions.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar papéis..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      {/* Roles List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredRoles.map((role) => (
-          <Card key={role.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 ${role.cor} rounded-lg text-white`}>
-                    {getRoleIcon(role.nome)}
+                            <Switch
+                              checked={marcado}
+                              onCheckedChange={() => togglePermission(permission.id)}
+                              disabled={isLocked}
+                              aria-label={permission.nome}
+                            />
+                          </div>
+                        )
+                      })}
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{role.nome}</CardTitle>
-                    <CardDescription className="text-xs">{role.descricao}</CardDescription>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t pt-4">
+          <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={editingRole ? handleUpdateRole : handleCreateRole}>
+            {editingRole ? "Atualizar" : "Criar Papel"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Permissões"
+        description="Papéis da plataforma e o que cada um pode fazer"
+        actions={dialogoPapel}
+      />
+
+      <MetricStrip
+        items={[
+          { label: "Papéis", value: visibleRoles.length, hint: `${visibleRoles.filter((r) => r.ativo).length} ativos` },
+          { label: "Usuários com papel", value: isLoading ? "…" : totalUsuarios },
+          { label: "Permissões disponíveis", value: visiblePermissions.length, hint: `${new Set(visiblePermissions.map((p) => p.categoria)).size} categorias` },
+          { label: "Escopo", value: isMaster && !empresaId ? "Global" : "Empresa", hint: isMaster && !empresaId ? "vale para todas as empresas" : "empresa selecionada" },
+        ]}
+      />
+
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 border-b p-3 sm:px-4">
+          <div className="relative min-w-[220px] flex-1 sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-9 pl-9"
+              placeholder="Buscar papéis..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {filteredRoles.length === 0 ? (
+          <div className="p-12 text-center">
+            <Shield className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Nenhum papel encontrado.</p>
+          </div>
+        ) : (
+          <ul className="divide-y">
+            {filteredRoles.map((role) => {
+              const cobertura = visiblePermissions.length ? Math.round((role.permissoes.length / visiblePermissions.length) * 100) : 0
+              return (
+                <li key={role.id} className={cn("flex flex-col gap-4 p-4 sm:px-5 lg:flex-row lg:items-center", !role.ativo && "bg-muted/20")}>
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white", role.cor, !role.ativo && "opacity-50")}>
+                      {getRoleIcon(role.nome)}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">{role.nome}</h3>
+                        <StatusPill tom={role.ativo ? "sucesso" : "neutro"}>{role.ativo ? "Ativo" : "Inativo"}</StatusPill>
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{role.descricao}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {role.permissoes.slice(0, 3).map((pId) => (
+                          <span key={pId} className="rounded-md border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                            {getPermissionNameById(pId)}
+                          </span>
+                        ))}
+                        {role.permissoes.length > 3 && (
+                          <span className="rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground">+{role.permissoes.length - 3} mais</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <Badge variant={role.ativo ? "default" : "secondary"}>
-                  {role.ativo ? "Ativo" : "Inativo"}
-                </Badge>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Usuários:</span>
-                <span className="font-medium">{role.usuariosCount}</span>
-              </div>
-              
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Permissões:</span>
-                  <span className="font-medium">{role.permissoes.length}</span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {role.permissoes.slice(0, 5).map((pId) => (
-                    <Badge key={pId} variant="outline" className="text-[10px] py-0">
-                      {getPermissionNameById(pId)}
-                    </Badge>
-                  ))}
-                  {role.permissoes.length > 5 && (
-                    <Badge variant="outline" className="text-[10px] py-0">
-                      +{role.permissoes.length - 5} mais
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex justify-between pt-2">
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => toggleRoleStatus(role.id)} disabled={role.isMasterRole}>
-                    {role.ativo ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleEditRole(role)}>
-                    <Edit3 className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleDeleteRole(role.id)}
-                  className="text-destructive hover:text-destructive"
-                  disabled={role.usuariosCount > 0 || role.isMasterRole || isOwnRole(role)}
-                  title={isOwnRole(role) ? "Você não pode excluir o seu próprio papel" : undefined}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 lg:shrink-0 lg:flex-nowrap">
+                    <div className="w-16 shrink-0">
+                      <div className="text-xs text-muted-foreground">Usuários</div>
+                      <div className="text-lg font-semibold tabular-nums">{role.usuariosCount}</div>
+                    </div>
+                    <div className="w-36 shrink-0">
+                      <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+                        <span>Permissões</span>
+                        <span className="tabular-nums">{role.permissoes.length}/{visiblePermissions.length}</span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, cobertura)}%` }} />
+                      </div>
+                    </div>
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground"
+                        onClick={() => toggleRoleStatus(role.id)}
+                        disabled={role.isMasterRole}
+                        aria-label={role.ativo ? `Desativar ${role.nome}` : `Ativar ${role.nome}`}
+                        title={role.ativo ? "Desativar" : "Ativar"}
+                      >
+                        {role.ativo ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleEditRole(role)} aria-label={`Editar ${role.nome}`}>
+                        <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteRole(role.id)}
+                        disabled={role.usuariosCount > 0 || role.isMasterRole || isOwnRole(role)}
+                        aria-label={`Excluir ${role.nome}`}
+                        title={isOwnRole(role) ? "Você não pode excluir o seu próprio papel" : role.usuariosCount > 0 ? "Papel com usuários não pode ser excluído" : "Excluir"}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </Card>
     </div>
   )
 }

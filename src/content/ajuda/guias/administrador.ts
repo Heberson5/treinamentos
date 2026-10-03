@@ -327,8 +327,8 @@ export const guiasAdministrador: Guia[] = [
       {
         titulo: "Conheça as integrações",
         texto:
-          "Em **Sistema → Integrações**, as abas reúnem as conexões disponíveis: **Calendário** (Google e Outlook), **Notificações**, **SMS** e **IA**. O topo da tela resume a situação de cada uma.",
-        pontos: ["Abas das integrações."],
+          "Em **Sistema → Integrações**, as abas reúnem as conexões disponíveis: **Calendário** (Google e Outlook), **Notificações**, **SMS** e **IA**. Elas ficam no menu à esquerda (no celular, na faixa do topo).",
+        pontos: ["Menu das integrações."],
         print: "adm-integracoes",
         aviso: "A conexão com calendários depende de configuração no servidor da plataforma. Se a tela avisar disso, fale com o suporte.",
       },
