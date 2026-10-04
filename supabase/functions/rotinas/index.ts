@@ -1,5 +1,5 @@
 // Rotinas agendadas da plataforma. Chamada pelo agendador (cron) da VPS:
-//   POST /functions/v1/rotinas   { "tarefa": "notificacoes" | "lembretes" | "relatorio_mensal" | "limpeza" | "todas" }
+//   POST /functions/v1/rotinas   { "tarefa": "notificacoes" | "lembretes" | "relatorio_mensal" | "limpeza" | "todas" | "alerta" }
 //   Authorization: Bearer <SERVICE_ROLE_KEY>
 // Só a chave de serviço (que fica apenas no servidor) pode disparar.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
@@ -311,7 +311,38 @@ async function limpeza(admin: SupabaseClient) {
   await apagar("leads_demonstracao", "criado_em", dias(365));    // pedidos de demonstração: 1 ano
   // Pedidos LGPD atendidos há mais de 5 anos (comprovação do atendimento)
   await apagar("solicitacoes_lgpd", "criado_em", dias(1825));
+  await apagar("registro_backups", "iniciado_em", dias(365));    // registro dos backups: 1 ano
   return r;
+}
+
+// ------------------------------------------------------------------
+// Alerta do monitoramento da VPS (scripts/vps/monitorar.sh) para os Masters
+// ------------------------------------------------------------------
+async function alerta(admin: SupabaseClient, body: Record<string, unknown>) {
+  const config = await carregarConfigEmail(admin);
+  if (!smtpConfigurado(config)) return { enviados: 0, aviso: "SMTP não configurado" };
+  const assunto = String(body?.assunto || "Alerta do servidor").replace(/[\r\n]+/g, " ").slice(0, 150);
+  const linhas = String(body?.mensagem || "").slice(0, 4000).split(/\r?\n/).filter(Boolean);
+  const { data: papeis } = await admin.from("usuario_roles").select("usuario_id").eq("role", "master");
+  const ids = (papeis || []).map((r: any) => r.usuario_id);
+  if (ids.length === 0) return { enviados: 0 };
+  const { data: masters } = await admin.from("perfis").select("id, nome, email, ativo").in("id", ids);
+  const carteiro = new Carteiro(config, admin, 10);
+  try {
+    for (const m of (masters || []) as any[]) {
+      if (m.ativo === false) continue;
+      await carteiro.enviar({
+        para: m.email,
+        tipo: "alerta_servidor",
+        usuarioId: m.id,
+        assunto: `[${config.nomeSistema}] ${assunto}`,
+        corpoHtml: `<p>O monitoramento do servidor encontrou o seguinte:</p><ul>${linhas.map((l) => `<li style="margin:4px 0">${esc(l)}</li>`).join("")}</ul><p style="color:#64748b;font-size:13px">Enviado automaticamente pelo script de monitoramento da VPS.</p>`,
+      });
+    }
+  } finally {
+    await carteiro.fechar();
+  }
+  return { enviados: carteiro.enviados, falhas: carteiro.falhas };
 }
 
 Deno.serve(async (req) => {
@@ -328,6 +359,7 @@ Deno.serve(async (req) => {
   const resultado: Record<string, unknown> = { tarefa };
 
   try {
+    if (tarefa === "alerta") return json({ ...resultado, ...(await alerta(admin, body)) });
     if (tarefa === "limpeza" || tarefa === "todas") resultado.limpeza = await limpeza(admin);
 
     if (tarefa !== "limpeza") {

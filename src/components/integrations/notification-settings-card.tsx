@@ -37,6 +37,7 @@ const ROTULO_TIPO: Record<string, string> = {
   lembrete_prazo: "Lembrete de prazo",
   relatorio_mensal: "Relatório mensal",
   pagamento: "Pagamento",
+  alerta_servidor: "Alerta do servidor",
   teste: "Teste",
 }
 
