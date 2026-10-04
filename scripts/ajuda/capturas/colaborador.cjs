@@ -369,4 +369,47 @@ module.exports = [
       { n: 3, alvo: (p) => p.getByRole("button", { name: "Hoje" }) },
     ],
   },
+
+  // ---------- Certificado, calendário e privacidade ----------
+  {
+    chave: "colab-validar",
+    como: "deslogado",
+    url: "/validar/7KQM-X4TB-9HRC",
+    viewport: { width: 1200, height: 900 },
+    marcas: [
+      { n: 1, alvo: (p) => p.getByRole("textbox", { name: "Código do certificado" }) },
+      { n: 2, alvo: (p) => p.getByText("Certificado válido") },
+    ],
+  },
+  { chave: "colab-validar-cel", como: "deslogado", url: "/validar/7KQM-X4TB-9HRC", celular: true },
+  {
+    chave: "colab-cal-sincronizar",
+    como: C,
+    url: "/calendario",
+    viewport: { width: 1200, height: 900 },
+    antes: async (p) => {
+      await p.getByRole("button", { name: /Sincronizar/ }).click()
+      await p.waitForTimeout(400)
+      await p.getByRole("button", { name: /Gerar novo link/ }).click()
+      await p.waitForTimeout(600)
+    },
+    recorte: (p) => p.getByRole("dialog"),
+    margem: 20,
+  },
+  {
+    chave: "colab-lgpd-aviso",
+    como: C,
+    url: "/meus-treinamentos",
+    semCiencia: true,
+    viewport: { width: 1200, height: 860 },
+    recorte: (p) => p.getByRole("dialog"),
+    margem: 24,
+  },
+  {
+    chave: "colab-meus-dados",
+    como: C,
+    url: "/meus-dados",
+    viewport: { width: 1366, height: 1250 },
+  },
+  { chave: "colab-meus-dados-cel", como: C, url: "/meus-dados", celular: true },
 ]

@@ -223,4 +223,5 @@ module.exports = [
     recorte: (p) => p.getByRole("dialog"),
     margem: 16,
   },
+  { chave: "mast-config-privacidade", como: M, url: "/admin/configuracoes", viewport: { width: 1366, height: 1100 }, antes: aba(/Privacidade/) },
 ]

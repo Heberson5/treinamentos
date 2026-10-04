@@ -242,4 +242,25 @@ module.exports = [
     antes: async (p) => { await p.getByRole("tab", { name: /^IA/ }).click(); await p.waitForTimeout(600) },
     viewport: { width: 1366, height: 1000 },
   },
+  {
+    chave: "adm-notificacoes",
+    como: A,
+    url: "/admin/integracoes",
+    antes: async (p) => { await p.getByRole("tab", { name: /Notificações/ }).click(); await p.waitForTimeout(600) },
+    viewport: { width: 1366, height: 1100 },
+  },
+  {
+    chave: "adm-lgpd",
+    como: A,
+    url: "/admin/privacidade",
+    viewport: { width: 1366, height: 1100 },
+  },
+  {
+    chave: "adm-lgpd-atender",
+    como: A,
+    url: "/admin/privacidade",
+    antes: async (p) => { await p.getByRole("button", { name: "Atender" }).first().click(); await p.waitForTimeout(600) },
+    recorte: (p) => p.getByRole("dialog"),
+    margem: 16,
+  },
 ]

@@ -172,7 +172,11 @@ serve(async (req) => {
               .update({ bloqueada: false, motivo_bloqueio: null, data_bloqueio: null, is_demo: false })
               .eq('id', empresa_id)
 
-            await avisarPagamento(supabase, empresa_id, payment.transaction_amount, annual)
+            // Responde logo ao Mercado Pago; o e-mail segue em segundo plano
+            const aviso = avisarPagamento(supabase, empresa_id, payment.transaction_amount, annual)
+            const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime
+            if (runtime?.waitUntil) runtime.waitUntil(aviso)
+            else await aviso
           }
         }
       } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
