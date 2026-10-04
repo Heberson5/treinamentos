@@ -544,6 +544,7 @@ export type Database = {
           telefone_contato: string | null
           tentativas_login_max: number
           timezone: string
+          url_plataforma: string | null
         }
         Insert: {
           atualizado_em?: string | null
@@ -580,6 +581,7 @@ export type Database = {
           telefone_contato?: string | null
           tentativas_login_max?: number
           timezone?: string
+          url_plataforma?: string | null
         }
         Update: {
           atualizado_em?: string | null
@@ -616,6 +618,7 @@ export type Database = {
           telefone_contato?: string | null
           tentativas_login_max?: number
           timezone?: string
+          url_plataforma?: string | null
         }
         Relationships: []
       }
@@ -655,6 +658,55 @@ export type Database = {
             foreignKeyName: "departamentos_empresa_id_fkey"
             columns: ["empresa_id"]
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emails_enviados: {
+        Row: {
+          assunto: string
+          criado_em: string
+          destinatario: string
+          empresa_id: string | null
+          erro: string | null
+          id: string
+          status: string
+          tipo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          assunto: string
+          criado_em?: string
+          destinatario: string
+          empresa_id?: string | null
+          erro?: string | null
+          id?: string
+          status: string
+          tipo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          assunto?: string
+          criado_em?: string
+          destinatario?: string
+          empresa_id?: string | null
+          erro?: string | null
+          id?: string
+          status?: string
+          tipo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emails_enviados_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emails_enviados_usuario_id_fkey"
+            columns: ["usuario_id"]
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
         ]
@@ -924,6 +976,40 @@ export type Database = {
           },
         ]
       }
+      lembretes_prazo_enviados: {
+        Row: {
+          enviado_em: string
+          marco: string
+          treinamento_id: string
+          usuario_id: string
+        }
+        Insert: {
+          enviado_em?: string
+          marco: string
+          treinamento_id: string
+          usuario_id: string
+        }
+        Update: {
+          enviado_em?: string
+          marco?: string
+          treinamento_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lembretes_prazo_enviados_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lembretes_prazo_enviados_usuario_id_fkey"
+            columns: ["usuario_id"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pagamentos: {
         Row: {
           atualizado_em: string | null
@@ -1002,6 +1088,7 @@ export type Database = {
           id: string
           nome: string
           numero: number | null
+          receber_emails: boolean
           sessao_atual_id: string | null
           telefone: string | null
           trocar_senha_primeiro_login: boolean | null
@@ -1022,6 +1109,7 @@ export type Database = {
           id: string
           nome: string
           numero?: number | null
+          receber_emails?: boolean
           sessao_atual_id?: string | null
           telefone?: string | null
           trocar_senha_primeiro_login?: boolean | null
@@ -1042,6 +1130,7 @@ export type Database = {
           id?: string
           nome?: string
           numero?: number | null
+          receber_emails?: boolean
           sessao_atual_id?: string | null
           telefone?: string | null
           trocar_senha_primeiro_login?: boolean | null
@@ -1228,6 +1317,43 @@ export type Database = {
         }
         Relationships: []
       }
+      preferencias_notificacao: {
+        Row: {
+          atualizado_em: string
+          conclusao: boolean
+          empresa_id: string
+          lembrete_dias: number[]
+          lembrete_prazo: boolean
+          novo_treinamento: boolean
+          relatorio_mensal: boolean
+        }
+        Insert: {
+          atualizado_em?: string
+          conclusao?: boolean
+          empresa_id: string
+          lembrete_dias?: number[]
+          lembrete_prazo?: boolean
+          novo_treinamento?: boolean
+          relatorio_mensal?: boolean
+        }
+        Update: {
+          atualizado_em?: string
+          conclusao?: boolean
+          empresa_id?: string
+          lembrete_dias?: number[]
+          lembrete_prazo?: boolean
+          novo_treinamento?: boolean
+          relatorio_mensal?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preferencias_notificacao_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       progresso_treinamentos: {
         Row: {
           atualizado_em: string | null
@@ -1235,6 +1361,7 @@ export type Database = {
           criado_em: string | null
           data_conclusao: string | null
           data_inicio: string | null
+          email_conclusao_em: string | null
           id: string
           nota_avaliacao: number | null
           numero: number | null
@@ -1249,6 +1376,7 @@ export type Database = {
           criado_em?: string | null
           data_conclusao?: string | null
           data_inicio?: string | null
+          email_conclusao_em?: string | null
           id?: string
           nota_avaliacao?: number | null
           numero?: number | null
@@ -1263,6 +1391,7 @@ export type Database = {
           criado_em?: string | null
           data_conclusao?: string | null
           data_inicio?: string | null
+          email_conclusao_em?: string | null
           id?: string
           nota_avaliacao?: number | null
           numero?: number | null
@@ -1376,6 +1505,31 @@ export type Database = {
             foreignKeyName: "questoes_treinamento_treinamento_id_fkey"
             columns: ["treinamento_id"]
             referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorios_mensais_enviados: {
+        Row: {
+          empresa_id: string
+          enviado_em: string
+          mes: string
+        }
+        Insert: {
+          empresa_id: string
+          enviado_em?: string
+          mes: string
+        }
+        Update: {
+          empresa_id?: string
+          enviado_em?: string
+          mes?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorios_mensais_enviados_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
@@ -1626,6 +1780,7 @@ export type Database = {
           media_avaliacao: number | null
           nivel: string | null
           nota_minima: number | null
+          notificado_em: string | null
           numero: number | null
           obrigatorio: boolean | null
           publicado: boolean | null
@@ -1650,6 +1805,7 @@ export type Database = {
           media_avaliacao?: number | null
           nivel?: string | null
           nota_minima?: number | null
+          notificado_em?: string | null
           numero?: number | null
           obrigatorio?: boolean | null
           publicado?: boolean | null
@@ -1674,6 +1830,7 @@ export type Database = {
           media_avaliacao?: number | null
           nivel?: string | null
           nota_minima?: number | null
+          notificado_em?: string | null
           numero?: number | null
           obrigatorio?: boolean | null
           publicado?: boolean | null
@@ -1779,6 +1936,7 @@ export type Database = {
           criado_em: string | null
           data_conclusao: string | null
           data_inicio: string | null
+          email_conclusao_em: string | null
           id: string
           nota_avaliacao: number | null
           numero: number | null

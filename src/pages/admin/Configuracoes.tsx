@@ -29,6 +29,7 @@ interface ConfiguracaoSistema {
   emailContato: string
   telefoneContato: string
   endereco: string
+  urlPlataforma: string
   logoUrl?: string
   timezone: string
   idioma: string
@@ -164,7 +165,7 @@ interface AuditEntry {
 const COLUNAS_CONFIG = [
   "nome_sistema", "favicon_url", "logo_sidebar_url", "session_timeout_min", "logoff_on_close",
   "tentativas_login_max", "bloqueio_horas", "nome_empresa", "email_contato", "telefone_contato",
-  "endereco", "timezone", "idioma", "smtp_host", "smtp_port", "smtp_usuario", "smtp_senha_configurada",
+  "endereco", "url_plataforma", "timezone", "idioma", "smtp_host", "smtp_port", "smtp_usuario", "smtp_senha_configurada",
   "smtp_tls", "email_remetente", "email_template_html", "notificacoes_email", "notificacoes_push",
   "notificacoes_conclusao", "notificacoes_lembrete", "senha_min_length", "senha_requer_maiuscula",
   "senha_requer_numero", "senha_requer_especial",
@@ -187,6 +188,7 @@ export default function Configuracoes() {
     emailContato: "contato@portaltreinamentos.com",
     telefoneContato: "(11) 99999-9999",
     endereco: "Rua Principal, 123 - São Paulo/SP",
+    urlPlataforma: "",
     timezone: "America/Sao_Paulo",
     idioma: "pt-BR",
     smtpHost: "smtp.gmail.com",
@@ -246,6 +248,7 @@ export default function Configuracoes() {
       emailContato: configData.email_contato || "",
       telefoneContato: configData.telefone_contato || "",
       endereco: configData.endereco || "",
+      urlPlataforma: configData.url_plataforma || "",
       timezone: configData.timezone || "America/Sao_Paulo",
       idioma: configData.idioma || "pt-BR",
       smtpHost: configData.smtp_host || "",
@@ -342,6 +345,7 @@ export default function Configuracoes() {
           email_contato: config.emailContato,
           telefone_contato: config.telefoneContato,
           endereco: config.endereco,
+          url_plataforma: config.urlPlataforma.trim().replace(/\/+$/, "") || null,
           timezone: config.timezone,
           idioma: config.idioma,
         }
@@ -394,11 +398,25 @@ export default function Configuracoes() {
     }
   }
 
+  // Envia um e-mail real pelo SMTP salvo (função send-email no servidor)
   const handleTestEmail = async () => {
     setTestingEmail(true)
-    await new Promise(r => setTimeout(r, 1500))
-    setTestingEmail(false)
-    toast({ title: "Email de teste enviado!", description: "Verifique sua caixa de entrada." })
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email", { body: { tipo: "teste" } })
+      if (error) {
+        let mensagem = error.message
+        try {
+          const corpo = await (error as any).context?.json?.()
+          if (corpo?.error) mensagem = corpo.error
+        } catch { /* mantém a mensagem padrão */ }
+        throw new Error(mensagem)
+      }
+      toast({ title: "E-mail de teste enviado!", description: `Verifique a caixa de entrada de ${(data as any)?.para || "seu e-mail"}.` })
+    } catch (e) {
+      toast({ title: "Não foi possível enviar", description: e instanceof Error ? e.message : String(e), variant: "destructive" })
+    } finally {
+      setTestingEmail(false)
+    }
   }
 
   const handleBackup = async () => {
@@ -507,6 +525,21 @@ export default function Configuracoes() {
                 </Select>
               </Field>
             </div>
+            <Field
+              label="Endereço da plataforma (URL)"
+              htmlFor="cfg-url"
+              hint="Usado nos links dos e-mails automáticos e na validação de certificados. Ex.: https://treinamentos.suaempresa.com.br"
+            >
+              <Input
+                id="cfg-url"
+                type="url"
+                inputMode="url"
+                value={config.urlPlataforma}
+                onChange={(e) => setConfig({ ...config, urlPlataforma: e.target.value })}
+                placeholder={typeof window !== "undefined" ? window.location.origin : "https://"}
+                disabled={somenteLeitura}
+              />
+            </Field>
             <Field label="Endereço" htmlFor="cfg-endereco">
               <Textarea id="cfg-endereco" value={config.endereco} onChange={(e) => setConfig({ ...config, endereco: e.target.value })} disabled={somenteLeitura} rows={2} />
             </Field>
@@ -517,7 +550,7 @@ export default function Configuracoes() {
         <TabsContent value="email" className="mt-0 space-y-6">
           <SettingsSection
             title="Servidor de envio (SMTP)"
-            description="Usado para mandar e-mails de acesso, lembretes e avisos."
+            description="Usado nos avisos, lembretes e relatórios automáticos. Salve antes de testar: o teste vai para o seu e-mail."
             footer={
               <>
                 <Button variant="outline" onClick={handleTestEmail} disabled={testingEmail || somenteLeitura} className="mr-auto">

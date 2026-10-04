@@ -1,174 +1,211 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Award, BarChart3, BookOpen, Clock, Mail, Save } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { 
-  Bell, 
-  Mail, 
-  Award, 
-  BookOpen,
-  Clock,
-  AlertTriangle
-} from "lucide-react"
-import { useIntegrations } from "@/contexts/integration-context"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/contexts/auth-context"
+import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
+import { useToast } from "@/hooks/use-toast"
+import { InfoNote, SettingList, SettingRow, SettingsSection, StatusPill } from "@/components/layout/settings"
+import { cn } from "@/lib/utils"
+
+// Preferências de e-mail automático da empresa (tabela preferencias_notificacao).
+// Os envios são feitos pela rotina agendada do servidor (função "rotinas").
+
+interface Preferencias {
+  novo_treinamento: boolean
+  conclusao: boolean
+  lembrete_prazo: boolean
+  lembrete_dias: number[]
+  relatorio_mensal: boolean
+}
+
+const PADRAO: Preferencias = {
+  novo_treinamento: true,
+  conclusao: true,
+  lembrete_prazo: true,
+  lembrete_dias: [7, 3, 1],
+  relatorio_mensal: true,
+}
+
+const OPCOES_DIAS = [30, 15, 7, 3, 1]
+
+const ROTULO_TIPO: Record<string, string> = {
+  novo_treinamento: "Novo treinamento",
+  conclusao: "Conclusão",
+  lembrete_prazo: "Lembrete de prazo",
+  relatorio_mensal: "Relatório mensal",
+  teste: "Teste",
+}
 
 export function NotificationSettingsCard() {
-  const { notificationSettings, updateNotificationSettings } = useIntegrations()
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const { empresaSelecionada, isMaster } = useEmpresaFilter()
+  const empresaId = isMaster
+    ? empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
+    : ((user as any)?.empresa_id ?? null)
+
+  const [prefs, setPrefs] = useState<Preferencias>(PADRAO)
+  const [salvando, setSalvando] = useState(false)
+
+  const { data: salvas, isLoading } = useQuery({
+    queryKey: ["preferencias-notificacao", empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("preferencias_notificacao")
+        .select("novo_treinamento, conclusao, lembrete_prazo, lembrete_dias, relatorio_mensal")
+        .eq("empresa_id", empresaId!)
+        .maybeSingle()
+      return (data as Preferencias | null) ?? null
+    },
+  })
+
+  useEffect(() => {
+    setPrefs(salvas ? { ...PADRAO, ...salvas } : PADRAO)
+  }, [salvas, empresaId])
+
+  const { data: ultimos = [] } = useQuery({
+    queryKey: ["emails-enviados", empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("emails_enviados")
+        .select("id, destinatario, tipo, assunto, status, erro, criado_em")
+        .eq("empresa_id", empresaId!)
+        .order("criado_em", { ascending: false })
+        .limit(8)
+      return data || []
+    },
+  })
+
+  const salvar = async () => {
+    if (!empresaId) return
+    setSalvando(true)
+    const linha = { empresa_id: empresaId, ...prefs, atualizado_em: new Date().toISOString() }
+    const { error } = salvas
+      ? await supabase.from("preferencias_notificacao").update(linha).eq("empresa_id", empresaId)
+      : await supabase.from("preferencias_notificacao").insert(linha)
+    setSalvando(false)
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+      return
+    }
+    queryClient.invalidateQueries({ queryKey: ["preferencias-notificacao", empresaId] })
+    toast({ title: "Preferências salvas", description: "Os próximos envios automáticos seguirão estas escolhas." })
+  }
+
+  const alternarDia = (dia: number) =>
+    setPrefs((p) => ({
+      ...p,
+      lembrete_dias: p.lembrete_dias.includes(dia)
+        ? p.lembrete_dias.filter((d) => d !== dia)
+        : [...p.lembrete_dias, dia].sort((a, b) => b - a),
+    }))
+
+  if (!empresaId) {
+    return (
+      <SettingsSection title="E-mails automáticos" description="Avisos enviados aos colaboradores e administradores.">
+        <InfoNote>Selecione uma empresa no topo da tela para ver e ajustar as preferências de e-mail dela.</InfoNote>
+      </SettingsSection>
+    )
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
-          Configurações de Notificações Automáticas
-        </CardTitle>
-        <CardDescription>
-          Configure os alertas automáticos para cursos e certificados
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Nota:</strong> As notificações por email requerem configuração do serviço de email (Resend) no backend.
-          </AlertDescription>
-        </Alert>
-
-        {/* Alerta de Novo Curso */}
-        <div className="flex items-start justify-between p-4 border rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <Label className="text-base font-medium">Alerta de Novo Curso</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Enviar notificação automática quando um novo curso estiver disponível para os departamentos autorizados
-              </p>
-              <div className="mt-2 text-xs text-muted-foreground">
-                <p>• Respeita as permissões de cada departamento</p>
-                <p>• Adiciona automaticamente ao calendário (se integrado)</p>
+    <div className="space-y-6">
+      <SettingsSection
+        title="E-mails automáticos"
+        description="Escolha quais avisos a plataforma envia para as pessoas desta empresa."
+        footer={
+          <Button onClick={salvar} disabled={salvando || isLoading}>
+            <Save className="mr-2 h-4 w-4" /> {salvando ? "Salvando..." : "Salvar preferências"}
+          </Button>
+        }
+      >
+        <SettingList>
+          <SettingRow
+            htmlFor="pref-novo"
+            label={<span className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> Novo treinamento disponível</span>}
+            description="Avisa os colaboradores quando um treinamento é publicado para eles (respeita o departamento)."
+          >
+            <Switch id="pref-novo" checked={prefs.novo_treinamento} onCheckedChange={(v) => setPrefs({ ...prefs, novo_treinamento: v })} />
+          </SettingRow>
+          <SettingRow
+            htmlFor="pref-conclusao"
+            label={<span className="flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Parabéns pela conclusão</span>}
+            description="Ao concluir, a pessoa recebe um e-mail com o link para baixar o certificado."
+          >
+            <Switch id="pref-conclusao" checked={prefs.conclusao} onCheckedChange={(v) => setPrefs({ ...prefs, conclusao: v })} />
+          </SettingRow>
+          <div className="py-3.5">
+            <SettingRow
+              className="py-0"
+              htmlFor="pref-lembrete"
+              label={<span className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> Lembrete de prazo</span>}
+              description="Lembra quem ainda não concluiu um treinamento com prazo. Também avisa no dia e um dia depois do vencimento."
+            >
+              <Switch id="pref-lembrete" checked={prefs.lembrete_prazo} onCheckedChange={(v) => setPrefs({ ...prefs, lembrete_prazo: v })} />
+            </SettingRow>
+            {prefs.lembrete_prazo && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 pl-6">
+                <span className="text-xs text-muted-foreground">Avisar antes do prazo:</span>
+                {OPCOES_DIAS.map((dia) => {
+                  const ativo = prefs.lembrete_dias.includes(dia)
+                  return (
+                    <button
+                      key={dia}
+                      type="button"
+                      aria-pressed={ativo}
+                      onClick={() => alternarDia(dia)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                        ativo ? "border-primary/40 bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      {dia === 1 ? "1 dia" : `${dia} dias`}
+                    </button>
+                  )
+                })}
               </div>
-            </div>
+            )}
           </div>
-          <Switch 
-            checked={notificationSettings.newCourseAlert}
-            onCheckedChange={(checked) => updateNotificationSettings({ newCourseAlert: checked })}
-          />
-        </div>
+          <SettingRow
+            htmlFor="pref-relatorio"
+            label={<span className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Relatório mensal</span>}
+            description="No dia 1 de cada mês, os administradores recebem um resumo do mês anterior."
+          >
+            <Switch id="pref-relatorio" checked={prefs.relatorio_mensal} onCheckedChange={(v) => setPrefs({ ...prefs, relatorio_mensal: v })} />
+          </SettingRow>
+        </SettingList>
+        <InfoNote icon={Mail}>
+          Os e-mails usam o servidor configurado pelo Master em <strong className="font-medium text-foreground">Configurações → Email</strong>.
+          Cada pessoa pode deixar de receber os avisos em <strong className="font-medium text-foreground">Meu Perfil → Privacidade</strong>.
+        </InfoNote>
+      </SettingsSection>
 
-        {/* Certificado Automático */}
-        <div className="flex items-start justify-between p-4 border rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Award className="h-5 w-5 text-yellow-600" />
-            </div>
-            <div>
-              <Label className="text-base font-medium">Envio Automático de Certificado</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Enviar certificado por email automaticamente quando o usuário concluir um curso
-              </p>
-              <div className="mt-2 text-xs text-muted-foreground">
-                <p>• Certificado em PDF anexado ao email</p>
-                <p>• Respeita os limites do plano (ilimitado para Premium/Enterprise)</p>
-              </div>
-            </div>
-          </div>
-          <Switch 
-            checked={notificationSettings.certificateAutoSend}
-            onCheckedChange={(checked) => updateNotificationSettings({ certificateAutoSend: checked })}
-          />
-        </div>
-
-        {/* Lembrete de Curso */}
-        <div className="flex items-start justify-between p-4 border rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Clock className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <Label className="text-base font-medium">Lembrete Antes do Curso</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Enviar lembrete antes do início de treinamentos agendados
-              </p>
-              <div className="mt-3">
-                <Label className="text-sm">Antecedência do lembrete</Label>
-                <Select 
-                  value={notificationSettings.reminderHoursBefore.toString()}
-                  onValueChange={(value) => updateNotificationSettings({ reminderHoursBefore: parseInt(value) })}
-                >
-                  <SelectTrigger className="w-[180px] mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 hora antes</SelectItem>
-                    <SelectItem value="2">2 horas antes</SelectItem>
-                    <SelectItem value="6">6 horas antes</SelectItem>
-                    <SelectItem value="12">12 horas antes</SelectItem>
-                    <SelectItem value="24">24 horas antes</SelectItem>
-                    <SelectItem value="48">48 horas antes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <Switch 
-            checked={notificationSettings.reminderBeforeCourse}
-            onCheckedChange={(checked) => updateNotificationSettings({ reminderBeforeCourse: checked })}
-          />
-        </div>
-
-        {/* Notificações por Email */}
-        <div className="flex items-start justify-between p-4 border rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Mail className="h-5 w-5 text-purple-600" />
-            </div>
-            <div>
-              <Label className="text-base font-medium">Notificações por Email</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Habilitar envio de todas as notificações por email
-              </p>
-            </div>
-          </div>
-          <Switch 
-            checked={notificationSettings.emailNotifications}
-            onCheckedChange={(checked) => updateNotificationSettings({ emailNotifications: checked })}
-          />
-        </div>
-
-        {/* Resumo de Configurações */}
-        <div className="bg-muted/50 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Resumo das Notificações Ativas</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${notificationSettings.newCourseAlert ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className={notificationSettings.newCourseAlert ? '' : 'text-muted-foreground'}>
-                Alertas de novos cursos
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${notificationSettings.certificateAutoSend ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className={notificationSettings.certificateAutoSend ? '' : 'text-muted-foreground'}>
-                Certificados automáticos
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${notificationSettings.reminderBeforeCourse ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className={notificationSettings.reminderBeforeCourse ? '' : 'text-muted-foreground'}>
-                Lembretes de cursos
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${notificationSettings.emailNotifications ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className={notificationSettings.emailNotifications ? '' : 'text-muted-foreground'}>
-                Notificações por email
-              </span>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <SettingsSection title="Últimos e-mails enviados" description="Os oito envios mais recentes desta empresa. O histórico é guardado por 6 meses." contentClassName="p-0">
+        {ultimos.length === 0 ? (
+          <p className="p-5 text-sm text-muted-foreground">Nenhum e-mail enviado ainda.</p>
+        ) : (
+          <ul className="divide-y">
+            {ultimos.map((e: any) => (
+              <li key={e.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                <span className="w-32 shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {new Date(e.criado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                </span>
+                <span className="min-w-0 flex-1 truncate" title={e.assunto}>{e.assunto}</span>
+                <span className="text-xs text-muted-foreground">{ROTULO_TIPO[e.tipo] || e.tipo}</span>
+                <StatusPill tom={e.status === "enviado" ? "sucesso" : "perigo"}>
+                  <span title={e.erro || undefined}>{e.status === "enviado" ? "Enviado" : "Falhou"}</span>
+                </StatusPill>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SettingsSection>
+    </div>
   )
 }
