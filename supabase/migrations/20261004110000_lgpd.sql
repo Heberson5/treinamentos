@@ -308,6 +308,7 @@ BEGIN
   DELETE FROM public.push_subscriptions WHERE usuario_id = p_usuario_id;
   DELETE FROM public.atividades WHERE usuario_id = p_usuario_id;
   DELETE FROM public.avisos_popup_usuarios WHERE usuario_id = p_usuario_id;
+  DELETE FROM public.calendario_tokens WHERE usuario_id = p_usuario_id;
   UPDATE public.emails_enviados SET destinatario = v_novo_email WHERE usuario_id = p_usuario_id;
   UPDATE public.sms_envios SET telefone = '', mensagem = '[anonimizado]' WHERE usuario_id = p_usuario_id;
   IF v_email_antigo IS NOT NULL THEN

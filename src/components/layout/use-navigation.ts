@@ -211,6 +211,7 @@ export function useBreadcrumbs(pathname: string): string[] {
     if (pathname.startsWith(AJUDA_URL + "/")) return [helpItem?.title || "Ajuda", "Guia"]
     if (pathname === "/meus-dados") return ["Meus dados e privacidade"]
     if (pathname === "/privacidade") return ["Política de Privacidade"]
+    if (pathname === "/validar" || pathname.startsWith("/validar/")) return ["Validar certificado"]
     const extra: Array<[RegExp, string, string]> = [
       [/^\/executar-treinamento\//, "/meus-treinamentos", "Estudo"],
       [/^\/treinamento\//, "/catalogo", "Detalhes"],

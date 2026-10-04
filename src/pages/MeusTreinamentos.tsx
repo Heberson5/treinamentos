@@ -225,7 +225,7 @@ export default function MeusTreinamentos() {
     <TrainingCertificate
       trigger={trigger}
       training={{
-        id: parseInt(item.id) || 0,
+        id: item.id,
         titulo: item.title,
         categoria: item.category,
         duracao: item.duration,

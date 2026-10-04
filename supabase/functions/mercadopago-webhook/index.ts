@@ -1,5 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0"
+import { Carteiro, botao, carregarConfigEmail, esc, smtpConfigurado } from "../_shared/email.ts"
+
+/** Avisa os administradores da empresa que o pagamento foi confirmado. */
+async function avisarPagamento(supabase: SupabaseClient, empresaId: string, valor: number, anual?: boolean) {
+  try {
+    const config = await carregarConfigEmail(supabase)
+    if (!smtpConfigurado(config)) return
+    const [{ data: empresa }, { data: pessoas }] = await Promise.all([
+      supabase.from('empresas').select('nome, nome_fantasia').eq('id', empresaId).maybeSingle(),
+      supabase.from('perfis').select('id, nome, email, ativo, receber_emails').eq('empresa_id', empresaId),
+    ])
+    const ids = (pessoas || []).map((p: any) => p.id)
+    if (ids.length === 0) return
+    const { data: papeis } = await supabase.from('usuario_roles').select('usuario_id').eq('role', 'admin').in('usuario_id', ids)
+    const admins = new Set((papeis || []).map((r: any) => r.usuario_id))
+    const nomeEmpresa = empresa?.nome_fantasia || empresa?.nome || ''
+    const valorBR = Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    const carteiro = new Carteiro(config, supabase, 20)
+    for (const p of (pessoas || []) as any[]) {
+      if (!admins.has(p.id) || p.ativo === false) continue
+      await carteiro.enviar({
+        para: p.email,
+        tipo: 'pagamento',
+        empresaId,
+        usuarioId: p.id,
+        assunto: `Pagamento confirmado — ${nomeEmpresa}`,
+        corpoHtml: `<p>Olá, ${esc(String(p.nome || '').split(' ')[0])}!</p><p>Recebemos o pagamento de <strong>${esc(valorBR)}</strong> (plano ${anual ? 'anual' : 'mensal'}) da empresa <strong>${esc(nomeEmpresa)}</strong>. O acesso à plataforma está liberado.</p><p>Para entrar, use o seu e-mail e a senha que você cadastrou.</p>${botao('Acessar a plataforma', config.urlPlataforma ? `${config.urlPlataforma}/login` : '')}`,
+      })
+    }
+    await carteiro.fechar()
+  } catch (e) {
+    console.error('Aviso de pagamento não enviado:', e instanceof Error ? e.message : e)
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -137,6 +171,8 @@ serve(async (req) => {
               .from('empresas')
               .update({ bloqueada: false, motivo_bloqueio: null, data_bloqueio: null, is_demo: false })
               .eq('id', empresa_id)
+
+            await avisarPagamento(supabase, empresa_id, payment.transaction_amount, annual)
           }
         }
       } else if (payment.status === 'rejected' || payment.status === 'cancelled') {

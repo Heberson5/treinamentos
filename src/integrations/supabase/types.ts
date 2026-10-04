@@ -295,6 +295,34 @@ export type Database = {
           },
         ]
       }
+      calendario_tokens: {
+        Row: {
+          criado_em: string
+          token_hash: string
+          ultimo_acesso_em: string | null
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          token_hash: string
+          ultimo_acesso_em?: string | null
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          token_hash?: string
+          ultimo_acesso_em?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendario_tokens_usuario_id_fkey"
+            columns: ["usuario_id"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargos: {
         Row: {
           ativo: boolean | null
@@ -371,6 +399,49 @@ export type Database = {
             foreignKeyName: "categorias_empresa_id_fkey"
             columns: ["empresa_id"]
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificados: {
+        Row: {
+          codigo: string
+          emitido_em: string
+          empresa_id: string | null
+          treinamento_id: string
+          usuario_id: string
+        }
+        Insert: {
+          codigo: string
+          emitido_em?: string
+          empresa_id?: string | null
+          treinamento_id: string
+          usuario_id: string
+        }
+        Update: {
+          codigo?: string
+          emitido_em?: string
+          empresa_id?: string | null
+          treinamento_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificados_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificados_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificados_usuario_id_fkey"
+            columns: ["usuario_id"]
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
         ]
@@ -2030,6 +2101,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _gerar_codigo_certificado: { Args: never; Returns: string }
       _liberar_leitura_colunas: {
         Args: { p_segredos: string[]; p_tabela: string }
         Returns: undefined
@@ -2139,7 +2211,12 @@ export type Database = {
         Returns: undefined
       }
       eh_admin_ou_master: { Args: { usuario_id: string }; Returns: boolean }
+      emitir_certificado: {
+        Args: { p_treinamento_id: string }
+        Returns: string
+      }
       exportar_meus_dados: { Args: never; Returns: Json }
+      gerar_token_calendario: { Args: never; Returns: string }
       get_empresa_id_do_usuario: {
         Args: { p_user_id: string }
         Returns: string
@@ -2222,6 +2299,17 @@ export type Database = {
         Returns: boolean
       }
       pode_tentar_login: { Args: { p_email: string }; Returns: Json }
+      prazos_calendario: {
+        Args: { p_token: string }
+        Returns: {
+          concluido: boolean
+          data_limite: string
+          duracao_minutos: number
+          obrigatorio: boolean
+          titulo: string
+          treinamento_id: string
+        }[]
+      }
       promover_primeiro_admin_empresa: {
         Args: { p_empresa_id: string }
         Returns: undefined
@@ -2246,6 +2334,8 @@ export type Database = {
           versao: string
         }[]
       }
+      revogar_token_calendario: { Args: never; Returns: undefined }
+      validar_certificado: { Args: { p_codigo: string }; Returns: Json }
       verificar_cnpj_demo_disponivel: {
         Args: { p_cnpj: string }
         Returns: boolean

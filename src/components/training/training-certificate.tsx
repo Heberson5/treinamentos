@@ -1,16 +1,21 @@
-import { useState, useRef, type ReactNode } from "react"
+import { useState, useRef, useEffect, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
+import QRCode from "qrcode"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSystemBranding } from "@/hooks/use-system-branding"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Award, Download, Share, Calendar, User, CheckCircle, BookOpen, Loader2 } from "lucide-react"
+import { Award, Download, Share, Calendar, User, CheckCircle, BookOpen, Loader2, ShieldCheck } from "lucide-react"
 import { useBrazilianDate } from "@/hooks/use-brazilian-date"
 import jsPDF from "jspdf"
+import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 interface TrainingCertificateProps {
   trigger?: ReactNode
   training: {
-    id: string | number
+    /** id (uuid) do treinamento */
+    id: string
     titulo: string
     categoria: string
     duracao: string
@@ -38,8 +43,31 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
   const certificateRef = useRef<HTMLDivElement>(null)
   const { formatDate } = useBrazilianDate()
 
-  const certificateId = `CERT-${training.id}-${Date.now().toString().slice(-6)}`
+  const { toast } = useToast()
   const completionDate = training.completedAt || new Date().toISOString()
+
+  // Código permanente do certificado (emitido uma vez pelo servidor)
+  const { data: codigo, isLoading: emitindo, error: erroEmissao } = useQuery({
+    queryKey: ["certificado-codigo", training.id],
+    enabled: isOpen && !!training.id,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("emitir_certificado", { p_treinamento_id: training.id })
+      if (error) throw error
+      return String(data)
+    },
+  })
+  const urlValidacao = codigo ? `${window.location.origin}/validar/${codigo}` : ""
+  const hostValidacao = `${window.location.host}/validar`
+
+  const [qrDataUrl, setQrDataUrl] = useState("")
+  useEffect(() => {
+    if (!urlValidacao) return
+    QRCode.toDataURL(urlValidacao, { margin: 0, width: 300, errorCorrectionLevel: "M", color: { dark: "#1e293b", light: "#ffffff" } })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(""))
+  }, [urlValidacao])
 
   const generatePDF = async () => {
     setIsGenerating(true)
@@ -88,13 +116,36 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       pdf.line(pageWidth - 15, pageHeight - 15, pageWidth - 15 - cornerSize, pageHeight - 15)
       pdf.line(pageWidth - 15, pageHeight - 15, pageWidth - 15, pageHeight - 15 - cornerSize)
 
+      // QR Code de validação (canto superior direito)
+      if (qrDataUrl) {
+        const qrSize = 24
+        const qrX = pageWidth - 22 - qrSize
+        const qrY = 22
+        pdf.setFillColor(255, 255, 255)
+        pdf.rect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 'F')
+        pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
+        pdf.setFontSize(6.5)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(110, 110, 110)
+        pdf.text('Valide este certificado', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' })
+        pdf.text(hostValidacao, qrX + qrSize / 2, qrY + qrSize + 7, { align: 'center' })
+      }
+
       // Award icon circle (simulated)
       pdf.setFillColor(212, 175, 55)
       pdf.circle(pageWidth / 2, 35, 12, 'F')
-      pdf.setTextColor(255, 255, 255)
-      pdf.setFontSize(16)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('★', pageWidth / 2, 38, { align: 'center' })
+      // Estrela desenhada (a fonte padrão do PDF não tem o caractere ★)
+      const estrela: Array<[number, number]> = []
+      for (let i = 0; i < 10; i++) {
+        const raio = i % 2 === 0 ? 7 : 2.8
+        const ang = -Math.PI / 2 + (i * Math.PI) / 5
+        estrela.push([pageWidth / 2 + raio * Math.cos(ang), 35.5 + raio * Math.sin(ang)])
+      }
+      pdf.setFillColor(255, 255, 255)
+      pdf.lines(
+        estrela.slice(1).map(([x, y], i) => [x - estrela[i][0], y - estrela[i][1]]),
+        estrela[0][0], estrela[0][1], [1, 1], 'F', true
+      )
 
       // Title
       pdf.setTextColor(50, 50, 50)
@@ -162,12 +213,12 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       pdf.text(detailsText, pageWidth / 2, detailsY, { align: 'center' })
 
       // Stats section
-      const statsY = 170
+      const statsY = 167
       const statsSpacing = 60
 
       // Completion rate
       pdf.setFillColor(34, 197, 94) // Green
-      pdf.circle(pageWidth / 2 - statsSpacing, statsY, 2, 'F')
+      pdf.circle(pageWidth / 2 - statsSpacing, statsY - 4, 1.5, 'F')
       pdf.setFontSize(18)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(34, 197, 94)
@@ -178,7 +229,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
 
       // Time dedicated
       pdf.setFillColor(59, 130, 246) // Blue
-      pdf.circle(pageWidth / 2, statsY, 2, 'F')
+      pdf.circle(pageWidth / 2, statsY - 4, 1.5, 'F')
       pdf.setFontSize(18)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(59, 130, 246)
@@ -192,7 +243,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       // Score (if available)
       if (userProgress.score != null) {
         pdf.setFillColor(168, 85, 247) // Purple
-        pdf.circle(pageWidth / 2 + statsSpacing, statsY, 2, 'F')
+        pdf.circle(pageWidth / 2 + statsSpacing, statsY - 4, 1.5, 'F')
         pdf.setFontSize(18)
         pdf.setFont('helvetica', 'bold')
         pdf.setTextColor(168, 85, 247)
@@ -203,7 +254,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       }
 
       // Footer section
-      const footerY = 195
+      const footerY = 190
 
       // Date - left
       pdf.setFontSize(9)
@@ -216,7 +267,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(150, 150, 150)
-      pdf.text(`ID: ${certificateId}`, 30, footerY + 4)
+      pdf.text(`Código: ${codigo}`, 30, footerY + 4)
 
       // Platform signature - center
       pdf.setDrawColor(100, 100, 100)
@@ -254,20 +305,29 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
 
     } catch (error) {
       console.error('Erro ao gerar PDF:', error)
+      toast({ title: 'Não foi possível gerar o PDF', variant: 'destructive' })
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const shareCertificate = () => {
+  const shareCertificate = async () => {
+    if (!urlValidacao) return
     if (navigator.share) {
-      navigator.share({
-        title: `Certificado - ${training.titulo}`,
-        text: `Concluí o treinamento "${training.titulo}" na plataforma ${plataforma}!`,
-        url: window.location.href
-      })
+      try {
+        await navigator.share({
+          title: `Certificado - ${training.titulo}`,
+          text: `Concluí o treinamento "${training.titulo}" na plataforma ${plataforma}!`,
+          url: urlValidacao
+        })
+      } catch { /* compartilhamento cancelado */ }
     } else {
-      navigator.clipboard.writeText(window.location.href)
+      try {
+        await navigator.clipboard.writeText(urlValidacao)
+        toast({ title: 'Link de validação copiado', description: 'Quem abrir o link confere a autenticidade do certificado.' })
+      } catch {
+        toast({ title: 'Não foi possível copiar o link', variant: 'destructive' })
+      }
     }
   }
 
@@ -313,6 +373,14 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
             <div className="absolute bottom-8 left-8 w-24 h-24 border-b-4 border-l-4 border-amber-500 rounded-bl-lg" />
             <div className="absolute bottom-8 right-8 w-24 h-24 border-b-4 border-r-4 border-amber-500 rounded-br-lg" />
             
+            {/* QR Code de validação */}
+            {qrDataUrl && (
+              <div className="absolute right-12 top-12 z-20 flex flex-col items-center gap-1">
+                <img src={qrDataUrl} alt="QR Code para validar o certificado" className="h-16 w-16 rounded bg-white p-1 sm:h-20 sm:w-20" />
+                <span className="text-[9px] text-slate-500">Valide este certificado</span>
+              </div>
+            )}
+
             {/* Content */}
             <div className="relative z-10 h-full flex flex-col items-center justify-between p-12">
               {/* Header */}
@@ -391,7 +459,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
                   <div className="text-left">
                     <p className="text-sm text-slate-500">Data de Conclusão</p>
                     <p className="font-semibold text-slate-700">{formatDate(completionDate)}</p>
-                    <p className="text-xs text-slate-400 mt-1">ID: {certificateId}</p>
+                    <p className="text-xs text-slate-400 mt-1">Código: {codigo || "…"}</p>
                   </div>
                   
                   <div className="text-center">
@@ -462,12 +530,28 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
             </CardContent>
           </Card>
           
+          {/* Validação */}
+          {erroEmissao ? (
+            <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-center text-sm text-destructive">
+              {(erroEmissao as Error).message || "Não foi possível emitir o certificado."}
+            </p>
+          ) : (
+            <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              {codigo ? (
+                <>Código de validação <strong className="font-mono text-foreground">{codigo}</strong> · qualquer pessoa confere em <span className="text-foreground">{hostValidacao}</span></>
+              ) : (
+                "Emitindo o código de validação…"
+              )}
+            </p>
+          )}
+
           {/* Actions */}
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-wrap gap-4 justify-center">
             <Button 
               onClick={generatePDF} 
               className="bg-green-600 hover:bg-green-700"
-              disabled={isGenerating}
+              disabled={isGenerating || emitindo || !codigo}
             >
               {isGenerating ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -476,7 +560,7 @@ export function TrainingCertificate({ training, userProgress, userName, userComp
               )}
               {isGenerating ? 'Gerando PDF...' : 'Baixar Certificado (PDF)'}
             </Button>
-            <Button variant="outline" onClick={shareCertificate}>
+            <Button variant="outline" onClick={shareCertificate} disabled={!codigo}>
               <Share className="mr-2 h-4 w-4" />
               Compartilhar
             </Button>

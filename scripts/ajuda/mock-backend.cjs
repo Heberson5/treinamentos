@@ -170,6 +170,8 @@ const tables = {
     { id: "em2", empresa_id: E1, destinatario: "rafael.souza@horizonte.exemplo", tipo: "conclusao", assunto: "Parabéns! Você concluiu Atendimento ao cliente", status: "enviado", erro: null, criado_em: iso(1) },
     { id: "em3", empresa_id: E1, destinatario: "carlos.lima@horizonte.exemplo", tipo: "novo_treinamento", assunto: "Novo treinamento disponível: Reforma Tributária", status: "enviado", erro: null, criado_em: iso(2) },
   ],
+  certificados: [],
+  calendario_tokens: [{ usuario_id: IDS.usuario, criado_em: iso(12), ultimo_acesso_em: iso(0.1) }],
   registro_backups: [{ iniciado_em: iso(0.3), concluido_em: iso(0.29), sucesso: true, tamanho_bytes: 48_500_000, mensagem: null }],
 };
 
@@ -186,6 +188,15 @@ const rpcs = {
   registrar_ciencia_politica: () => "1.0",
   abrir_solicitacao_lgpd: () => "sl-nova",
   exportar_meus_dados: () => ({ gerado_em: iso(0) }),
+  emitir_certificado: () => "7KQM-X4TB-9HRC",
+  validar_certificado: (b) => {
+    const c = String((b && b.p_codigo) || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (c !== "7KQMX4TB9HRC") return { encontrado: false };
+    return { encontrado: true, valido: true, codigo: "7KQM-X4TB-9HRC", titular: "Lucas Ferreira", treinamento: "LGPD na prática",
+      carga_horaria_minutos: 90, concluido_em: iso(6), emitido_em: iso(6), empresa: "Horizonte Alimentos" };
+  },
+  gerar_token_calendario: () => "3f9c2a7e5b1d48c6a0e9f7b2d4c6a8e13f9c2a7e5b1d48c6a0e9f7b2d4c6a8e1",
+  revogar_token_calendario: () => null,
   pode_tentar_login: () => ({ permitido: true, restantes: 5 }),
   get_empresa_id_do_usuario: () => null,
   // Como no servidor real, o gabarito não vai junto das questões

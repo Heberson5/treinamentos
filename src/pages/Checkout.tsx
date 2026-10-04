@@ -263,13 +263,6 @@ export default function Checkout() {
       // Proceed to payment
       setStep('pagamento')
 
-      // Guarda os dados (sem a senha) temporariamente para confirmar o
-      // acesso por e-mail após o pagamento (nunca persistido no servidor).
-      sessionStorage.setItem('pending_credentials_email', JSON.stringify({
-        nome: responsavel,
-        email,
-        empresaNome: nomeFantasia || razaoSocial,
-      }))
 
       // Plano anual: cobrança única no cartão. Plano mensal: assinatura recorrente (cobrança automática todo mês).
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
@@ -289,7 +282,6 @@ export default function Checkout() {
       )
 
       if (checkoutError || !checkoutData?.success) {
-        sessionStorage.removeItem('pending_credentials_email')
         toast({
           title: "Aviso",
           description: "Empresa criada com sucesso! Configure o pagamento mais tarde em Integrações.",
@@ -302,7 +294,6 @@ export default function Checkout() {
       if (checkoutData.init_point) {
         window.location.href = checkoutData.init_point
       } else {
-        sessionStorage.removeItem('pending_credentials_email')
         toast({
           title: "Empresa criada!",
           description: "Você está no período de demonstração de 7 dias.",

@@ -12,17 +12,15 @@ import { SettingsTabs, type AbaConfig } from "@/components/layout/settings"
 
 export default function Integracoes() {
   const { user } = useAuth()
-  const { calendarIntegrations, paymentIntegration } = useIntegrations()
+  const { paymentIntegration } = useIntegrations()
   const isMaster = user?.role === "master"
-
-  const calendariosConectados = calendarIntegrations.filter((c) => c.connected).length
 
   const abas: AbaConfig[] = [
     {
       value: "calendar",
       label: "Calendário",
       icon: Calendar,
-      hint: calendariosConectados > 0 ? `${calendariosConectados} conectado${calendariosConectados > 1 ? "s" : ""}` : "Google e Outlook",
+      hint: "Prazos no Google e Outlook",
     },
     ...(isMaster
       ? [{
@@ -32,7 +30,7 @@ export default function Integracoes() {
           hint: paymentIntegration.connected ? "Mercado Pago conectado" : "Mercado Pago",
         }]
       : []),
-    { value: "notifications", label: "Notificações", icon: Bell, hint: "Alertas e certificados" },
+    { value: "notifications", label: "Notificações", icon: Bell, hint: "E-mails automáticos" },
     { value: "sms", label: "SMS", icon: MessageSquare, hint: "Mensagens via Mobizon" },
     { value: "ai", label: "IA", icon: Sparkles, hint: "Assistente de conteúdo" },
   ]

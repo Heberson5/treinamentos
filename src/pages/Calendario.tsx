@@ -10,13 +10,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Calendar as CalendarIcon, Plus, Clock, Users, MapPin, BookOpen,
-  ChevronLeft, ChevronRight, Filter, Bell, Edit3, Trash2
+  ChevronLeft, ChevronRight, Filter, Bell, Edit3, Trash2, RefreshCw
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useBrazilianDate } from "@/hooks/use-brazilian-date"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import { AddToCalendarButton } from "@/components/training/AddToCalendarButton"
+import { AssinarCalendarioDialog } from "@/components/calendario/assinar-calendario"
 import { registrarAuditoria } from "@/lib/audit-utils"
 
 interface CalendarEvent {
@@ -315,6 +316,10 @@ export default function Calendario() {
               <SelectItem value="revisao">Revisões</SelectItem>
             </SelectContent>
           </Select>
+
+          <AssinarCalendarioDialog
+            trigger={<Button variant="outline"><RefreshCw className="mr-2 h-4 w-4" /> Sincronizar</Button>}
+          />
 
           <Dialog open={isReminderOpen} onOpenChange={setIsReminderOpen}>
             <DialogTrigger asChild>

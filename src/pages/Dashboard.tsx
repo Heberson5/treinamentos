@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { sendCredentialsEmail } from "@/services/email-service";
 import { format, formatDistanceToNow, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
@@ -382,29 +381,13 @@ export default function Dashboard() {
     departmentId: "",
   });
 
-  // Após confirmação do pagamento, envia (mock) o e-mail com as credenciais de acesso
-  // cadastradas durante o checkout. Nunca é reenviado a partir do servidor.
+  // Retorno do checkout com pagamento aprovado. A confirmação por e-mail é
+  // enviada pelo servidor (webhook do Mercado Pago) aos administradores.
   useEffect(() => {
     if (searchParams.get("payment") !== "success") return;
 
-    const pending = sessionStorage.getItem("pending_credentials_email");
-    if (pending) {
-      try {
-        const credentials = JSON.parse(pending);
-        sendCredentialsEmail(credentials).then(() => {
-          toast({
-            title: "Pagamento confirmado!",
-            description: `Um e-mail com os dados de acesso foi enviado para ${credentials.email}.`,
-          });
-        });
-      } catch (error) {
-        console.error("Erro ao processar credenciais pendentes:", error);
-      } finally {
-        sessionStorage.removeItem("pending_credentials_email");
-      }
-    } else {
-      toast({ title: "Pagamento confirmado!", description: "Seu acesso está liberado." });
-    }
+    sessionStorage.removeItem("pending_credentials_email");
+    toast({ title: "Pagamento confirmado!", description: "Seu acesso está liberado." });
 
     searchParams.delete("payment");
     setSearchParams(searchParams, { replace: true });
