@@ -1,621 +1,306 @@
-// src/components/empresa/empresa-config-modal.tsx
-import { useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+// Configuração de uma empresa cliente (Master): plano contratado, cobranças e usuários.
+// Tudo vem do banco: plano_contratos, planos, pagamentos, perfis e usuario_roles.
+import { useEffect, useMemo, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Link } from "react-router-dom"
+import { ArrowRight, Building2, CreditCard, Loader2, Users } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  CreditCard,
-  Users,
-  Settings,
-  Shield,
-  Calendar,
-  Building2,
-  AlertCircle,
-  Check,
-  ExternalLink,
-  UserCheck,
-  Crown,
-  User,
-} from "lucide-react"
+import { supabase } from "@/integrations/supabase/client"
 import { usePlans } from "@/contexts/plans-context"
 import { toast } from "@/hooks/use-toast"
+import { Field, InfoNote, StatusPill, type Tom } from "@/components/layout/settings"
+import { cn } from "@/lib/utils"
 
-interface Usuario {
-  id: number
+interface EmpresaBasica {
+  id: string
   nome: string
-  email: string
-  cargo: string
-  permissao: "admin" | "gestor" | "usuario"
-  status: "ativo" | "inativo"
-  avatar?: string
-}
-
-interface Empresa {
-  id: number
-  nome: string
-  razaoSocial: string
-  cnpj: string
-  email: string
-  telefone: string
-  endereco: string
-  responsavel: string
-  plano: "basico" | "plus" | "premium" | "enterprise"
-  status: "ativa" | "inativa" | "suspensa"
-  usuariosAtivos: number
-  usuariosTotal: number
-  treinamentosAtivos: number
-  dataContratacao: string
-  proximoVencimento: string
-  logo?: string
-  pacotesAdicionais?: number
-  tipoFaturamento?: "mensal" | "anual"
-  statusPagamento?: "ativo" | "pendente" | "cancelado"
+  nome_fantasia?: string | null
+  cnpj?: string | null
+  plano_id?: string | null
 }
 
 interface EmpresaConfigModalProps {
-  empresa: Empresa | null
+  empresa: EmpresaBasica | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUpdate: (empresa: Empresa) => void
+  onUpdate: () => void
 }
 
-// Mock de usuários apenas para exibição na aba "Usuários"
-const mockUsuarios: Usuario[] = [
-  { id: 1, nome: "Heber Sohas", email: "heber@empresa.com", cargo: "Diretor", permissao: "admin", status: "ativo" },
-  { id: 2, nome: "Maria Silva", email: "maria@empresa.com", cargo: "Gerente RH", permissao: "gestor", status: "ativo" },
-  { id: 3, nome: "João Santos", email: "joao@empresa.com", cargo: "Analista", permissao: "usuario", status: "ativo" },
-  { id: 4, nome: "Ana Costa", email: "ana@empresa.com", cargo: "Coordenadora", permissao: "gestor", status: "inativo" },
-]
-
-// Limites de cadastros por plano (base)
-type PlanoEmpresa = Empresa["plano"]
-
-const LIMITE_USUARIOS_POR_PLANO: Record<PlanoEmpresa, number> = {
-  basico: 3,
-  plus: 5,
-  premium: 15,
-  enterprise: 50,
+const brl = (v: number) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+const data = (v: string | null) => {
+  if (!v) return "—"
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : v
 }
 
-// Quantidade de cadastros adicionais por pacote
-const USUARIOS_POR_PACOTE = 5
-
-const calcularUsuariosTotalContrato = (
-  plano: PlanoEmpresa,
-  pacotesAdicionais?: number
-): number => {
-  const base = LIMITE_USUARIOS_POR_PLANO[plano] ?? 0
-  const adicionais =
-    plano === "enterprise" ? (pacotesAdicionais || 0) * USUARIOS_POR_PACOTE : 0
-
-  return base + adicionais
+const STATUS_PAG: Record<string, { label: string; tom: Tom }> = {
+  pago: { label: "Pago", tom: "sucesso" },
+  pendente: { label: "Pendente", tom: "alerta" },
+  atrasado: { label: "Atrasado", tom: "perigo" },
+  cancelado: { label: "Cancelado", tom: "neutro" },
 }
+const PAPEL: Record<string, string> = { admin: "Administrador", instrutor: "Instrutor", usuario: "Colaborador", master: "Master" }
 
-export function EmpresaConfigModal({
-  empresa,
-  open,
-  onOpenChange,
-  onUpdate,
-}: EmpresaConfigModalProps) {
-  const { planos, getPlanoById, descontoAnual, calcularPrecoAnual } = usePlans()
+export function EmpresaConfigModal({ empresa, open, onOpenChange, onUpdate }: EmpresaConfigModalProps) {
+  const queryClient = useQueryClient()
+  const { planos } = usePlans()
+  const empresaId = empresa?.id
+  const [planoSelecionado, setPlanoSelecionado] = useState<string>("")
+  const [salvando, setSalvando] = useState(false)
 
-  const [planoSelecionado, setPlanoSelecionado] = useState<PlanoEmpresa>(
-    empresa?.plano || "basico"
-  )
-  const [tipoFaturamento, setTipoFaturamento] = useState<"mensal" | "anual">(
-    empresa?.tipoFaturamento || "mensal"
-  )
-  const [pacotesAdicionais, setPacotesAdicionais] = useState<number>(
-    empresa?.pacotesAdicionais || 0
-  )
-  const [usuarios] = useState<Usuario[]>(mockUsuarios)
-  const [isSaving, setIsSaving] = useState(false)
+  const { data: contrato, isLoading: carregandoContrato } = useQuery({
+    queryKey: ["empresa-contrato", empresaId],
+    enabled: !!empresaId && open,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("plano_contratos")
+        .select("id, plano_id, nome_plano, preco_contratado, limite_usuarios, limite_treinamentos, data_inicio")
+        .eq("empresa_id", empresaId!)
+        .eq("ativo", true)
+        .order("data_inicio", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      return data
+    },
+  })
+
+  const { data: pessoas = [], isLoading: carregandoPessoas } = useQuery({
+    queryKey: ["empresa-pessoas", empresaId],
+    enabled: !!empresaId && open,
+    queryFn: async () => {
+      const { data: perfis } = await supabase
+        .from("perfis")
+        .select("id, nome, email, cargo, ativo")
+        .eq("empresa_id", empresaId!)
+        .order("nome")
+      const ids = (perfis || []).map((p) => p.id)
+      const { data: papeis } = ids.length
+        ? await supabase.from("usuario_roles").select("usuario_id, role").in("usuario_id", ids)
+        : { data: [] as { usuario_id: string; role: string }[] }
+      const papelDe = new Map((papeis || []).map((p) => [p.usuario_id, p.role]))
+      return (perfis || []).map((p) => ({ ...p, papel: papelDe.get(p.id) || "usuario" }))
+    },
+  })
+
+  const { data: pagamentos = [], isLoading: carregandoPag } = useQuery({
+    queryKey: ["empresa-pagamentos", empresaId],
+    enabled: !!empresaId && open,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pagamentos")
+        .select("id, valor, data_vencimento, data_pagamento, status, referencia")
+        .eq("empresa_id", empresaId!)
+        .order("data_vencimento", { ascending: false })
+        .limit(12)
+      return data || []
+    },
+  })
+
+  const planoAtualId = contrato?.plano_id || empresa?.plano_id || ""
+  useEffect(() => {
+    if (open) setPlanoSelecionado(planoAtualId)
+  }, [open, planoAtualId])
+
+  const ativos = pessoas.filter((p: any) => p.ativo !== false).length
+  const planoNovo = planos.find((p) => p.id === planoSelecionado)
+  const mudou = !!planoSelecionado && planoSelecionado !== planoAtualId
+  const limiteAtual = contrato?.limite_usuarios ?? null
+  const limiteNovo = planoNovo?.limiteUsuarios ?? null
+  const acimaDoLimiteNovo = mudou && limiteNovo != null && ativos > limiteNovo
+
+  const totais = useMemo(() => {
+    const t = { pago: 0, aberto: 0 }
+    for (const p of pagamentos as any[]) {
+      if (p.status === "pago") t.pago += Number(p.valor)
+      else if (p.status === "pendente" || p.status === "atrasado") t.aberto += Number(p.valor)
+    }
+    return t
+  }, [pagamentos])
 
   if (!empresa) return null
+  const nomeEmpresa = empresa.nome_fantasia || empresa.nome
 
-  const planoAtual = getPlanoById(empresa.plano)
-  const planoNovo = getPlanoById(planoSelecionado)
-
-  const handleSave = () => {
-    setIsSaving(true)
-
-    const novoPlano: PlanoEmpresa = planoSelecionado
-    const novosPacotes = novoPlano === "enterprise" ? pacotesAdicionais : 0
-    const usuariosTotal = calcularUsuariosTotalContrato(novoPlano, novosPacotes)
-
-    // Aqui você integraria a chamada real de API
-    setTimeout(() => {
-      onUpdate({
-        ...empresa,
-        plano: novoPlano,
-        tipoFaturamento,
-        pacotesAdicionais: novosPacotes,
-        usuariosTotal,
-      })
-
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações da empresa foram atualizadas com sucesso.",
-      })
-
-      setIsSaving(false)
-      onOpenChange(false)
-    }, 500)
-  }
-
-  const handleConfigurarPagamento = () => {
-    toast({
-      title: "Integração Mercado Pago",
-      description:
-        "Redirecionando para configuração de pagamento recorrente (simulação).",
-    })
-  }
-
-  const getPermissaoLabel = (permissao: string) => {
-    switch (permissao) {
-      case "admin":
-        return "Administrador"
-      case "gestor":
-        return "Gestor"
-      case "usuario":
-        return "Usuário"
-      default:
-        return permissao
+  const salvarPlano = async () => {
+    if (!mudou || !planoNovo) return
+    setSalvando(true)
+    try {
+      const { error } = await supabase.rpc("criar_contrato_plano", { p_empresa_id: empresa.id, p_plano_id: planoSelecionado })
+      if (error) throw error
+      const { error: errEmpresa } = await supabase.from("empresas").update({ plano_id: planoSelecionado }).eq("id", empresa.id)
+      if (errEmpresa) throw errEmpresa
+      queryClient.invalidateQueries({ queryKey: ["empresa-contrato", empresa.id] })
+      toast({ title: "Plano alterado", description: `${nomeEmpresa} agora está no plano ${planoNovo.nome}.` })
+      onUpdate()
+    } catch (e) {
+      toast({ title: "Não foi possível alterar o plano", description: e instanceof Error ? e.message : String(e), variant: "destructive" })
+    } finally {
+      setSalvando(false)
     }
   }
-
-  const getPermissaoIcon = (permissao: string) => {
-    switch (permissao) {
-      case "admin":
-        return Crown
-      case "gestor":
-        return Shield
-      default:
-        return User
-    }
-  }
-
-  const getPermissaoColor = (permissao: string) => {
-    switch (permissao) {
-      case "admin":
-        return "bg-amber-500"
-      case "gestor":
-        return "bg-blue-500"
-      default:
-        return "bg-slate-500"
-    }
-  }
-
-  const getInitials = (nome: string) => {
-    return nome
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  const calcularValor = () => {
-    if (!planoNovo) return { mensal: 0, anual: 0 }
-
-    let valorBase = planoNovo.preco
-
-    if (planoSelecionado === "enterprise" && pacotesAdicionais > 0) {
-      valorBase += (planoNovo.precoPacoteAdicional || 150) * pacotesAdicionais
-    }
-
-    const { precoComDesconto } = calcularPrecoAnual(valorBase)
-
-    return {
-      mensal: valorBase,
-      anual: precoComDesconto,
-    }
-  }
-
-  const valores = calcularValor()
-  const limiteNovo = calcularUsuariosTotalContrato(
-    planoSelecionado,
-    planoSelecionado === "enterprise" ? pacotesAdicionais : 0
-  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={empresa.logo} alt={empresa.nome} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {getInitials(empresa.nome)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <DialogTitle className="text-xl">
-                Configurações - {empresa.nome}
-              </DialogTitle>
-              <DialogDescription>
-                {empresa.razaoSocial} • CNPJ: {empresa.cnpj}
-              </DialogDescription>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Building2 className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <DialogTitle className="truncate">Configurações — {nomeEmpresa}</DialogTitle>
+              <DialogDescription>{empresa.cnpj ? `CNPJ ${empresa.cnpj}` : "Plano, cobranças e usuários da empresa"}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="plano" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-auto gap-1">
-            <TabsTrigger value="plano" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Building2 className="h-4 w-4" />
-              Plano
-            </TabsTrigger>
-            <TabsTrigger value="faturamento" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <CreditCard className="h-4 w-4" />
-              Faturamento
-            </TabsTrigger>
-            <TabsTrigger value="usuarios" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Users className="h-4 w-4" />
-              Usuários
-            </TabsTrigger>
+        <Tabs defaultValue="plano" className="min-w-0">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="plano" className="gap-1.5"><Building2 className="h-4 w-4" /> Plano</TabsTrigger>
+            <TabsTrigger value="faturamento" className="gap-1.5"><CreditCard className="h-4 w-4" /> Faturamento</TabsTrigger>
+            <TabsTrigger value="usuarios" className="gap-1.5"><Users className="h-4 w-4" /> Usuários</TabsTrigger>
           </TabsList>
 
-          {/* Aba Plano */}
-          <TabsContent value="plano" className="space-y-6 py-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Plano atual</CardTitle>
-                <CardDescription>
-                  Gerencie o plano contratado pela empresa.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium">{planoAtual?.nome}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Limite contratado:{" "}
-                      <span className="font-semibold">
-                        {empresa.usuariosTotal}
-                      </span>{" "}
-                      cadastros de usuários (ativos + inativos).
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Plano base:{" "}
-                      {LIMITE_USUARIOS_POR_PLANO[empresa.plano]} cadastros •
-                      Pacotes adicionais:{" "}
-                      {empresa.pacotesAdicionais ?? 0} × {USUARIOS_POR_PACOTE}{" "}
-                      cadastros.
-                    </p>
-                  </div>
-                  <Badge className={(planoAtual?.cor || "bg-primary") + " text-white"}>
-                    {planoAtual?.nome}
-                  </Badge>
+          {/* Plano */}
+          <TabsContent value="plano" className="mt-4 space-y-4">
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3">
+              <div className="bg-card p-4">
+                <div className="text-xs text-muted-foreground">Plano atual</div>
+                <div className="mt-1 font-semibold">{carregandoContrato ? "…" : contrato?.nome_plano || "Sem contrato"}</div>
+                {contrato?.data_inicio && <div className="text-xs text-muted-foreground">desde {data(contrato.data_inicio)}</div>}
+              </div>
+              <div className="bg-card p-4">
+                <div className="text-xs text-muted-foreground">Valor contratado</div>
+                <div className="mt-1 font-semibold tabular-nums">{contrato ? brl(contrato.preco_contratado) : "—"}</div>
+                <div className="text-xs text-muted-foreground">preço guardado no contrato</div>
+              </div>
+              <div className="bg-card p-4">
+                <div className="text-xs text-muted-foreground">Usuários ativos</div>
+                <div className={cn("mt-1 font-semibold tabular-nums", limiteAtual != null && ativos > limiteAtual && "text-red-600")}>
+                  {carregandoPessoas ? "…" : ativos}
+                  {limiteAtual != null && <span className="font-normal text-muted-foreground"> / {limiteAtual}</span>}
                 </div>
+                <div className="text-xs text-muted-foreground">limite do contrato</div>
+              </div>
+            </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-3">
-                    <Label>Plano contratado</Label>
-                    <Select
-                      value={planoSelecionado}
-                      onValueChange={(value) =>
-                        setPlanoSelecionado(value as PlanoEmpresa)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um plano" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planos.map((plano) => (
-                          <SelectItem key={plano.id} value={plano.id}>
-                            {plano.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+            <Field label="Trocar para o plano">
+              <Select value={planoSelecionado} onValueChange={setPlanoSelecionado}>
+                <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                <SelectContent>
+                  {planos.filter((p) => p.ativo || p.id === planoAtualId).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome} — {brl(p.preco)}{p.periodo} · até {p.limiteUsuarios} usuários
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
-                    {planoSelecionado === "enterprise" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="pacotesAdicionais">
-                          Pacotes adicionais de usuários
-                        </Label>
-                        <Input
-                          id="pacotesAdicionais"
-                          type="number"
-                          min={0}
-                          value={pacotesAdicionais}
-                          onChange={(e) =>
-                            setPacotesAdicionais(
-                              Math.max(0, Number(e.target.value) || 0)
-                            )
-                          }
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Cada pacote adiciona{" "}
-                          <strong>{USUARIOS_POR_PACOTE}</strong> cadastros de
-                          usuários (contando ativos + inativos).
-                        </p>
-                      </div>
-                    )}
-                  </div>
+            {mudou && planoNovo && (
+              <InfoNote tom={acimaDoLimiteNovo ? "alerta" : "info"}>
+                Um novo contrato será criado com o preço ({brl(planoNovo.preco)}{planoNovo.periodo}) e o limite ({planoNovo.limiteUsuarios} usuários) atuais
+                do plano {planoNovo.nome}. O contrato anterior é encerrado e fica no histórico.
+                {acimaDoLimiteNovo && ` Atenção: a empresa tem ${ativos} usuários ativos, acima do novo limite.`}
+              </InfoNote>
+            )}
 
-                  <div className="space-y-3">
-                    <Label>Resumo da alteração</Label>
-                    <Card className="border-dashed">
-                      <CardContent className="p-4 space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Settings className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            Plano atual:{" "}
-                            <strong>{planoAtual?.nome ?? empresa.plano}</strong>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <ArrowRightIcon />
-                          <span>
-                            Novo plano:{" "}
-                            <strong>{planoNovo?.nome ?? planoSelecionado}</strong>
-                          </span>
-                        </div>
-                        <div className="pt-2 border-t text-xs text-muted-foreground">
-                          <p>
-                            Limite atual de cadastros:{" "}
-                            <strong>{empresa.usuariosTotal}</strong> usuários.
-                          </p>
-                          <p>
-                            Limite após alteração:{" "}
-                            <strong>{limiteNovo}</strong> usuários.
-                          </p>
-                          <p className="mt-1">
-                            O limite considera todos os cadastros de usuários,
-                            independentemente de estarem ativos ou inativos.
-                          </p>
-                        </div>
-                        {planoSelecionado !== empresa.plano && (
-                          <div className="mt-2 flex items-start gap-2 text-xs text-orange-700 bg-orange-50 border border-orange-100 rounded-md p-2">
-                            <AlertCircle className="h-4 w-4 mt-0.5" />
-                            <span>
-                              A alteração de plano será aplicada no próximo ciclo
-                              de faturamento. Os contratos já vigentes não são
-                              afetados por alterações futuras na configuração
-                              dos planos mestres.
-                            </span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+              <Button onClick={salvarPlano} disabled={!mudou || salvando}>
+                {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar novo plano
+              </Button>
+            </div>
           </TabsContent>
 
-          {/* Aba Faturamento */}
-          <TabsContent value="faturamento" className="space-y-6 py-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Tipo de faturamento</CardTitle>
-                <CardDescription>
-                  Defina se a cobrança será mensal ou anual.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      tipoFaturamento === "mensal"
-                        ? "border-primary ring-2 ring-primary"
-                        : "hover:border-primary/40"
-                    }`}
-                    onClick={() => setTipoFaturamento("mensal")}
-                  >
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">Mensal</span>
-                        {tipoFaturamento === "mensal" && (
-                          <Check className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                      <p className="text-2xl font-bold">
-                        R$ {valores.mensal.toFixed(2).replace(".", ",")}
-                      </p>
-                      <p className="text-sm text-muted-foreground">/mês</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      tipoFaturamento === "anual"
-                        ? "border-primary ring-2 ring-primary"
-                        : "hover:border-primary/40"
-                    } ${
-                      !descontoAnual.habilitado
-                        ? "opacity-50 pointer-events-none"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      descontoAnual.habilitado && setTipoFaturamento("anual")
-                    }
-                  >
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">Anual</span>
-                        {descontoAnual.habilitado && (
-                          <Badge className="bg-green-500 text-white text-xs">
-                            -{descontoAnual.percentual}%
-                          </Badge>
-                        )}
-                        {tipoFaturamento === "anual" && (
-                          <Check className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                      <p className="text-2xl font-bold">
-                        R$ {valores.anual.toFixed(2).replace(".", ",")}
-                      </p>
-                      <p className="text-sm text-muted-foreground">/ano</p>
-                      {descontoAnual.habilitado && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Economia de R${" "}
-                          {((valores.mensal * 12) - valores.anual)
-                            .toFixed(2)
-                            .replace(".", ",")}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card className="mt-2">
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <CreditCard className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-blue-800">
-                            Pagamento recorrente
-                          </p>
-                          <p className="text-sm text-blue-700">
-                            Configure a cobrança automática via Mercado Pago
-                            para ativar o plano automaticamente após o pagamento.
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleConfigurarPagamento}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Configurar
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div>
-                        <p className="font-medium">Status do pagamento</p>
-                        <p className="text-sm text-muted-foreground">
-                          Última cobrança realizada com sucesso (exemplo).
-                        </p>
-                      </div>
-                      <Badge className="bg-green-500 text-white">
-                        Ativo
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CardContent>
-            </Card>
+          {/* Faturamento */}
+          <TabsContent value="faturamento" className="mt-4 space-y-4">
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2">
+              <div className="bg-card p-4">
+                <div className="text-xs text-muted-foreground">Recebido (últimas cobranças)</div>
+                <div className="mt-1 font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{brl(totais.pago)}</div>
+              </div>
+              <div className="bg-card p-4">
+                <div className="text-xs text-muted-foreground">Em aberto</div>
+                <div className={cn("mt-1 font-semibold tabular-nums", totais.aberto > 0 && "text-amber-600 dark:text-amber-400")}>{brl(totais.aberto)}</div>
+              </div>
+            </div>
+            {carregandoPag ? (
+              <p className="text-sm text-muted-foreground">Carregando…</p>
+            ) : pagamentos.length === 0 ? (
+              <InfoNote>Nenhuma cobrança registrada para esta empresa.</InfoNote>
+            ) : (
+              <div className="overflow-hidden rounded-xl border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+                      <th className="px-4 py-2 text-left font-medium">Vencimento</th>
+                      <th className="px-3 py-2 text-left font-medium">Referência</th>
+                      <th className="px-3 py-2 text-right font-medium">Valor</th>
+                      <th className="px-4 py-2 text-left font-medium">Situação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(pagamentos as any[]).map((p) => (
+                      <tr key={p.id} className="border-b last:border-0">
+                        <td className="px-4 py-2.5 tabular-nums">{data(p.data_vencimento)}</td>
+                        <td className="max-w-[200px] truncate px-3 py-2.5 text-muted-foreground">{p.referencia || "—"}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">{brl(p.valor)}</td>
+                        <td className="px-4 py-2.5"><StatusPill tom={STATUS_PAG[p.status]?.tom || "neutro"}>{STATUS_PAG[p.status]?.label || p.status}</StatusPill></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button asChild variant="outline">
+                <Link to="/admin/financeiro" onClick={() => onOpenChange(false)}>
+                  Abrir Financeiro <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </TabsContent>
 
-          {/* Aba Usuários */}
-          <TabsContent value="usuarios" className="space-y-6 py-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Usuários cadastrados</CardTitle>
-                    <CardDescription>
-                      {usuarios.filter((u) => u.status === "ativo").length} usuários
-                      ativos • limite contratado de{" "}
-                      <strong>{empresa.usuariosTotal}</strong> cadastros
-                      (ativos + inativos).
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline">
-                    <Users className="h-4 w-4 mr-1" />
-                    {usuarios.length} no exemplo
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {usuarios.map((usuario) => {
-                  const PermissaoIcon = getPermissaoIcon(usuario.permissao)
-                  return (
-                    <div
-                      key={usuario.id}
-                      className={`flex items-center justify-between p-4 rounded-lg border ${
-                        usuario.status === "inativo"
-                          ? "opacity-60 bg-muted"
-                          : "bg-background"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={usuario.avatar} alt={usuario.nome} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {getInitials(usuario.nome)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{usuario.nome}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {usuario.email}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          {usuario.cargo}
-                        </span>
-                        <Badge
-                          className={`${getPermissaoColor(
-                            usuario.permissao
-                          )} text-white`}
-                        >
-                          <PermissaoIcon className="h-3 w-3 mr-1" />
-                          {getPermissaoLabel(usuario.permissao)}
-                        </Badge>
-                        <Badge
-                          variant={
-                            usuario.status === "ativo" ? "default" : "secondary"
-                          }
-                        >
-                          {usuario.status === "ativo" ? "Ativo" : "Inativo"}
-                        </Badge>
-                        <Button variant="outline" size="icon">
-                          <UserCheck className="h-4 w-4" />
-                        </Button>
-                      </div>
+          {/* Usuários */}
+          <TabsContent value="usuarios" className="mt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {pessoas.length} {pessoas.length === 1 ? "pessoa cadastrada" : "pessoas cadastradas"} · {ativos} {ativos === 1 ? "ativa" : "ativas"}
+            </p>
+            {carregandoPessoas ? (
+              <p className="text-sm text-muted-foreground">Carregando…</p>
+            ) : pessoas.length === 0 ? (
+              <InfoNote>Nenhum usuário cadastrado nesta empresa.</InfoNote>
+            ) : (
+              <ul className="max-h-[340px] divide-y overflow-y-auto rounded-xl border">
+                {(pessoas as any[]).map((p) => (
+                  <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {String(p.nome || "?").split(" ").map((s: string) => s[0]).slice(0, 2).join("").toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{p.nome}</div>
+                      <div className="truncate text-xs text-muted-foreground">{p.email}</div>
                     </div>
-                  )
-                })}
-                <p className="text-xs text-muted-foreground mt-2">
-                  Esta lista é apenas ilustrativa. O limite contratado de{" "}
-                  <strong>{empresa.usuariosTotal}</strong> é aplicado sobre todos
-                  os cadastros reais de usuários da empresa, incluindo os
-                  inativos.
-                </p>
-              </CardContent>
-            </Card>
+                    <span className="hidden text-xs text-muted-foreground sm:block">{PAPEL[p.papel] || p.papel}</span>
+                    <StatusPill tom={p.ativo === false ? "neutro" : "sucesso"}>{p.ativo === false ? "Inativo" : "Ativo"}</StatusPill>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex justify-end">
+              <Button asChild variant="outline">
+                <Link to="/admin/usuarios" onClick={() => onOpenChange(false)}>
+                  Gerenciar em Usuários <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Salvando..." : "Salvar configurações"}
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   )
-}
-
-// Ícone simples para usar no resumo de alteração
-function ArrowRightIcon() {
-  return <span className="text-muted-foreground mx-1">→</span>
 }

@@ -46,8 +46,13 @@ async function fetchAnalytics({ empresaFilter, startDate }: FetchAnalyticsParams
       if (empresaFilter) usuariosQuery = usuariosQuery.eq("empresa_id", empresaFilter)
       const { count: totalUsuarios } = await usuariosQuery
 
-      let atividadesQuery = supabase.from("atividades").select("usuario_id", { count: "exact", head: true }).gte("criado_em", startDate)
-      const { count: usuariosAtivos } = await atividadesQuery
+      // Pessoas (distintas) com alguma atividade no período — calculado abaixo,
+      // depois de saber quem pertence à empresa filtrada
+      const { data: atividadesData } = await supabase
+        .from("atividades")
+        .select("usuario_id")
+        .gte("criado_em", startDate)
+        .limit(20000)
 
       let novosCadastrosQuery = supabase.from("perfis").select("*", { count: "exact", head: true }).gte("criado_em", startDate)
       if (empresaFilter) novosCadastrosQuery = novosCadastrosQuery.eq("empresa_id", empresaFilter)
@@ -75,7 +80,7 @@ async function fetchAnalytics({ empresaFilter, startDate }: FetchAnalyticsParams
       const horasEstudo = progressoFiltrado.reduce((acc, p) => acc + (p.tempo_assistido_minutos || 0), 0) / 60
 
       const analyticsData: AnalyticsData = {
-        totalUsuarios: totalUsuarios || 0, usuariosAtivos: usuariosAtivos || 0,
+        totalUsuarios: totalUsuarios || 0, usuariosAtivos: 0,
         novosCadastros: novosCadastros || 0, totalTreinamentos: totalTreinamentos || 0,
         treinamentosAtivos: treinamentosAtivos || 0, totalConclusoes,
         taxaConclusao: Math.round(taxaConclusao * 10) / 10,
@@ -91,6 +96,17 @@ async function fetchAnalytics({ empresaFilter, startDate }: FetchAnalyticsParams
       if (empresaFilter) usersDeptQuery = usersDeptQuery.eq("empresa_id", empresaFilter)
       const { data: allUsers } = await usersDeptQuery
       const userDeptMap = new Map(allUsers?.map(u => [u.id, u.departamento_id]) || [])
+
+      // Engajamento = pessoas distintas com atividade ou progresso no período
+      // (limitado ao total de pessoas — nunca passa de 100%)
+      const ativos = new Set<string>()
+      for (const a of atividadesData || []) {
+        if (a.usuario_id && userDeptMap.has(a.usuario_id)) ativos.add(a.usuario_id)
+      }
+      for (const p of progressoFiltrado) {
+        if (p.usuario_id && userDeptMap.has(p.usuario_id)) ativos.add(p.usuario_id)
+      }
+      analyticsData.usuariosAtivos = Math.min(ativos.size, analyticsData.totalUsuarios)
 
       const deptStats: DepartmentStats[] = []
       if (departamentos) {

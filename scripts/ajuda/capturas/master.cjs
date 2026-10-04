@@ -96,8 +96,8 @@ module.exports = [
     como: M,
     url: "/admin/permissoes",
     marcas: [
-      { n: 1, alvo: (p) => p.getByRole("button", { name: /Novo Papel/ }) },
-      { n: 2, alvo: (p) => p.locator("li").filter({ hasText: "Administrador" }).first() },
+      { n: 1, alvo: (p) => p.locator("li").filter({ hasText: "Administrador" }).first() },
+      { n: 2, alvo: (p) => p.getByRole("button", { name: "Editar Administrador" }) },
     ],
   },
   {

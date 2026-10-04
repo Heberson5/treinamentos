@@ -98,13 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userData.role !== "master" && userData.empresa_id) {
         const { data: empresa } = await supabase
           .from("empresas")
-          .select("bloqueada, motivo_bloqueio, is_demo, demo_expires_at")
+          .select("ativo, bloqueada, motivo_bloqueio, is_demo, demo_expires_at")
           .eq("id", userData.empresa_id)
           .single();
 
         if (empresa) {
           let bloqueada = !!empresa.bloqueada;
           let motivo = empresa.motivo_bloqueio;
+
+          // Empresa desativada pelo Master também não acessa a plataforma
+          if (empresa.ativo === false) {
+            bloqueada = true;
+            motivo = motivo || "O acesso da sua empresa está desativado. Entre em contato com o suporte.";
+          }
 
           // Suspensão automática ao expirar o período de degustação
           if (!bloqueada && empresa.is_demo && empresa.demo_expires_at && new Date(empresa.demo_expires_at) < new Date()) {

@@ -3,14 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Edit3, Trash2, Shield, Lock, Crown, UserCheck, User, Eye, EyeOff } from "lucide-react"
+import { Search, Edit3, Shield, Lock, Crown, UserCheck, User } from "lucide-react"
 import { PageHeader } from "@/components/layout/page-header"
-import { MetricStrip, StatusPill, Field } from "@/components/layout/settings"
+import { MetricStrip, StatusPill, InfoNote } from "@/components/layout/settings"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
@@ -289,18 +288,6 @@ export default function Permissoes() {
     setEditingRole(null)
   }
 
-  const handleCreateRole = () => {
-    if (!newRole.nome) {
-      toast({ title: "Campo obrigatório", description: "Nome do papel é obrigatório", variant: "destructive" })
-      return
-    }
-    const role: Role = { id: Date.now(), ...newRole, usuariosCount: 0, ativo: true }
-    setRoles([...roles, role])
-    setIsCreateRoleOpen(false)
-    resetForm()
-    toast({ title: "Papel criado!", description: "O papel foi criado com sucesso." })
-  }
-
   const handleEditRole = (role: Role) => {
     setEditingRole(role)
     setNewRole({ nome: role.nome, descricao: role.descricao, cor: role.cor, permissoes: [...role.permissoes] })
@@ -352,20 +339,6 @@ export default function Permissoes() {
 
   const isOwnRole = (role: Role) => nomeParaRole(role.nome) === user?.role
 
-  const handleDeleteRole = (id: number) => {
-    const role = roles.find(r => r.id === id)
-    if (role?.isMasterRole || (role && isOwnRole(role))) {
-      toast({ title: "Não permitido", description: "Você não pode excluir o seu próprio papel", variant: "destructive" })
-      return
-    }
-    if (role && role.usuariosCount > 0) {
-      toast({ title: "Não é possível excluir", description: "Este papel possui usuários associados", variant: "destructive" })
-      return
-    }
-    setRoles(roles.filter(r => r.id !== id))
-    toast({ title: "Papel excluído", description: "O papel foi removido com sucesso." })
-  }
-
   const togglePermission = (permissionId: string) => {
     if (editingRole?.isMasterRole && permissionId === "system.permissions") {
       toast({ title: "Não permitido", description: "A permissão 'Permissões' não pode ser desativada para o Master", variant: "destructive" })
@@ -377,15 +350,6 @@ export default function Permissoes() {
         ? prev.permissoes.filter(p => p !== permissionId)
         : [...prev.permissoes, permissionId]
     }))
-  }
-
-  const toggleRoleStatus = (id: number) => {
-    const role = roles.find(r => r.id === id)
-    if (role?.isMasterRole) {
-      toast({ title: "Não permitido", description: "O papel Master não pode ser desativado", variant: "destructive" })
-      return
-    }
-    setRoles(roles.map(role => role.id === id ? { ...role, ativo: !role.ativo } : role))
   }
 
   const getRoleIcon = (nome: string) => {
@@ -417,62 +381,13 @@ export default function Permissoes() {
       setIsCreateRoleOpen(open)
       if (!open) resetForm()
     }}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Papel
-        </Button>
-      </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingRole ? "Editar Papel" : "Criar Novo Papel"}</DialogTitle>
-          <DialogDescription>
-            {editingRole ? "Atualize as informações e permissões do papel." : "Configure um novo papel com suas respectivas permissões."}
-          </DialogDescription>
+          <DialogTitle>Permissões — {editingRole?.nome}</DialogTitle>
+          <DialogDescription>{editingRole?.descricao}</DialogDescription>
         </DialogHeader>
 
         <div className="min-w-0 space-y-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label="Nome do Papel *" htmlFor="nome" className="min-w-0">
-              <Input
-                id="nome"
-                value={newRole.nome}
-                onChange={(e) => setNewRole({ ...newRole, nome: e.target.value })}
-                placeholder="Ex: Gerente"
-                disabled={editingRole?.isMasterRole}
-              />
-            </Field>
-            <Field label="Cor do Papel" className="min-w-0">
-              <div className="flex flex-wrap gap-2 pt-1">
-                {coresDisponiveis.map((cor) => (
-                  <button
-                    key={cor.value}
-                    type="button"
-                    onClick={() => setNewRole({ ...newRole, cor: cor.value })}
-                    className={cn(
-                      "h-7 w-7 rounded-full ring-offset-2 ring-offset-background transition-all",
-                      newRole.cor === cor.value ? "ring-2 ring-foreground/60" : "hover:scale-110",
-                    )}
-                    style={{ backgroundColor: cor.hex }}
-                    title={cor.label}
-                    aria-label={`Cor ${cor.label}`}
-                    aria-pressed={newRole.cor === cor.value}
-                  />
-                ))}
-              </div>
-            </Field>
-          </div>
-
-          <Field label="Descrição" htmlFor="descricao">
-            <Textarea
-              id="descricao"
-              value={newRole.descricao}
-              onChange={(e) => setNewRole({ ...newRole, descricao: e.target.value })}
-              placeholder="Descrição das responsabilidades do papel"
-              rows={2}
-            />
-          </Field>
-
           <div className="min-w-0 space-y-2">
             <div className="flex items-baseline justify-between">
               <Label className="text-[13px] font-medium">Permissões</Label>
@@ -536,9 +451,7 @@ export default function Permissoes() {
           <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={editingRole ? handleUpdateRole : handleCreateRole}>
-            {editingRole ? "Atualizar" : "Criar Papel"}
-          </Button>
+          <Button onClick={handleUpdateRole}>Salvar permissões</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -549,12 +462,17 @@ export default function Permissoes() {
       <PageHeader
         title="Permissões"
         description="Papéis da plataforma e o que cada um pode fazer"
-        actions={dialogoPapel}
       />
+      {dialogoPapel}
+
+      <InfoNote>
+        Os quatro papéis são fixos da plataforma. Aqui você define o que cada um pode fazer.
+        {isMaster && !empresaId ? " Com “Todas as empresas” no topo, as permissões valem para todas as empresas." : " As permissões valem para a empresa selecionada."}
+      </InfoNote>
 
       <MetricStrip
         items={[
-          { label: "Papéis", value: visibleRoles.length, hint: `${visibleRoles.filter((r) => r.ativo).length} ativos` },
+          { label: "Papéis", value: visibleRoles.length, hint: "fixos da plataforma" },
           { label: "Usuários com papel", value: isLoading ? "…" : totalUsuarios },
           { label: "Permissões disponíveis", value: visiblePermissions.length, hint: `${new Set(visiblePermissions.map((p) => p.categoria)).size} categorias` },
           { label: "Escopo", value: isMaster && !empresaId ? "Global" : "Empresa", hint: isMaster && !empresaId ? "vale para todas as empresas" : "empresa selecionada" },
@@ -592,7 +510,6 @@ export default function Permissoes() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold">{role.nome}</h3>
-                        <StatusPill tom={role.ativo ? "sucesso" : "neutro"}>{role.ativo ? "Ativo" : "Inativo"}</StatusPill>
                       </div>
                       <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{role.descricao}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
@@ -623,30 +540,8 @@ export default function Permissoes() {
                       </div>
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground"
-                        onClick={() => toggleRoleStatus(role.id)}
-                        disabled={role.isMasterRole}
-                        aria-label={role.ativo ? `Desativar ${role.nome}` : `Ativar ${role.nome}`}
-                        title={role.ativo ? "Desativar" : "Ativar"}
-                      >
-                        {role.ativo ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditRole(role)} aria-label={`Editar ${role.nome}`}>
-                        <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Editar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteRole(role.id)}
-                        disabled={role.usuariosCount > 0 || role.isMasterRole || isOwnRole(role)}
-                        aria-label={`Excluir ${role.nome}`}
-                        title={isOwnRole(role) ? "Você não pode excluir o seu próprio papel" : role.usuariosCount > 0 ? "Papel com usuários não pode ser excluído" : "Excluir"}
-                      >
-                        <Trash2 className="h-4 w-4" />
+                        <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Editar permissões
                       </Button>
                     </div>
                   </div>

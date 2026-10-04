@@ -404,7 +404,9 @@ export default function EmpresasSupabase() {
 
       toast({
         title: novoStatus ? "Empresa ativada" : "Empresa desativada",
-        description: `A empresa foi ${novoStatus ? "ativada" : "desativada"} com sucesso`,
+        description: novoStatus
+          ? "As pessoas da empresa voltam a acessar a plataforma."
+          : "Ninguém da empresa consegue entrar até que ela seja ativada de novo.",
       });
     } catch (error) {
       toast({
