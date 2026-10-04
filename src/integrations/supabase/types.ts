@@ -124,7 +124,6 @@ export type Database = {
           {
             foreignKeyName: "avaliacoes_treinamentos_treinamento_id_fkey"
             columns: ["treinamento_id"]
-            isOneToOne: false
             referencedRelation: "treinamentos"
             referencedColumns: ["id"]
           },
@@ -189,14 +188,12 @@ export type Database = {
           {
             foreignKeyName: "avisos_popup_departamento_id_fkey"
             columns: ["departamento_id"]
-            isOneToOne: false
             referencedRelation: "departamentos"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "avisos_popup_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -225,14 +222,12 @@ export type Database = {
           {
             foreignKeyName: "avisos_popup_usuarios_aviso_id_fkey"
             columns: ["aviso_id"]
-            isOneToOne: false
             referencedRelation: "avisos_popup"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "avisos_popup_usuarios_usuario_id_fkey"
             columns: ["usuario_id"]
-            isOneToOne: false
             referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
@@ -264,7 +259,6 @@ export type Database = {
           {
             foreignKeyName: "avisos_popup_visualizacoes_aviso_id_fkey"
             columns: ["aviso_id"]
-            isOneToOne: false
             referencedRelation: "avisos_popup"
             referencedColumns: ["id"]
           },
@@ -305,7 +299,6 @@ export type Database = {
           {
             foreignKeyName: "cargos_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -346,7 +339,6 @@ export type Database = {
           {
             foreignKeyName: "categorias_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -381,7 +373,6 @@ export type Database = {
           {
             foreignKeyName: "cnpj_demo_usado_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -394,6 +385,9 @@ export type Database = {
           api_key_deepseek: string | null
           api_key_gemini: string | null
           atualizado_em: string | null
+          chave_chatgpt_configurada: boolean | null
+          chave_deepseek_configurada: boolean | null
+          chave_gemini_configurada: boolean | null
           criado_em: string | null
           empresa_id: string
           habilitado: boolean | null
@@ -408,6 +402,9 @@ export type Database = {
           api_key_deepseek?: string | null
           api_key_gemini?: string | null
           atualizado_em?: string | null
+          chave_chatgpt_configurada?: boolean | null
+          chave_deepseek_configurada?: boolean | null
+          chave_gemini_configurada?: boolean | null
           criado_em?: string | null
           empresa_id: string
           habilitado?: boolean | null
@@ -422,6 +419,9 @@ export type Database = {
           api_key_deepseek?: string | null
           api_key_gemini?: string | null
           atualizado_em?: string | null
+          chave_chatgpt_configurada?: boolean | null
+          chave_deepseek_configurada?: boolean | null
+          chave_gemini_configurada?: boolean | null
           criado_em?: string | null
           empresa_id?: string
           habilitado?: boolean | null
@@ -434,47 +434,10 @@ export type Database = {
           {
             foreignKeyName: "configuracoes_ia_empresa_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: true
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
-      }
-      configuracoes_pagamento: {
-        Row: {
-          access_token: string | null
-          atualizado_em: string | null
-          criado_em: string | null
-          habilitado: boolean
-          id: string
-          provedor: string
-          public_key: string | null
-          sandbox_mode: boolean
-          webhook_secret: string | null
-        }
-        Insert: {
-          access_token?: string | null
-          atualizado_em?: string | null
-          criado_em?: string | null
-          habilitado?: boolean
-          id?: string
-          provedor?: string
-          public_key?: string | null
-          sandbox_mode?: boolean
-          webhook_secret?: string | null
-        }
-        Update: {
-          access_token?: string | null
-          atualizado_em?: string | null
-          criado_em?: string | null
-          habilitado?: boolean
-          id?: string
-          provedor?: string
-          public_key?: string | null
-          sandbox_mode?: boolean
-          webhook_secret?: string | null
-        }
-        Relationships: []
       }
       configuracoes_menu: {
         Row: {
@@ -503,48 +466,156 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_pagamento: {
+        Row: {
+          access_token: string | null
+          access_token_configurado: boolean | null
+          atualizado_em: string | null
+          criado_em: string | null
+          habilitado: boolean
+          id: string
+          provedor: string
+          public_key: string | null
+          sandbox_mode: boolean
+          webhook_secret: string | null
+          webhook_secret_configurado: boolean | null
+        }
+        Insert: {
+          access_token?: string | null
+          access_token_configurado?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          habilitado?: boolean
+          id?: string
+          provedor?: string
+          public_key?: string | null
+          sandbox_mode?: boolean
+          webhook_secret?: string | null
+          webhook_secret_configurado?: boolean | null
+        }
+        Update: {
+          access_token?: string | null
+          access_token_configurado?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          habilitado?: boolean
+          id?: string
+          provedor?: string
+          public_key?: string | null
+          sandbox_mode?: boolean
+          webhook_secret?: string | null
+          webhook_secret_configurado?: boolean | null
+        }
+        Relationships: []
+      }
       configuracoes_sistema: {
         Row: {
           atualizado_em: string | null
           backup_config: Json
           backup_destino: string
           bloqueio_horas: number
+          email_contato: string | null
+          email_remetente: string | null
+          email_template_html: string | null
+          endereco: string | null
           favicon_url: string | null
           id: string
+          idioma: string
           logo_sidebar_url: string | null
           logoff_on_close: boolean
+          nome_empresa: string
           nome_sistema: string
+          notificacoes_conclusao: boolean
+          notificacoes_email: boolean
+          notificacoes_lembrete: boolean
+          notificacoes_push: boolean
           numero: number | null
+          senha_min_length: number
+          senha_requer_especial: boolean
+          senha_requer_maiuscula: boolean
+          senha_requer_numero: boolean
           session_timeout_min: number
+          smtp_host: string | null
+          smtp_port: number
+          smtp_senha: string | null
+          smtp_senha_configurada: boolean | null
+          smtp_tls: boolean
+          smtp_usuario: string | null
+          telefone_contato: string | null
           tentativas_login_max: number
+          timezone: string
         }
         Insert: {
           atualizado_em?: string | null
           backup_config?: Json
           backup_destino?: string
           bloqueio_horas?: number
+          email_contato?: string | null
+          email_remetente?: string | null
+          email_template_html?: string | null
+          endereco?: string | null
           favicon_url?: string | null
           id?: string
+          idioma?: string
           logo_sidebar_url?: string | null
           logoff_on_close?: boolean
+          nome_empresa?: string
           nome_sistema?: string
+          notificacoes_conclusao?: boolean
+          notificacoes_email?: boolean
+          notificacoes_lembrete?: boolean
+          notificacoes_push?: boolean
           numero?: number | null
+          senha_min_length?: number
+          senha_requer_especial?: boolean
+          senha_requer_maiuscula?: boolean
+          senha_requer_numero?: boolean
           session_timeout_min?: number
+          smtp_host?: string | null
+          smtp_port?: number
+          smtp_senha?: string | null
+          smtp_senha_configurada?: boolean | null
+          smtp_tls?: boolean
+          smtp_usuario?: string | null
+          telefone_contato?: string | null
           tentativas_login_max?: number
+          timezone?: string
         }
         Update: {
           atualizado_em?: string | null
           backup_config?: Json
           backup_destino?: string
           bloqueio_horas?: number
+          email_contato?: string | null
+          email_remetente?: string | null
+          email_template_html?: string | null
+          endereco?: string | null
           favicon_url?: string | null
           id?: string
+          idioma?: string
           logo_sidebar_url?: string | null
           logoff_on_close?: boolean
+          nome_empresa?: string
           nome_sistema?: string
+          notificacoes_conclusao?: boolean
+          notificacoes_email?: boolean
+          notificacoes_lembrete?: boolean
+          notificacoes_push?: boolean
           numero?: number | null
+          senha_min_length?: number
+          senha_requer_especial?: boolean
+          senha_requer_maiuscula?: boolean
+          senha_requer_numero?: boolean
           session_timeout_min?: number
+          smtp_host?: string | null
+          smtp_port?: number
+          smtp_senha?: string | null
+          smtp_senha_configurada?: boolean | null
+          smtp_tls?: boolean
+          smtp_usuario?: string | null
+          telefone_contato?: string | null
           tentativas_login_max?: number
+          timezone?: string
         }
         Relationships: []
       }
@@ -583,7 +654,6 @@ export type Database = {
           {
             foreignKeyName: "departamentos_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -600,6 +670,7 @@ export type Database = {
           data_contratacao: string | null
           demo_created_at: string | null
           demo_expires_at: string | null
+          dias_degustacao: number
           email: string | null
           endereco: string | null
           id: string
@@ -625,6 +696,7 @@ export type Database = {
           data_contratacao?: string | null
           demo_created_at?: string | null
           demo_expires_at?: string | null
+          dias_degustacao?: number
           email?: string | null
           endereco?: string | null
           id?: string
@@ -650,6 +722,7 @@ export type Database = {
           data_contratacao?: string | null
           demo_created_at?: string | null
           demo_expires_at?: string | null
+          dias_degustacao?: number
           email?: string | null
           endereco?: string | null
           id?: string
@@ -670,6 +743,10 @@ export type Database = {
       landing_page_config: {
         Row: {
           atualizado_em: string | null
+          carousel_autoplay: boolean
+          carousel_autoplay_speed: number
+          carousel_images: Json
+          carousel_transition: string
           company_description: string | null
           company_name: string | null
           criado_em: string | null
@@ -697,6 +774,10 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string | null
+          carousel_autoplay?: boolean
+          carousel_autoplay_speed?: number
+          carousel_images?: Json
+          carousel_transition?: string
           company_description?: string | null
           company_name?: string | null
           criado_em?: string | null
@@ -724,6 +805,10 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string | null
+          carousel_autoplay?: boolean
+          carousel_autoplay_speed?: number
+          carousel_images?: Json
+          carousel_transition?: string
           company_description?: string | null
           company_name?: string | null
           criado_em?: string | null
@@ -748,6 +833,39 @@ export type Database = {
           sobre_nos?: string | null
           stats_section?: Json | null
           termos_de_uso?: string | null
+        }
+        Relationships: []
+      }
+      leads_demonstracao: {
+        Row: {
+          criado_em: string
+          email: string
+          empresa: string | null
+          id: string
+          mensagem: string | null
+          nome: string
+          status: string
+          telefone: string | null
+        }
+        Insert: {
+          criado_em?: string
+          email: string
+          empresa?: string | null
+          id?: string
+          mensagem?: string | null
+          nome: string
+          status?: string
+          telefone?: string | null
+        }
+        Update: {
+          criado_em?: string
+          email?: string
+          empresa?: string | null
+          id?: string
+          mensagem?: string | null
+          nome?: string
+          status?: string
+          telefone?: string | null
         }
         Relationships: []
       }
@@ -801,7 +919,6 @@ export type Database = {
           {
             foreignKeyName: "lembretes_treinamento_id_fkey"
             columns: ["treinamento_id"]
-            isOneToOne: false
             referencedRelation: "treinamentos"
             referencedColumns: ["id"]
           },
@@ -857,14 +974,12 @@ export type Database = {
           {
             foreignKeyName: "pagamentos_contrato_id_fkey"
             columns: ["contrato_id"]
-            isOneToOne: false
             referencedRelation: "plano_contratos"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "pagamentos_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -887,6 +1002,7 @@ export type Database = {
           id: string
           nome: string
           numero: number | null
+          sessao_atual_id: string | null
           telefone: string | null
           trocar_senha_primeiro_login: boolean | null
         }
@@ -906,6 +1022,7 @@ export type Database = {
           id: string
           nome: string
           numero?: number | null
+          sessao_atual_id?: string | null
           telefone?: string | null
           trocar_senha_primeiro_login?: boolean | null
         }
@@ -925,6 +1042,7 @@ export type Database = {
           id?: string
           nome?: string
           numero?: number | null
+          sessao_atual_id?: string | null
           telefone?: string | null
           trocar_senha_primeiro_login?: boolean | null
         }
@@ -932,14 +1050,12 @@ export type Database = {
           {
             foreignKeyName: "perfis_departamento_id_fkey"
             columns: ["departamento_id"]
-            isOneToOne: false
             referencedRelation: "departamentos"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "perfis_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -977,7 +1093,6 @@ export type Database = {
           {
             foreignKeyName: "permissoes_role_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -1042,14 +1157,12 @@ export type Database = {
           {
             foreignKeyName: "plano_contratos_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "plano_contratos_plano_id_fkey"
             columns: ["plano_id"]
-            isOneToOne: false
             referencedRelation: "planos"
             referencedColumns: ["id"]
           },
@@ -1162,7 +1275,6 @@ export type Database = {
           {
             foreignKeyName: "progresso_treinamentos_treinamento_id_fkey"
             columns: ["treinamento_id"]
-            isOneToOne: false
             referencedRelation: "treinamentos"
             referencedColumns: ["id"]
           },
@@ -1263,7 +1375,6 @@ export type Database = {
           {
             foreignKeyName: "questoes_treinamento_treinamento_id_fkey"
             columns: ["treinamento_id"]
-            isOneToOne: false
             referencedRelation: "treinamentos"
             referencedColumns: ["id"]
           },
@@ -1273,6 +1384,7 @@ export type Database = {
         Row: {
           api_id: string | null
           api_key: string | null
+          api_key_cadastrada: boolean | null
           api_key_configurada: boolean
           ativo: boolean
           atualizado_em: string
@@ -1286,6 +1398,7 @@ export type Database = {
         Insert: {
           api_id?: string | null
           api_key?: string | null
+          api_key_cadastrada?: boolean | null
           api_key_configurada?: boolean
           ativo?: boolean
           atualizado_em?: string
@@ -1299,6 +1412,7 @@ export type Database = {
         Update: {
           api_id?: string | null
           api_key?: string | null
+          api_key_cadastrada?: boolean | null
           api_key_configurada?: boolean
           ativo?: boolean
           atualizado_em?: string
@@ -1436,7 +1550,6 @@ export type Database = {
           {
             foreignKeyName: "tentativas_avaliacao_treinamento_id_fkey"
             columns: ["treinamento_id"]
-            isOneToOne: false
             referencedRelation: "treinamentos"
             referencedColumns: ["id"]
           },
@@ -1573,14 +1686,12 @@ export type Database = {
           {
             foreignKeyName: "treinamentos_departamento_id_fkey"
             columns: ["departamento_id"]
-            isOneToOne: false
             referencedRelation: "departamentos"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "treinamentos_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: false
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -1618,7 +1729,6 @@ export type Database = {
           {
             foreignKeyName: "uso_empresa_empresa_id_fkey"
             columns: ["empresa_id"]
-            isOneToOne: true
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
@@ -1653,6 +1763,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _liberar_leitura_colunas: {
+        Args: { p_segredos: string[]; p_tabela: string }
+        Returns: undefined
+      }
       concluir_treinamento: {
         Args: {
           p_nota_avaliacao?: number
@@ -1673,20 +1787,36 @@ export type Database = {
           treinamento_id: string
           usuario_id: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "progresso_treinamentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       copiar_modelos_para_empresa: {
         Args: { p_empresa_id: string }
         Returns: undefined
       }
-      promover_primeiro_admin_empresa: {
-        Args: { p_empresa_id: string }
-        Returns: undefined
+      corrigir_avaliacao: {
+        Args: {
+          p_duracao_segundos: number
+          p_nota_minima?: number
+          p_respostas: Json
+          p_tempo_estudo_segundos: number
+          p_treinamento_id: string
+        }
+        Returns: Json
+      }
+      criar_contrato_plano: {
+        Args: { p_empresa_id: string; p_plano_id: string }
+        Returns: string
       }
       criar_empresa_demo: {
         Args: {
           p_cargo: string
           p_cnpj: string
-          p_departamento_nome: string | null
+          p_departamento_nome: string
           p_email: string
           p_endereco: string
           p_nome: string
@@ -1705,6 +1835,7 @@ export type Database = {
           data_contratacao: string | null
           demo_created_at: string | null
           demo_expires_at: string | null
+          dias_degustacao: number
           email: string | null
           endereco: string | null
           id: string
@@ -1720,20 +1851,16 @@ export type Database = {
           telefone: string | null
           tema_cor: string | null
         }
-      }
-      corrigir_avaliacao: {
-        Args: {
-          p_duracao_segundos: number
-          p_nota_minima?: number
-          p_respostas: Json
-          p_tempo_estudo_segundos: number
-          p_treinamento_id: string
+        SetofOptions: {
+          from: "*"
+          to: "empresas"
+          isOneToOne: true
+          isSetofReturn: false
         }
-        Returns: Json
       }
-      criar_contrato_plano: {
-        Args: { p_empresa_id: string; p_plano_id: string }
-        Returns: string
+      definir_sessao_atual: {
+        Args: { p_sessao_id: string }
+        Returns: undefined
       }
       eh_admin_ou_master: { Args: { usuario_id: string }; Returns: boolean }
       get_empresa_id_do_usuario: {
@@ -1744,6 +1871,7 @@ export type Database = {
         Args: never
         Returns: {
           ativo: boolean
+          avatar_url: string
           cargo: string
           data_nascimento: string
           departamento_id: string
@@ -1804,6 +1932,10 @@ export type Database = {
         Returns: boolean
       }
       pode_tentar_login: { Args: { p_email: string }; Returns: Json }
+      promover_primeiro_admin_empresa: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
       registrar_cnpj_demo: {
         Args: { p_cnpj: string; p_empresa_id: string }
         Returns: undefined
@@ -1853,12 +1985,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1882,11 +2014,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1907,11 +2039,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1932,11 +2064,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1949,11 +2081,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1969,3 +2101,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -16,7 +16,7 @@ import {
 } from "@/components/layout/settings"
 import {
   Save, Mail, Bell, Shield, Database, Building2, Send, RotateCcw,
-  Download, RefreshCw, AlertTriangle, FileText, Search, Cloud, HardDrive,
+  Download, RefreshCw, AlertTriangle, FileText, Search,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
@@ -36,6 +36,7 @@ interface ConfiguracaoSistema {
   smtpPort: number
   smtpUsuario: string
   smtpSenha: string
+  smtpSenhaConfigurada?: boolean
   smtpTls: boolean
   emailRemetente: string
   emailTemplateHtml: string
@@ -58,8 +59,6 @@ interface ConfiguracaoSistema {
   backupAutomatico: boolean
   backupFrequencia: string
   // Backup - novos
-  backupDestino: string
-  backupConfig: { url?: string; bucket?: string; token?: string; pasta?: string }
   // Sistema
   nomeSistema: string
   faviconUrl: string
@@ -162,6 +161,15 @@ interface AuditEntry {
   criado_em: string
 }
 
+const COLUNAS_CONFIG = [
+  "nome_sistema", "favicon_url", "logo_sidebar_url", "session_timeout_min", "logoff_on_close",
+  "tentativas_login_max", "bloqueio_horas", "nome_empresa", "email_contato", "telefone_contato",
+  "endereco", "timezone", "idioma", "smtp_host", "smtp_port", "smtp_usuario", "smtp_senha_configurada",
+  "smtp_tls", "email_remetente", "email_template_html", "notificacoes_email", "notificacoes_push",
+  "notificacoes_conclusao", "notificacoes_lembrete", "senha_min_length", "senha_requer_maiuscula",
+  "senha_requer_numero", "senha_requer_especial",
+].join(", ")
+
 const todayIso = () => new Date().toISOString().split("T")[0]
 
 export default function Configuracoes() {
@@ -205,8 +213,6 @@ export default function Configuracoes() {
     logLevel: "info",
     backupAutomatico: true,
     backupFrequencia: "diario",
-    backupDestino: "local",
-    backupConfig: {},
     nomeSistema: "Portal Treinamentos",
     faviconUrl: "",
     logoSidebarUrl: "",
@@ -215,9 +221,10 @@ export default function Configuracoes() {
   const { data: configData } = useQuery({
     queryKey: ["configuracoes-sistema"],
     queryFn: async () => {
+      // A senha do SMTP é somente escrita: nunca é lida pelo navegador
       const { data } = await supabase
         .from("configuracoes_sistema" as any)
-        .select("*")
+        .select(COLUNAS_CONFIG)
         .limit(1)
         .single()
       return data as any
@@ -235,8 +242,6 @@ export default function Configuracoes() {
       logoffOnClose: !!configData.logoff_on_close,
       tentativasLoginMax: configData.tentativas_login_max ?? 5,
       bloqueioHoras: configData.bloqueio_horas ?? 24,
-      backupDestino: configData.backup_destino || "local",
-      backupConfig: configData.backup_config || {},
       nomeEmpresa: configData.nome_empresa || "Portal Treinamentos",
       emailContato: configData.email_contato || "",
       telefoneContato: configData.telefone_contato || "",
@@ -246,7 +251,8 @@ export default function Configuracoes() {
       smtpHost: configData.smtp_host || "",
       smtpPort: configData.smtp_port ?? 587,
       smtpUsuario: configData.smtp_usuario || "",
-      smtpSenha: configData.smtp_senha || "",
+      smtpSenha: "",
+      smtpSenhaConfigurada: !!configData.smtp_senha_configurada,
       smtpTls: configData.smtp_tls ?? true,
       emailRemetente: configData.email_remetente || "",
       emailTemplateHtml: configData.email_template_html || DEFAULT_EMAIL_TEMPLATE,
@@ -284,6 +290,21 @@ export default function Configuracoes() {
 
   const auditLogs = auditLogsData ?? []
 
+  // Último backup automático registrado pelo script da VPS
+  const { data: ultimoBackup } = useQuery({
+    queryKey: ["registro-backups", "ultimo"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("registro_backups" as any)
+        .select("iniciado_em, concluido_em, sucesso, tamanho_bytes, mensagem")
+        .order("iniciado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      return (data as any) as { iniciado_em: string; concluido_em: string | null; sucesso: boolean; tamanho_bytes: number | null; mensagem: string | null } | null
+    },
+    enabled: user?.role === "master",
+  })
+
   const persistSeguranca = async () => {
     if (user?.role !== "master") return
     setLoading(true)
@@ -302,27 +323,6 @@ export default function Configuracoes() {
       toast({ title: "Configurações de segurança salvas!" })
       queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
       await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: "segurança", descricao: "Atualizou políticas de segurança e logoff automático" })
-    } else {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
-    }
-  }
-
-  const persistBackup = async () => {
-    if (user?.role !== "master") return
-    setLoading(true)
-    const { error } = await supabase
-      .from("configuracoes_sistema" as any)
-      .update({
-        backup_destino: config.backupDestino,
-        backup_config: config.backupConfig,
-        atualizado_em: new Date().toISOString(),
-      } as any)
-      .not("id", "is", null)
-    setLoading(false)
-    if (!error) {
-      toast({ title: "Configurações de backup salvas!" })
-      queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
-      await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: "backup", descricao: `Atualizou destino de backup para ${config.backupDestino}` })
     } else {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
     }
@@ -351,7 +351,8 @@ export default function Configuracoes() {
           smtp_host: config.smtpHost,
           smtp_port: config.smtpPort,
           smtp_usuario: config.smtpUsuario,
-          smtp_senha: config.smtpSenha,
+          // Campo vazio = manter a senha já cadastrada
+          ...(config.smtpSenha.trim() ? { smtp_senha: config.smtpSenha } : {}),
           smtp_tls: config.smtpTls,
           email_remetente: config.emailRemetente,
           email_template_html: config.emailTemplateHtml,
@@ -404,7 +405,7 @@ export default function Configuracoes() {
     setLoading(true)
     try {
       const tabelas = ["empresas", "perfis", "treinamentos", "categorias", "departamentos"]
-      const dump: Record<string, any> = { gerado_em: new Date().toISOString(), destino: config.backupDestino }
+      const dump: Record<string, any> = { gerado_em: new Date().toISOString() }
       for (const t of tabelas) {
         const { data } = await supabase.from(t as any).select("*").limit(5000) as any
         dump[t] = data || []
@@ -418,11 +419,9 @@ export default function Configuracoes() {
       URL.revokeObjectURL(url)
       toast({
         title: "Backup gerado!",
-        description: config.backupDestino === "local"
-          ? "Download iniciado."
-          : `Arquivo baixado. Envie manualmente para ${config.backupDestino} (configuração armazenada).`,
+        description: "Download iniciado. Guarde o arquivo em local protegido.",
       })
-      await registrarAuditoria({ acao: "criar", menu: "configuracoes", local: "backup", descricao: `Backup manual gerado (${config.backupDestino})` })
+      await registrarAuditoria({ acao: "criar", menu: "configuracoes", local: "backup", descricao: "Backup manual baixado pelo navegador" })
     } finally {
       setLoading(false)
     }
@@ -444,9 +443,6 @@ export default function Configuracoes() {
     log.descricao.toLowerCase().includes(auditSearch.toLowerCase()) ||
     log.menu.toLowerCase().includes(auditSearch.toLowerCase())
   )
-
-  const updateBackupCfg = (patch: Partial<typeof config.backupConfig>) =>
-    setConfig({ ...config, backupConfig: { ...config.backupConfig, ...patch } })
 
   const somenteLeitura = user?.role !== "master"
 
@@ -546,7 +542,15 @@ export default function Configuracoes() {
                 <Input id="smtp-usuario" value={config.smtpUsuario} onChange={(e) => setConfig({ ...config, smtpUsuario: e.target.value })} autoComplete="off" disabled={somenteLeitura} />
               </Field>
               <Field label="Senha SMTP" htmlFor="smtp-senha">
-                <Input id="smtp-senha" type="password" value={config.smtpSenha} onChange={(e) => setConfig({ ...config, smtpSenha: e.target.value })} autoComplete="new-password" disabled={somenteLeitura} />
+                <Input
+                  id="smtp-senha"
+                  type="password"
+                  value={config.smtpSenha}
+                  onChange={(e) => setConfig({ ...config, smtpSenha: e.target.value })}
+                  placeholder={config.smtpSenhaConfigurada ? "Senha cadastrada — digite para trocar" : ""}
+                  autoComplete="new-password"
+                  disabled={somenteLeitura}
+                />
               </Field>
             </div>
             <Field label="Email remetente" htmlFor="smtp-remetente" hint="Endereço que aparece como remetente das mensagens.">
@@ -760,63 +764,63 @@ export default function Configuracoes() {
         {/* Backup */}
         <TabsContent value="backup" className="mt-0 space-y-6">
           <SettingsSection
-            title="Destino do backup"
-            description="Gere um arquivo com os dados principais e escolha onde ele deve ser guardado."
+            title="Backup automático do servidor"
+            description="Cópia completa do banco de dados feita todos os dias na VPS."
+          >
+            {ultimoBackup ? (
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">Último backup</div>
+                  <div className="mt-0.5 font-medium tabular-nums">
+                    {new Date(ultimoBackup.concluido_em || ultimoBackup.iniciado_em).toLocaleString("pt-BR")}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Situação</div>
+                  <div className="mt-1">
+                    <StatusPill tom={ultimoBackup.sucesso ? "sucesso" : "perigo"}>{ultimoBackup.sucesso ? "Concluído" : "Falhou"}</StatusPill>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Tamanho</div>
+                  <div className="mt-0.5 font-medium tabular-nums">
+                    {ultimoBackup.tamanho_bytes ? `${(ultimoBackup.tamanho_bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB` : "—"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <InfoNote tom="alerta" icon={AlertTriangle}>
+                Nenhum backup automático registrado ainda. Ele começa a funcionar depois que o script de backup é instalado na VPS
+                (veja o guia <code className="font-mono text-xs">docs/VPS.md</code>).
+              </InfoNote>
+            )}
+            {ultimoBackup && !ultimoBackup.sucesso && ultimoBackup.mensagem && (
+              <InfoNote tom="perigo" icon={AlertTriangle}>{ultimoBackup.mensagem}</InfoNote>
+            )}
+          </SettingsSection>
+
+          <SettingsSection
+            title="Cópia manual"
+            description="Baixa agora um arquivo com os dados principais (empresas, usuários, treinamentos, categorias e departamentos)."
             footer={
-              <>
-                <Button variant="outline" onClick={handleBackup} disabled={loading || somenteLeitura} className="mr-auto">
-                  <Download className="mr-2 h-4 w-4" /> {loading ? "Gerando..." : "Gerar backup agora"}
-                </Button>
-                <Button onClick={persistBackup} disabled={loading || somenteLeitura}>
-                  <Save className="mr-2 h-4 w-4" /> Salvar configuração
-                </Button>
-              </>
+              <Button variant="outline" onClick={handleBackup} disabled={loading || somenteLeitura}>
+                <Download className="mr-2 h-4 w-4" /> {loading ? "Gerando..." : "Gerar backup agora"}
+              </Button>
             }
           >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Field label="Destino">
-                <Select value={config.backupDestino} onValueChange={(v) => setConfig({ ...config, backupDestino: v })} disabled={somenteLeitura}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="local"><div className="flex items-center gap-2"><HardDrive className="h-4 w-4" /> Local (download)</div></SelectItem>
-                    <SelectItem value="cloud"><div className="flex items-center gap-2"><Cloud className="h-4 w-4" /> Supabase Storage</div></SelectItem>
-                    <SelectItem value="gdrive">Google Drive</SelectItem>
-                    <SelectItem value="dropbox">Dropbox</SelectItem>
-                    <SelectItem value="s3">Amazon S3 / Compatível</SelectItem>
-                    <SelectItem value="ftp">FTP / SFTP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Pasta / bucket de destino" htmlFor="backup-pasta">
-                <Input
-                  id="backup-pasta"
-                  value={config.backupConfig.pasta || ""}
-                  onChange={(e) => updateBackupCfg({ pasta: e.target.value })}
-                  placeholder={config.backupDestino === "s3" ? "meu-bucket/backups" : "/backups"}
-                  disabled={somenteLeitura}
-                />
-              </Field>
-            </div>
-
-            {config.backupDestino !== "local" && config.backupDestino !== "cloud" && (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Field label="URL / endpoint" htmlFor="backup-url">
-                  <Input id="backup-url" value={config.backupConfig.url || ""} onChange={(e) => updateBackupCfg({ url: e.target.value })} placeholder="https://..." disabled={somenteLeitura} />
-                </Field>
-                <Field label="Token / credencial" htmlFor="backup-token">
-                  <Input id="backup-token" type="password" value={config.backupConfig.token || ""} onChange={(e) => updateBackupCfg({ token: e.target.value })} placeholder="Chave de acesso" autoComplete="new-password" disabled={somenteLeitura} />
-                </Field>
-              </div>
-            )}
-
+            <InfoNote icon={Shield}>
+              O arquivo contém dados pessoais (LGPD). Guarde-o em local protegido e apague cópias que não forem mais necessárias.
+              A geração fica registrada na auditoria.
+            </InfoNote>
           </SettingsSection>
 
           <SettingsSection
             title="Restaurar backup"
-            description="Voltar os dados a partir de um arquivo gerado nesta tela."
+            description="Voltar os dados a partir de um backup."
           >
             <InfoNote tom="alerta" icon={AlertTriangle}>
-              A restauração substitui os dados atuais. Por segurança, ela é feita pelo suporte técnico diretamente no servidor, a partir do arquivo de backup. Gere um backup novo antes de pedir a restauração.
+              A restauração substitui os dados atuais. Por segurança, ela é feita pelo suporte técnico diretamente no servidor, a partir dos
+              backups automáticos. Gere uma cópia nova antes de pedir a restauração.
             </InfoNote>
           </SettingsSection>
         </TabsContent>

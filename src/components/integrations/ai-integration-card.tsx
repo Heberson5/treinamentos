@@ -93,11 +93,16 @@ interface ConfiguracaoIA {
   empresa_id: string;
   provedor_ia: ProvedorIA;
   modelo_ia?: string;
-  api_key_gemini?: string;
-  api_key_chatgpt?: string;
-  api_key_deepseek?: string;
+  chave_gemini_configurada?: boolean;
+  chave_chatgpt_configurada?: boolean;
+  chave_deepseek_configurada?: boolean;
   habilitado: boolean;
 }
+
+// As chaves são "somente escrita": a tela nunca recebe o valor salvo, só
+// sabe se existe uma chave cadastrada. Campo vazio = manter a chave atual.
+const COLUNAS_CONFIG_IA =
+  "id, empresa_id, provedor_ia, modelo_ia, habilitado, chave_gemini_configurada, chave_chatgpt_configurada, chave_deepseek_configurada";
 
 export function AIIntegrationCard() {
   const { user } = useAuth();
@@ -192,7 +197,7 @@ export function AIIntegrationCard() {
     try {
       const { data, error } = await supabase
         .from("configuracoes_ia_empresa")
-        .select("*")
+        .select(COLUNAS_CONFIG_IA)
         .eq("empresa_id", empresaAtiva)
         .single();
 
@@ -206,10 +211,10 @@ export function AIIntegrationCard() {
         setProvedorSelecionado(configData.provedor_ia as ProvedorIA);
         setModeloSelecionado(configData.modelo_ia || "gemini-2.5-flash");
         setHabilitado(configData.habilitado);
-        // Carregar as 3 chaves separadas
-        setApiKeyGemini((configData as any).api_key_gemini || "");
-        setApiKeyChatGPT((configData as any).api_key_chatgpt || "");
-        setApiKeyDeepSeek((configData as any).api_key_deepseek || "");
+        // As chaves nunca voltam do servidor; os campos começam vazios
+        setApiKeyGemini("");
+        setApiKeyChatGPT("");
+        setApiKeyDeepSeek("");
       } else {
         // Reset para valores padrão se não houver configuração
         setConfig(null);
@@ -251,14 +256,15 @@ export function AIIntegrationCard() {
     setSaving(true);
 
     try {
-      const dadosParaSalvar = {
+      // Só envia a chave quando algo foi digitado (vazio = manter a atual)
+      const dadosParaSalvar: Record<string, unknown> = {
         provedor_ia: provedorSelecionado,
         modelo_ia: modeloSelecionado,
-        api_key_gemini: apiKeyGemini || null,
-        api_key_chatgpt: apiKeyChatGPT || null,
-        api_key_deepseek: apiKeyDeepSeek || null,
-        habilitado
+        habilitado,
       };
+      if (apiKeyGemini.trim()) dadosParaSalvar.api_key_gemini = apiKeyGemini.trim();
+      if (apiKeyChatGPT.trim()) dadosParaSalvar.api_key_chatgpt = apiKeyChatGPT.trim();
+      if (apiKeyDeepSeek.trim()) dadosParaSalvar.api_key_deepseek = apiKeyDeepSeek.trim();
 
       if (config?.id) {
         // Atualizar configuração existente
@@ -485,13 +491,14 @@ export function AIIntegrationCard() {
                   <Label className="text-sm font-medium flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-blue-600" />
                     Google Gemini
-                    {apiKeyGemini && <Badge variant="outline" className="text-green-600 text-xs">Configurada</Badge>}
+                    {(apiKeyGemini || config?.chave_gemini_configurada) && <Badge variant="outline" className="text-green-600 text-xs">Configurada</Badge>}
                   </Label>
                   <div className="relative">
                     <Input
                       type={showApiKeyGemini ? "text" : "password"}
-                      placeholder="Chave de API do Google Gemini"
+                      placeholder={config?.chave_gemini_configurada ? "Chave cadastrada — digite para trocar" : "Chave de API do Google Gemini"}
                       value={apiKeyGemini}
+                      autoComplete="off"
                       onChange={(e) => setApiKeyGemini(e.target.value)}
                       disabled={!habilitado}
                       className="pr-10"
@@ -520,13 +527,14 @@ export function AIIntegrationCard() {
                   <Label className="text-sm font-medium flex items-center gap-2">
                     <Brain className="h-4 w-4 text-green-600" />
                     OpenAI ChatGPT
-                    {apiKeyChatGPT && <Badge variant="outline" className="text-green-600 text-xs">Configurada</Badge>}
+                    {(apiKeyChatGPT || config?.chave_chatgpt_configurada) && <Badge variant="outline" className="text-green-600 text-xs">Configurada</Badge>}
                   </Label>
                   <div className="relative">
                     <Input
                       type={showApiKeyChatGPT ? "text" : "password"}
-                      placeholder="Chave de API do OpenAI ChatGPT"
+                      placeholder={config?.chave_chatgpt_configurada ? "Chave cadastrada — digite para trocar" : "Chave de API do OpenAI ChatGPT"}
                       value={apiKeyChatGPT}
+                      autoComplete="off"
                       onChange={(e) => setApiKeyChatGPT(e.target.value)}
                       disabled={!habilitado}
                       className="pr-10"
@@ -555,13 +563,14 @@ export function AIIntegrationCard() {
                   <Label className="text-sm font-medium flex items-center gap-2">
                     <Zap className="h-4 w-4 text-orange-600" />
                     DeepSeek
-                    {apiKeyDeepSeek && <Badge variant="outline" className="text-green-600 text-xs">Configurada</Badge>}
+                    {(apiKeyDeepSeek || config?.chave_deepseek_configurada) && <Badge variant="outline" className="text-green-600 text-xs">Configurada</Badge>}
                   </Label>
                   <div className="relative">
                     <Input
                       type={showApiKeyDeepSeek ? "text" : "password"}
-                      placeholder="Chave de API do DeepSeek"
+                      placeholder={config?.chave_deepseek_configurada ? "Chave cadastrada — digite para trocar" : "Chave de API do DeepSeek"}
                       value={apiKeyDeepSeek}
+                      autoComplete="off"
                       onChange={(e) => setApiKeyDeepSeek(e.target.value)}
                       disabled={!habilitado}
                       className="pr-10"

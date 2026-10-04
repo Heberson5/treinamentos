@@ -187,7 +187,7 @@ export default function ArquiteturaSistema() {
     const loadConfig = async () => {
       const { data } = await supabase
         .from("configuracoes_sistema" as any)
-        .select("*")
+        .select("nome_sistema, favicon_url, logo_sidebar_url")
         .limit(1)
         .single()
       if (data) {

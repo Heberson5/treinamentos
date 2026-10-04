@@ -48,7 +48,7 @@ export function useAIRewrite(options?: UseAIRewriteOptions) {
       // Buscar configuração de IA da empresa (incluindo chaves)
       const { data: configIA, error: configError } = await supabase
         .from("configuracoes_ia_empresa")
-        .select("provedor_ia, habilitado, api_key_gemini, api_key_chatgpt, api_key_deepseek")
+        .select("provedor_ia, habilitado, chave_gemini_configurada, chave_chatgpt_configurada, chave_deepseek_configurada")
         .eq("empresa_id", user.empresa_id)
         .single();
 
@@ -56,7 +56,7 @@ export function useAIRewrite(options?: UseAIRewriteOptions) {
         console.error("Erro ao buscar config IA:", configError);
       }
 
-      const config = configIA as (AIConfig & { api_key_gemini?: string; api_key_chatgpt?: string; api_key_deepseek?: string }) | null;
+      const config = configIA as (AIConfig & { chave_gemini_configurada?: boolean; chave_chatgpt_configurada?: boolean; chave_deepseek_configurada?: boolean }) | null;
 
       // Verificar se está habilitado E se tem chave configurada para o provedor selecionado
       if (!config || !config.habilitado) {
@@ -67,9 +67,9 @@ export function useAIRewrite(options?: UseAIRewriteOptions) {
 
       const provedor = config.provedor_ia || "gemini";
       const temChave = 
-        (provedor === "gemini" && !!config.api_key_gemini) ||
-        (provedor === "chatgpt" && !!config.api_key_chatgpt) ||
-        (provedor === "deepseek" && !!config.api_key_deepseek);
+        (provedor === "gemini" && !!config.chave_gemini_configurada) ||
+        (provedor === "chatgpt" && !!config.chave_chatgpt_configurada) ||
+        (provedor === "deepseek" && !!config.chave_deepseek_configurada);
 
       if (!temChave) {
         setIsEnabled(false);

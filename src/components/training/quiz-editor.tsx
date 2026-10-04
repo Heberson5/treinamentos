@@ -130,7 +130,7 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
       // Verificar config IA com chave
       const { data: configIA } = await supabase
         .from("configuracoes_ia_empresa")
-        .select("provedor_ia, habilitado, api_key_gemini, api_key_chatgpt, api_key_deepseek")
+        .select("provedor_ia, habilitado, chave_gemini_configurada, chave_chatgpt_configurada, chave_deepseek_configurada")
         .eq("empresa_id", user.empresa_id)
         .single()
       
@@ -142,9 +142,9 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
       
       const provedor = configIA.provedor_ia || "gemini"
       const temChave = 
-        (provedor === "gemini" && !!(configIA as any).api_key_gemini) ||
-        (provedor === "chatgpt" && !!(configIA as any).api_key_chatgpt) ||
-        (provedor === "deepseek" && !!(configIA as any).api_key_deepseek)
+        (provedor === "gemini" && !!(configIA as any).chave_gemini_configurada) ||
+        (provedor === "chatgpt" && !!(configIA as any).chave_chatgpt_configurada) ||
+        (provedor === "deepseek" && !!(configIA as any).chave_deepseek_configurada)
       
       setAiAccessEnabled(temChave)
     } catch {

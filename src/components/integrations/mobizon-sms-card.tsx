@@ -108,7 +108,8 @@ export function MobizonSmsCard() {
       try {
         let configQuery = supabase
           .from("sms_configuracoes")
-          .select("*")
+          // A chave da API é somente escrita: nunca volta para o navegador
+          .select("id, empresa_id, provedor, ativo, modo_teste, remetente, api_key_configurada, api_key_cadastrada, api_id")
           .eq("provedor", "mobizon")
           .limit(1)
 
@@ -122,8 +123,8 @@ export function MobizonSmsCard() {
           ativo: configData?.ativo ?? false,
           modo_teste: configData?.modo_teste ?? true,
           remetente: configData?.remetente ?? null,
-          api_key_configurada: configData?.api_key_configurada ?? false,
-          api_key: (configData as any)?.api_key ?? null,
+          api_key_configurada: !!(configData as any)?.api_key_cadastrada,
+          api_key: null,
           api_id: (configData as any)?.api_id ?? null,
 
         })
@@ -172,10 +173,11 @@ export function MobizonSmsCard() {
         ativo: config.ativo,
         modo_teste: config.modo_teste,
         remetente: config.remetente || null,
-        api_key: config.api_key || null,
         api_id: config.api_id || null,
-        api_key_configurada: !!(config.api_key && config.api_key.trim().length > 0),
+        api_key_configurada: !!(config.api_key?.trim()) || config.api_key_configurada,
       }
+      // Campo vazio = manter a chave já cadastrada
+      if (config.api_key?.trim()) configPayload.api_key = config.api_key.trim()
 
 
       if (config.id) {
@@ -186,7 +188,7 @@ export function MobizonSmsCard() {
         if (error) throw error
         setConfig((prev) => ({ ...prev, id: data.id }))
       }
-      setConfig((prev) => ({ ...prev, api_key_configurada: configPayload.api_key_configurada }))
+      setConfig((prev) => ({ ...prev, api_key: null, api_key_configurada: configPayload.api_key_configurada }))
 
       for (const trigger of triggers) {
         const payload = {
@@ -312,7 +314,7 @@ export function MobizonSmsCard() {
                 type="password"
                 value={config.api_key || ""}
                 onChange={(e) => setConfig((prev) => ({ ...prev, api_key: e.target.value }))}
-                placeholder="Cole aqui a chave de API"
+                placeholder={config.api_key_configurada ? "Chave cadastrada — cole outra para trocar" : "Cole aqui a chave de API"}
                 autoComplete="off"
               />
               <p className="text-xs text-muted-foreground">Encontrada no painel Mobizon &gt; API.</p>

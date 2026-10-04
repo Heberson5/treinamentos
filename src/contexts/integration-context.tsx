@@ -131,7 +131,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase
       .from('configuracoes_pagamento')
-      .select('access_token, sandbox_mode, habilitado, webhook_secret')
+      .select('sandbox_mode, habilitado, webhook_secret_configurado')
       .eq('provedor', 'mercadopago')
       .maybeSingle()
       .then(({ data }) => {
@@ -140,7 +140,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
           provider: 'mercadopago',
           connected: !!data.habilitado,
           sandboxMode: data.sandbox_mode,
-          webhookConfigured: !!data.webhook_secret,
+          webhookConfigured: !!(data as any).webhook_secret_configurado,
           recurringPaymentsEnabled: !!data.habilitado,
         })
       })
@@ -221,12 +221,12 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const connectPayment = async (accessToken: string, publicKey: string) => {
     setIsLoading(true)
     try {
+      // A linha do Mercado Pago é criada pela migração; aqui só atualizamos.
+      // As credenciais são somente escrita: o navegador nunca as lê de volta.
       const { error } = await supabase
         .from('configuracoes_pagamento')
-        .upsert(
-          { provedor: 'mercadopago', access_token: accessToken, public_key: publicKey, habilitado: true },
-          { onConflict: 'provedor' }
-        )
+        .update({ access_token: accessToken, public_key: publicKey, habilitado: true })
+        .eq('provedor', 'mercadopago')
 
       if (error) throw error
 
