@@ -1,4 +1,5 @@
 // src/pages/TrainingPage.tsx
+import { protecaoCopia, classeProtecaoCopia } from "@/components/training/conteudo-protegido"
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useTraining } from "@/contexts/training-context";
@@ -120,7 +121,7 @@ export default function TrainingPage() {
   const ytId = isYT ? getYouTubeId(videoUrl) : null;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${classeProtecaoCopia}`} {...protecaoCopia}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">

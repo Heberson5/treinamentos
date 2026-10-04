@@ -41,7 +41,7 @@ async function anonimizar(usuarioId: string, solicitacaoId?: string) {
   if (error) {
     let msg = error.message
     try {
-      const corpo = await (error as any).context?.json?.()
+      const corpo = await (error as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.()
       if (corpo?.error) msg = corpo.error
     } catch { /* mantém */ }
     throw new Error(msg)
@@ -54,7 +54,7 @@ export default function PrivacidadeLGPD() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { empresaSelecionada, isMaster } = useEmpresaFilter()
-  const empresaFiltro = isMaster ? (empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null) : (user as any)?.empresa_id ?? null
+  const empresaFiltro = isMaster ? (empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null) : user?.empresa_id ?? null
 
   const [filtro, setFiltro] = useState<"pendentes" | "todas">("pendentes")
   const [aberta, setAberta] = useState<Solicitacao | null>(null)

@@ -48,7 +48,7 @@ export function NotificationSettingsCard() {
   const { empresaSelecionada, isMaster } = useEmpresaFilter()
   const empresaId = isMaster
     ? empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
-    : ((user as any)?.empresa_id ?? null)
+    : (user?.empresa_id ?? null)
 
   const [prefs, setPrefs] = useState<Preferencias>(PADRAO)
   const [salvando, setSalvando] = useState(false)
@@ -193,7 +193,7 @@ export function NotificationSettingsCard() {
           <p className="p-5 text-sm text-muted-foreground">Nenhum e-mail enviado ainda.</p>
         ) : (
           <ul className="divide-y">
-            {ultimos.map((e: any) => (
+            {ultimos.map((e) => (
               <li key={e.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
                 <span className="w-32 shrink-0 text-xs tabular-nums text-muted-foreground">
                   {new Date(e.criado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}

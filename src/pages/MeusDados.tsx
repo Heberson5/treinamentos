@@ -225,7 +225,7 @@ export default function MeusDados() {
           <p className="p-5 text-sm text-muted-foreground">Você ainda não fez nenhuma solicitação.</p>
         ) : (
           <ul className="divide-y">
-            {(solicitacoes as any[]).map((s) => (
+            {solicitacoes.map((s) => (
               <li key={s.id} className="space-y-1.5 px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium">{TIPOS_SOLICITACAO[s.tipo]?.label || s.tipo}</span>

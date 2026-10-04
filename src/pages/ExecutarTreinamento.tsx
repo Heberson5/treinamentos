@@ -26,6 +26,7 @@ import { useActiveTimer } from "@/hooks/use-active-timer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
+import { protecaoCopia, classeProtecaoCopia } from "@/components/training/conteudo-protegido";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { getVideoInfo } from "@/lib/video-utils";
 import { QuizViewer } from "@/components/training/quiz-viewer";
@@ -1920,7 +1921,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${classeProtecaoCopia}`} {...protecaoCopia}>
       {/* Barra superior fixa: título, cronômetro compacto e ação principal */}
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6">

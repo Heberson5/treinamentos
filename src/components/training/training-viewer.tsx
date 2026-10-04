@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { protecaoCopia, classeProtecaoCopia } from "@/components/training/conteudo-protegido"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -280,7 +281,7 @@ export function TrainingViewer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`max-w-5xl max-h-[90vh] overflow-y-auto ${classeProtecaoCopia}`} {...protecaoCopia}>
         <DialogHeader>
           <DialogTitle className="text-2xl">{titulo}</DialogTitle>
           {subtitulo && (

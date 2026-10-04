@@ -25,7 +25,7 @@ export function usePoliticaPrivacidade() {
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<PoliticaPublica> => {
       const { data } = await supabase.rpc("obter_politica_privacidade")
-      const d = (Array.isArray(data) ? data[0] : data) as Record<string, any> | null
+      const d = (Array.isArray(data) ? data[0] : data) as Record<string, string | null> | null
       const texto = (d?.texto_md || "").trim() || politicaPadrao({
         controlador: d?.controlador,
         nomeSistema: d?.nome_sistema,

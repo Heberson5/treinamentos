@@ -1626,6 +1626,39 @@ export type Database = {
           },
         ]
       }
+      registro_backups: {
+        Row: {
+          arquivo: string | null
+          concluido_em: string | null
+          copia_externa: boolean
+          id: number
+          iniciado_em: string
+          mensagem: string | null
+          sucesso: boolean
+          tamanho_bytes: number | null
+        }
+        Insert: {
+          arquivo?: string | null
+          concluido_em?: string | null
+          copia_externa?: boolean
+          id?: number
+          iniciado_em?: string
+          mensagem?: string | null
+          sucesso?: boolean
+          tamanho_bytes?: number | null
+        }
+        Update: {
+          arquivo?: string | null
+          concluido_em?: string | null
+          copia_externa?: boolean
+          id?: number
+          iniciado_em?: string
+          mensagem?: string | null
+          sucesso?: boolean
+          tamanho_bytes?: number | null
+        }
+        Relationships: []
+      }
       relatorios_mensais_enviados: {
         Row: {
           empresa_id: string

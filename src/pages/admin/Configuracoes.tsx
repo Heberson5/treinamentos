@@ -312,7 +312,7 @@ export default function Configuracoes() {
     queryKey: ["registro-backups", "ultimo"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("registro_backups" as any)
+        .from("registro_backups")
         .select("iniciado_em, concluido_em, sucesso, tamanho_bytes, mensagem")
         .order("iniciado_em", { ascending: false })
         .limit(1)

@@ -26,55 +26,8 @@ const ARQUIVO_CAPTURAS = process.env.AJUDA_CAPTURAS || path.join(__dirname, "cap
 const PORTA = Number(process.env.AJUDA_PORTA || 5199)
 const BASE = `http://127.0.0.1:${PORTA}`
 
-function carregarPlaywright() {
-  const caminhos = [RAIZ, process.env.PLAYWRIGHT_CORE_DIR].filter(Boolean)
-  for (const p of caminhos) {
-    try {
-      return require(require.resolve("playwright-core", { paths: [p] }))
-    } catch {
-      /* tenta o próximo */
-    }
-  }
-  console.error("playwright-core não encontrado. Rode: npm i --no-save playwright-core@1.56")
-  process.exit(1)
-}
-
-function caminhoChromium() {
-  const candidatos = [process.env.CHROMIUM_PATH, "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"].filter(Boolean)
-  return candidatos.find((c) => fs.existsSync(c))
-}
-
-async function esperarServidor(url, tentativas = 60) {
-  for (let i = 0; i < tentativas; i++) {
-    try {
-      const r = await fetch(url)
-      if (r.ok) return
-    } catch {
-      /* ainda subindo */
-    }
-    await new Promise((r) => setTimeout(r, 500))
-  }
-  throw new Error("O servidor do Vite não respondeu a tempo")
-}
-
-function subirVite() {
-  const { SUPABASE_HOST } = require("./mock-backend.cjs")
-  const env = {
-    ...process.env,
-    // Variáveis já definidas têm prioridade sobre os arquivos .env do Vite:
-    // o sistema roda apontando só para o backend fictício.
-    VITE_SUPABASE_URL: `http://${SUPABASE_HOST}`,
-    VITE_SUPABASE_PUBLISHABLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.ficticia",
-    VITE_SUPABASE_PROJECT_ID: "fakesupa",
-  }
-  const vite = spawn(process.execPath, [path.join(RAIZ, "node_modules", "vite", "bin", "vite.js"), "--host", "127.0.0.1", "--port", String(PORTA), "--strictPort"], {
-    cwd: RAIZ,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-  vite.stderr.on("data", (d) => process.env.AJUDA_DEBUG && process.stderr.write(d))
-  return vite
-}
+const { carregarPlaywright, caminhoChromium, esperarServidor, subirVite: subirViteNaPorta } = require("./navegador.cjs")
+const subirVite = () => subirViteNaPorta(PORTA)
 
 const CSS_ESTAVEL = `
   *, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; transition-duration: 0s !important; caret-color: transparent !important; }
