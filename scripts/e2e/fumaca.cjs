@@ -123,6 +123,13 @@ async function main() {
   try {
     await esperarServidor(BASE)
     const browser = await chromium.launch({ executablePath: caminhoChromium() })
+    // Aquecimento: a primeira abertura compila as páginas no Vite e pode
+    // passar do tempo limite dos testes
+    {
+      const aquecer = await browser.newPage()
+      await aquecer.goto(BASE + "/login", { waitUntil: "networkidle", timeout: 60000 }).catch(() => {})
+      await aquecer.close()
+    }
     for (const t of lista) {
       const context = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: "pt-BR", timezoneId: "America/Sao_Paulo", acceptDownloads: true })
       const page = await context.newPage()

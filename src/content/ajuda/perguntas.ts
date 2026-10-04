@@ -44,6 +44,28 @@ export const perguntasFrequentes: PerguntaFrequente[] = [
     pergunta: "Por que não consigo copiar o texto do treinamento?",
     resposta: "O conteúdo dos treinamentos é protegido contra cópia, para preservar o material da sua empresa.",
   },
+  {
+    papel: "usuario",
+    pergunta: "Como alguém confere se o meu certificado é verdadeiro?",
+    resposta:
+      "Todo certificado tem um **código de validação** e um QR Code. Quem recebe lê o QR Code ou digita o código na página **Validar certificado** — não precisa de login — e vê se ele é válido.",
+  },
+  {
+    papel: "usuario",
+    pergunta: "Como paro de receber e-mails da plataforma?",
+    resposta: "Clique no seu nome, abra **Meus dados e privacidade** e desligue **Receber avisos por e-mail**. Você continua vendo tudo dentro da plataforma.",
+  },
+  {
+    papel: "usuario",
+    pergunta: "Como peço uma cópia, a correção ou a exclusão dos meus dados?",
+    resposta:
+      "Em **Meus dados e privacidade**, use **Baixar meus dados** para receber uma cópia na hora. Para corrigir, anonimizar ou outros pedidos, use **Fazer uma solicitação**: a resposta chega em até 15 dias.",
+  },
+  {
+    papel: "usuario",
+    pergunta: "Os prazos podem aparecer no Google Agenda ou no Outlook?",
+    resposta: "Sim. Em **Calendário**, clique em **Sincronizar** e gere o seu link pessoal. Os prazos passam a aparecer e se atualizam sozinhos.",
+  },
 
   // ---- Instrutor ----
   {
@@ -95,6 +117,18 @@ export const perguntasFrequentes: PerguntaFrequente[] = [
     pergunta: "Como mudo o logo e as cores da empresa?",
     resposta: "A identidade visual é configurada pelo **Master** em **Configurações**. Peça a alteração ao responsável pela plataforma.",
   },
+  {
+    papel: "admin",
+    pergunta: "Um colaborador saiu da empresa. O que faço com os dados dele?",
+    resposta:
+      "**Inative** o usuário para liberar a vaga do plano. Se ele pedir (ou a política da empresa exigir), use **Privacidade (LGPD) → Anonimizar um usuário**: os dados pessoais são apagados e os relatórios continuam com os números, sem identificar a pessoa.",
+  },
+  {
+    papel: "admin",
+    pergunta: "Os colaboradores não estão recebendo os e-mails automáticos.",
+    resposta:
+      "Confira em **Integrações → Notificações** se o aviso está ligado e veja a lista de últimos envios. A pessoa também pode ter recusado os e-mails em **Meus dados e privacidade**. Se aparecer **Falhou**, avise o Master para conferir o servidor de e-mail.",
+  },
 
   // ---- Master ----
   {
@@ -112,5 +146,11 @@ export const perguntasFrequentes: PerguntaFrequente[] = [
     papel: "master",
     pergunta: "Onde cadastro o e-mail e o telefone de suporte que aparecem na Ajuda?",
     resposta: "Em **Configurações**, nos dados de contato. Administradores veem esses contatos no quadro “Ainda com dúvida?” da Central de Ajuda.",
+  },
+  {
+    papel: "master",
+    pergunta: "Como sei se os backups estão funcionando?",
+    resposta:
+      "Em **Configurações → Backup**, o quadro **Backup automático do servidor** mostra a data e a situação do último backup. Se algo falhar, os Masters recebem um e-mail de alerta do monitoramento do servidor.",
   },
 ]

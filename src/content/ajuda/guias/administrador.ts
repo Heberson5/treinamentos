@@ -318,8 +318,8 @@ export const guiasAdministrador: Guia[] = [
     id: "integracoes-e-ia",
     papel: "admin",
     tema: "Sistema",
-    titulo: "Integrações e recursos de IA",
-    resumo: "Veja o que pode ser conectado: calendário, notificações, SMS e IA.",
+    titulo: "Integrações, e-mails automáticos e IA",
+    resumo: "Prazos no calendário, e-mails automáticos para a equipe, SMS e IA.",
     icone: "Plug",
     minutos: 3,
     rotas: ["/admin/integracoes"],
@@ -327,10 +327,16 @@ export const guiasAdministrador: Guia[] = [
       {
         titulo: "Conheça as integrações",
         texto:
-          "Em **Sistema → Integrações**, as abas reúnem as conexões disponíveis: **Calendário** (Google e Outlook), **Notificações**, **SMS** e **IA**. Elas ficam no menu à esquerda (no celular, na faixa do topo).",
+          "Em **Sistema → Integrações**, as abas reúnem as conexões disponíveis: **Calendário**, **Notificações**, **SMS** e **IA**. Elas ficam no menu à esquerda (no celular, na faixa do topo). Em **Calendário**, você gera o seu link de prazos para o Google Agenda, o Outlook ou o iPhone; cada colaborador faz o mesmo em **Calendário → Sincronizar**.",
         pontos: ["Menu das integrações."],
         print: "adm-integracoes",
-        aviso: "A conexão com calendários depende de configuração no servidor da plataforma. Se a tela avisar disso, fale com o suporte.",
+      },
+      {
+        titulo: "Escolha os e-mails automáticos",
+        texto:
+          "Na aba **Notificações**, ligue ou desligue os avisos enviados às pessoas da sua empresa: **novo treinamento disponível** (respeita o departamento), **parabéns pela conclusão**, **lembrete de prazo** (escolha quantos dias antes: 30, 15, 7, 3 ou 1) e **relatório mensal** para os administradores. Clique em **Salvar preferências**. Logo abaixo aparecem os últimos e-mails enviados.",
+        print: "adm-notificacoes",
+        dica: "Cada pessoa pode recusar os e-mails em **Meus dados e privacidade**. Se ninguém recebe nada, peça ao suporte para conferir o servidor de e-mail.",
       },
       {
         titulo: "Recursos de IA",
@@ -338,6 +344,39 @@ export const guiasAdministrador: Guia[] = [
           "Na aba **IA**, é possível habilitar recursos como **reescrever textos** no editor e **gerar questões** de avaliação. Dependem do seu plano e de uma chave de acesso válida.",
         print: "adm-integracoes-ia",
         dica: "Quando a IA não está habilitada, os botões correspondentes aparecem desativados no editor, com a explicação.",
+      },
+    ],
+  },
+
+  {
+    id: "privacidade-lgpd",
+    papel: "admin",
+    tema: "Acessos",
+    titulo: "Privacidade (LGPD): pedidos e anonimização",
+    resumo: "Responda aos pedidos dos colaboradores no prazo e anonimize quem saiu da empresa.",
+    icone: "ShieldCheck",
+    minutos: 4,
+    rotas: ["/admin/privacidade"],
+    passos: [
+      {
+        titulo: "Acompanhe os pedidos e a ciência da política",
+        texto:
+          "Em **Organização → Privacidade (LGPD)**, o topo mostra os **pedidos pendentes**, os com **prazo em até 3 dias**, os concluídos nos últimos 30 dias e a **ciência da política** (quantas pessoas já registraram ciência da versão atual). Abaixo, em **Solicitações dos titulares**, ficam os pedidos com o tipo, quem pediu e o prazo — use **Pendentes** ou **Todas** para filtrar.",
+        print: "adm-lgpd",
+        aviso: "A LGPD dá **15 dias** para responder. Pedidos perto do vencimento aparecem destacados.",
+      },
+      {
+        titulo: "Atenda um pedido",
+        texto:
+          "Clique em **Atender**, escreva a resposta e escolha a situação: **Em andamento**, **Concluída** ou **Recusada** (explique o motivo). A pessoa vê a resposta em **Meus dados e privacidade**.",
+        print: "adm-lgpd-atender",
+        dica: "Para corrigir dados como cargo, departamento ou e-mail, edite o usuário em **Usuários** e depois conclua o pedido.",
+      },
+      {
+        titulo: "Anonimize quem saiu da empresa",
+        texto:
+          "Em **Anonimizar um usuário**, busque a pessoa e confirme digitando **ANONIMIZAR**. O nome, o e-mail, o telefone e o histórico de contato são apagados, e a conta deixa de entrar. Os números de progresso continuam nos relatórios, sem identificar ninguém, e os certificados dela deixam de valer na validação.",
+        aviso: "Não dá para desfazer. Antes, exporte os relatórios de que a empresa precisa guardar.",
       },
     ],
   },

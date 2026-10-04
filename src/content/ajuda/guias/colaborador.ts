@@ -278,9 +278,16 @@ export const guiasColaborador: Guia[] = [
       {
         titulo: "Abra e baixe o certificado",
         texto:
-          "O certificado mostra seu nome, o treinamento, a duração, o tempo dedicado, a nota final e a data de conclusão. Role a janela até o fim e clique em **Baixar Certificado (PDF)**. Também é possível **Compartilhar**.",
+          "O certificado mostra seu nome, o treinamento, a duração, o tempo dedicado, a nota final, a data de conclusão e um **código de validação** com QR Code. Role a janela até o fim e clique em **Baixar Certificado (PDF)**. **Compartilhar** envia o link de validação.",
         print: "colab-certificado",
-        dica: "O certificado só aparece depois que o treinamento foi concluído (e, se houver prova, aprovado).",
+        dica: "O certificado só aparece depois que o treinamento foi concluído (e, se houver prova, aprovado). O código é sempre o mesmo para aquele treinamento.",
+      },
+      {
+        titulo: "Quem recebe confere a autenticidade",
+        texto:
+          "Qualquer pessoa (um cliente ou outra empresa, por exemplo) pode ler o QR Code do certificado ou digitar o código na página **Validar certificado**, sem precisar de login. A página confirma se o certificado é válido e mostra apenas o nome, o treinamento, a carga horária, a data de conclusão e a empresa.",
+        print: "colab-validar",
+        printCelular: "colab-validar-cel",
       },
     ],
   },
@@ -290,7 +297,7 @@ export const guiasColaborador: Guia[] = [
     papel: "usuario",
     tema: "No dia a dia",
     titulo: "Calendário, lembretes e avisos",
-    resumo: "Organize prazos com lembretes e entenda os avisos da plataforma.",
+    resumo: "Leve os prazos para o seu calendário, crie lembretes e entenda os avisos.",
     icone: "Smartphone",
     minutos: 3,
     rotas: ["/calendario"],
@@ -301,6 +308,13 @@ export const guiasColaborador: Guia[] = [
           "O **Calendário** mostra os seus eventos, os prazos dos treinamentos e os seus lembretes, por mês, semana ou dia.",
         pontos: ["Crie um **Lembrete** pessoal.", "Troque a visualização: Mês, Semana ou Dia.", "Volte para o dia de hoje."],
         print: "colab-calendario",
+      },
+      {
+        titulo: "Leve os prazos para o seu calendário",
+        texto:
+          "Clique em **Sincronizar** e depois em **Gerar meu link**. Use os botões **Google Agenda**, **Outlook** ou **iPhone / Mac** para assinar: os prazos dos seus treinamentos passam a aparecer no app de calendário que você já usa e se atualizam sozinhos.",
+        print: "colab-cal-sincronizar",
+        aviso: "O link é pessoal. Se ele vazar, clique em **Gerar novo link**: o anterior para de funcionar na hora.",
       },
       {
         titulo: "Crie um lembrete",
@@ -315,6 +329,43 @@ export const guiasColaborador: Guia[] = [
         print: "colab-aviso-popup",
         dica:
           "Quer usar a plataforma como aplicativo? No celular, aceite a sugestão de **instalar** que aparece ao entrar, ou use a opção “Adicionar à tela inicial” do navegador.",
+      },
+    ],
+  },
+
+  {
+    id: "privacidade-e-meus-dados",
+    papel: "usuario",
+    tema: "No dia a dia",
+    titulo: "Privacidade e os seus dados (LGPD)",
+    resumo: "Veja como seus dados são usados, baixe uma cópia, recuse e-mails e faça pedidos.",
+    icone: "ShieldCheck",
+    minutos: 3,
+    rotas: ["/meus-dados", "/privacidade"],
+    passos: [
+      {
+        titulo: "Leia o aviso de privacidade",
+        texto:
+          "No primeiro acesso, e sempre que a Política de Privacidade mudar, aparece um resumo de quais dados a plataforma usa e para quê. Leia e clique em **Li e estou ciente**. A política completa fica em **Ler a política completa**.",
+        print: "colab-lgpd-aviso",
+      },
+      {
+        titulo: "Abra “Meus dados e privacidade”",
+        texto:
+          "Clique no seu nome, no topo da tela, e escolha **Meus dados e privacidade**. Ali você vê a versão da política, o contato do encarregado de dados (DPO) e tudo o que pode fazer com os seus dados.",
+        print: "colab-meus-dados",
+        printCelular: "colab-meus-dados-cel",
+      },
+      {
+        titulo: "Baixe uma cópia ou recuse os e-mails",
+        texto:
+          "**Baixar meus dados** gera na hora um arquivo com seu cadastro, progresso, notas, avisos e pedidos. Em **Avisos por e-mail**, desligue a chave para não receber mais os e-mails automáticos (novos treinamentos, lembretes de prazo e conclusões).",
+        aviso: "O arquivo baixado contém seus dados pessoais. Guarde-o em local seguro.",
+      },
+      {
+        titulo: "Faça uma solicitação",
+        texto:
+          "Em **Fazer uma solicitação**, escolha o que precisa — corrigir dados, saber com quem são compartilhados, anonimizar ao sair da empresa, entre outros — e clique em **Enviar solicitação**. A empresa responde em até **15 dias**, e a resposta aparece em **Minhas solicitações**.",
       },
     ],
   },

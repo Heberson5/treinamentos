@@ -76,15 +76,15 @@ export const guiasMaster: Guia[] = [
       },
       {
         titulo: "Ajuste plano, faturamento e usuários",
-        texto: "Clique em **Config** no cartão da empresa. A janela tem três abas: **Plano**, **Faturamento** e **Usuários**.",
+        texto: "Clique em **Config** no cartão da empresa. A janela tem três abas com os dados reais da empresa: **Plano** (troque o plano e veja o contrato atual), **Faturamento** (pagamentos registrados) e **Usuários** (quem tem acesso e com qual papel).",
         print: "mast-empresa-config",
-        dica: "O plano define o limite de usuários cadastrados. Alterações de plano valem a partir do próximo ciclo de faturamento.",
+        dica: "O plano define o limite de usuários cadastrados. Ao trocar de plano, um novo contrato é registrado na hora.",
       },
       {
         titulo: "Entenda os três estados de uma empresa",
         texto:
-          "**Desativar** tira a empresa da lista de ativas. Já o **bloqueio de acesso** — que impede o login das pessoas da empresa — é feito no **Financeiro** (botão de bloqueio num pagamento atrasado) ou acontece sozinho quando uma demonstração expira. A lixeira **exclui** a empresa de vez, e não dá para desfazer.",
-        aviso: "Antes de excluir, confirme que não precisa mais dos dados. Para apenas suspender o acesso, use o bloqueio no Financeiro.",
+          "**Desativar** suspende a empresa: as pessoas dela deixam de conseguir entrar (aparece a mensagem para procurar o suporte), mas nada é apagado — reative quando quiser. O **bloqueio por pagamento** é feito no **Financeiro** (num pagamento atrasado) ou acontece sozinho quando uma demonstração expira. A lixeira **exclui** a empresa de vez, e não dá para desfazer.",
+        aviso: "Antes de excluir, confirme que não precisa mais dos dados. Para apenas suspender o acesso, use **Desativar**.",
       },
     ],
   },
@@ -138,20 +138,20 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Conheça os papéis",
         texto:
-          "Em **Sistema → Permissões**, o topo resume os papéis, os usuários e as permissões disponíveis. Abaixo, cada papel (Master, Administrador, Instrutor e Usuário) aparece em uma linha com quantas pessoas o usam e quantas permissões tem. Com **Todas as empresas** selecionado no topo, as permissões valem para todas as empresas.",
+          "Em **Sistema → Permissões**, o topo resume os papéis, os usuários e as permissões disponíveis. Abaixo, cada um dos quatro papéis fixos (Master, Administrador, Instrutor e Usuário) aparece em uma linha com quantas pessoas o usam e quantas permissões tem. Com **Todas as empresas** selecionado no topo, as permissões valem para todas as empresas.",
         pontos: [
-          "**Novo Papel:** cria um papel personalizado.",
-          "Linha do papel: usuários, barra de permissões ativas, olho para ativar ou desativar, **Editar** e lixeira para excluir.",
+          "Linha do papel: usuários e barra de permissões ativas.",
+          "**Editar permissões** do papel.",
         ],
         print: "mast-permissoes",
       },
       {
         titulo: "Edite as permissões de um papel",
         texto:
-          "Clique em **Editar** na linha do papel. Ajuste nome, cor e descrição e, em **Permissões**, navegue pelas abas — cada uma mostra quantas permissões estão ligadas (Treinamentos, Catálogo, Usuários, Relatórios, Departamentos, Empresas, Integrações, Sistema e Financeiro). Ligue ou desligue cada permissão e clique em **Atualizar**.",
+          "Clique em **Editar permissões** na linha do papel. Navegue pelas abas — cada uma mostra quantas permissões estão ligadas (Treinamentos, Catálogo, Usuários, Relatórios, Departamentos, Empresas, Integrações, Sistema e Financeiro). Ligue ou desligue cada permissão e clique em **Salvar permissões**.",
         print: "mast-permissao-editar",
         dica: "A permissão **Upload de Vídeo** (marcada com o selo Master) só pode ser concedida por você. Sem ela, instrutores só informam vídeos por link.",
-        aviso: "Mudar permissões afeta todas as pessoas daquele papel em todas as empresas. Só é possível excluir um papel que não tenha usuários.",
+        aviso: "Mudar permissões afeta todas as pessoas daquele papel em todas as empresas. Os quatro papéis são fixos: não é possível criar nem excluir papéis.",
       },
     ],
   },
@@ -161,7 +161,7 @@ export const guiasMaster: Guia[] = [
     papel: "master",
     tema: "Sistema",
     titulo: "Configurações do sistema",
-    resumo: "Dados de contato, e-mail, segurança, auditoria e backup.",
+    resumo: "Contato, endereço da plataforma, e-mail, segurança, auditoria, backup e privacidade.",
     icone: "Settings2",
     minutos: 7,
     rotas: ["/admin/configuracoes"],
@@ -169,9 +169,9 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Dados gerais e contato",
         texto:
-          "Em **Sistema → Configurações**, a aba **Geral** guarda nome, e-mail de contato, telefone, fuso horário e endereço. O e-mail e o telefone aparecem para os administradores no quadro “Ainda com dúvida?” da Central de Ajuda.",
+          "Em **Sistema → Configurações**, a aba **Geral** guarda nome, e-mail de contato, telefone, fuso horário e o **Endereço da plataforma (URL)** — usado nos links dos e-mails, no QR Code dos certificados e no calendário. O e-mail e o telefone aparecem para os administradores no quadro “Ainda com dúvida?” da Central de Ajuda.",
         pontos: [
-          "O menu à esquerda (no celular, a faixa no topo) leva às seções: Geral, Email, Notificações, Segurança, Auditoria e Backup.",
+          "O menu à esquerda (no celular, a faixa no topo) leva às seções: Geral, Email, Notificações, Segurança, Auditoria, Backup e Privacidade.",
           "**Email de Contato** (e telefone): é o contato de suporte mostrado na Ajuda.",
           "Clique em **Salvar**, no rodapé do quadro, para gravar. Só o Master consegue alterar estas configurações.",
         ],
@@ -180,13 +180,13 @@ export const guiasMaster: Guia[] = [
       {
         titulo: "Configure o envio de e-mails",
         texto:
-          "Na aba **Email**, informe o servidor SMTP, a porta, o usuário, a senha e o e-mail remetente. Use **Testar Email** para conferir antes de salvar. Mais abaixo há o **modelo de e-mail em HTML** usado nas mensagens automáticas, com tags como o nome do sistema e da empresa.",
+          "Na aba **Email**, informe o servidor SMTP, a porta, o usuário, a senha e o e-mail remetente e clique em salvar. Depois use **Testar Email**: a plataforma envia de verdade uma mensagem para o seu e-mail. Mais abaixo há o **modelo de e-mail em HTML** usado nas mensagens automáticas, com tags como o nome do sistema e da empresa.",
         print: "mast-config-email",
-        aviso: "A senha do e-mail é uma credencial. Nunca a envie por mensagem ou a registre em documentos.",
+        aviso: "A senha fica guardada só no servidor: depois de salva, ela não aparece mais na tela (o campo mostra “Senha cadastrada”). Para trocar, digite a nova.",
       },
       {
         titulo: "Escolha as notificações",
-        texto: "Na aba **Notificações**, ligue ou desligue e-mail, notificações push, aviso de conclusão de treinamento e lembretes de pendências.",
+        texto: "Na aba **Notificações**, ligue ou desligue, para toda a plataforma, os e-mails, as notificações push, o aviso de conclusão e os lembretes de prazo. O que cada empresa recebe é ajustado pelo administrador dela em **Integrações → Notificações**.",
         print: "mast-config-notificacoes",
       },
       {
@@ -202,11 +202,18 @@ export const guiasMaster: Guia[] = [
         print: "mast-config-auditoria",
       },
       {
-        titulo: "Faça e restaure backups",
+        titulo: "Acompanhe os backups",
         texto:
-          "Na aba **Backup**, escolha o destino e use **Gerar backup agora** para baixar um arquivo com os dados principais (empresas, usuários, treinamentos, categorias e departamentos). Clique em **Salvar configuração** para gravar o destino escolhido.",
+          "Na aba **Backup**, **Backup automático do servidor** mostra quando foi feita a última cópia completa do banco (todo dia de madrugada, guardada por 14 dias) e se deu certo. Em **Cópia manual**, baixe na hora um arquivo com os dados principais (empresas, usuários, treinamentos, categorias e departamentos).",
         print: "mast-config-backup",
-        aviso: "Restaurar um backup substitui os dados atuais. Por segurança, a restauração é feita pelo suporte técnico direto no servidor, a partir do arquivo gerado aqui. Gere um backup novo antes de pedir.",
+        aviso: "Restaurar um backup substitui os dados atuais. Por segurança, a restauração é feita pelo suporte técnico direto no servidor. Se o último backup estiver com falha ou antigo, avise o suporte — você também recebe um e-mail de alerta.",
+      },
+      {
+        titulo: "Privacidade: encarregado e política",
+        texto:
+          "Na aba **Privacidade**, informe o **encarregado pelo tratamento de dados (DPO)** — nome e e-mail aparecem para todos como canal da LGPD. Em **Política de Privacidade**, deixe em branco para usar o texto padrão (que já descreve os dados, finalidades, prazos e direitos) ou clique em **Começar do texto padrão** para adaptá-lo. **Pré-visualizar** mostra como fica; **Ver página pública** abre a página que qualquer pessoa acessa.",
+        print: "mast-config-privacidade",
+        aviso: "Ao mudar o conteúdo, ligue **Publicar como nova versão**: todos verão o aviso de privacidade de novo e registrarão ciência. Revise o texto com o seu jurídico antes de publicar.",
       },
     ],
   },
