@@ -47,9 +47,9 @@ Ao acessar e utilizar a plataforma ${config.company_name}, você concorda em cum
 4.3. Conteúdos gerados por usuários são de responsabilidade do criador.
 
 ## 5. Privacidade e LGPD
-5.1. Coletamos apenas dados necessários para funcionamento do serviço.
-5.2. Seus dados são protegidos conforme a Lei Geral de Proteção de Dados.
-5.3. Você pode solicitar a exclusão de seus dados a qualquer momento.
+5.1. O tratamento de dados pessoais segue a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+5.2. Os detalhes — dados tratados, finalidades, prazos de guarda e como exercer seus direitos — estão na [Política de Privacidade](/privacidade).
+5.3. Você pode baixar seus dados e fazer solicitações em "Meus dados e privacidade", dentro da plataforma.
 
 ## 6. Pagamentos
 6.1. Os planos são cobrados conforme contrato firmado.
@@ -58,8 +58,7 @@ Ao acessar e utilizar a plataforma ${config.company_name}, você concorda em cum
 
 ## 7. Cancelamento
 7.1. O cancelamento pode ser solicitado a qualquer momento.
-7.2. Os dados serão mantidos por 30 dias após o cancelamento.
-7.3. Após este período, todos os dados serão excluídos permanentemente.
+7.2. Após o cancelamento, os dados são eliminados ou anonimizados conforme a Política de Privacidade, salvo quando a lei exigir sua guarda.
 
 ## 8. Alterações nos Termos
 8.1. Estes termos podem ser alterados a qualquer momento.

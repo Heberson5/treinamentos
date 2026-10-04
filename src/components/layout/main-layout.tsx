@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { useIdleLogout } from "@/hooks/use-idle-logout"
 import { useOnlineUsers } from "@/hooks/use-online-users"
 import { TrocaSenhaObrigatoria } from "@/components/auth/trocar-senha-dialog"
+import { AvisoPrivacidade } from "@/components/lgpd/aviso-privacidade"
 
 interface MainLayoutProps {
   children: ReactNode
@@ -38,6 +39,7 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
           <PWAInstallPrompt />
           <PopupDisplay />
           <TrocaSenhaObrigatoria />
+          <AvisoPrivacidade />
         </div>
       </SidebarProvider>
     );
@@ -66,6 +68,7 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
         <PopupDisplay />
         {/* Troca de senha obrigatória (link de recuperação ou primeiro acesso) */}
         <TrocaSenhaObrigatoria />
+        <AvisoPrivacidade />
       </div>
     </SidebarProvider>
   )

@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Bell, LogOut, Settings, User, Building2, Camera, X, ChevronRight, ChevronDown, CircleHelp, LifeBuoy, KeyRound } from "lucide-react"
+import { Bell, LogOut, Settings, User, Building2, Camera, X, ChevronRight, ChevronDown, CircleHelp, LifeBuoy, KeyRound, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAuth } from "@/contexts/auth-context"
@@ -337,6 +337,10 @@ export function Header({ onLogout }: HeaderProps) {
               <User className="mr-2 h-4 w-4" />
               Meu Perfil
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/meus-dados")}>
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Meus dados e privacidade
+            </DropdownMenuItem>
             {(user?.role === "master" || user?.role === "admin") && (
               <DropdownMenuItem onClick={() => navigate("/admin/configuracoes")}>
                 <Settings className="mr-2 h-4 w-4" />
@@ -425,6 +429,16 @@ export function Header({ onLogout }: HeaderProps) {
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsSenhaOpen(true)}>
                 <KeyRound className="mr-2 h-4 w-4" /> Alterar senha
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Meus dados e privacidade</p>
+                <p className="text-xs text-muted-foreground">Baixar seus dados, avisos por e-mail e pedidos LGPD</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { setIsProfileOpen(false); navigate("/meus-dados") }}>
+                <ShieldCheck className="mr-2 h-4 w-4" /> Abrir
               </Button>
             </div>
 

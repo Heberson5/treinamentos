@@ -182,7 +182,7 @@ export function NotificationSettingsCard() {
         </SettingList>
         <InfoNote icon={Mail}>
           Os e-mails usam o servidor configurado pelo Master em <strong className="font-medium text-foreground">Configurações → Email</strong>.
-          Cada pessoa pode deixar de receber os avisos em <strong className="font-medium text-foreground">Meu Perfil → Privacidade</strong>.
+          Cada pessoa pode deixar de receber os avisos em <strong className="font-medium text-foreground">Meus dados e privacidade</strong> (menu do nome).
         </InfoNote>
       </SettingsSection>
 

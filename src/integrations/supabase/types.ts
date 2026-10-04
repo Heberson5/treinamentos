@@ -14,6 +14,37 @@ export type Database = {
   }
   public: {
     Tables: {
+      aceites_politica: {
+        Row: {
+          aceito_em: string
+          id: string
+          user_agent: string | null
+          usuario_id: string
+          versao: string
+        }
+        Insert: {
+          aceito_em?: string
+          id?: string
+          user_agent?: string | null
+          usuario_id: string
+          versao: string
+        }
+        Update: {
+          aceito_em?: string
+          id?: string
+          user_agent?: string | null
+          usuario_id?: string
+          versao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aceites_politica_usuario_id_fkey"
+            columns: ["usuario_id"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividades: {
         Row: {
           criado_em: string | null
@@ -517,6 +548,8 @@ export type Database = {
           email_contato: string | null
           email_remetente: string | null
           email_template_html: string | null
+          encarregado_email: string | null
+          encarregado_nome: string | null
           endereco: string | null
           favicon_url: string | null
           id: string
@@ -530,6 +563,9 @@ export type Database = {
           notificacoes_lembrete: boolean
           notificacoes_push: boolean
           numero: number | null
+          politica_atualizada_em: string
+          politica_privacidade_md: string | null
+          politica_versao: string
           senha_min_length: number
           senha_requer_especial: boolean
           senha_requer_maiuscula: boolean
@@ -554,6 +590,8 @@ export type Database = {
           email_contato?: string | null
           email_remetente?: string | null
           email_template_html?: string | null
+          encarregado_email?: string | null
+          encarregado_nome?: string | null
           endereco?: string | null
           favicon_url?: string | null
           id?: string
@@ -567,6 +605,9 @@ export type Database = {
           notificacoes_lembrete?: boolean
           notificacoes_push?: boolean
           numero?: number | null
+          politica_atualizada_em?: string
+          politica_privacidade_md?: string | null
+          politica_versao?: string
           senha_min_length?: number
           senha_requer_especial?: boolean
           senha_requer_maiuscula?: boolean
@@ -591,6 +632,8 @@ export type Database = {
           email_contato?: string | null
           email_remetente?: string | null
           email_template_html?: string | null
+          encarregado_email?: string | null
+          encarregado_nome?: string | null
           endereco?: string | null
           favicon_url?: string | null
           id?: string
@@ -604,6 +647,9 @@ export type Database = {
           notificacoes_lembrete?: boolean
           notificacoes_push?: boolean
           numero?: number | null
+          politica_atualizada_em?: string
+          politica_privacidade_md?: string | null
+          politica_versao?: string
           senha_min_length?: number
           senha_requer_especial?: boolean
           senha_requer_maiuscula?: boolean
@@ -1660,6 +1706,70 @@ export type Database = {
         }
         Relationships: []
       }
+      solicitacoes_lgpd: {
+        Row: {
+          atendida_por: string | null
+          atualizado_em: string
+          concluida_em: string | null
+          criado_em: string
+          descricao: string | null
+          empresa_id: string | null
+          id: string
+          prazo_em: string
+          resposta: string | null
+          status: string
+          tipo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          atendida_por?: string | null
+          atualizado_em?: string
+          concluida_em?: string | null
+          criado_em?: string
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          prazo_em?: string
+          resposta?: string | null
+          status?: string
+          tipo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          atendida_por?: string | null
+          atualizado_em?: string
+          concluida_em?: string | null
+          criado_em?: string
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          prazo_em?: string
+          resposta?: string | null
+          status?: string
+          tipo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_lgpd_atendida_por_fkey"
+            columns: ["atendida_por"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_lgpd_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_lgpd_usuario_id_fkey"
+            columns: ["usuario_id"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tentativas_avaliacao: {
         Row: {
           aprovado: boolean
@@ -1924,6 +2034,14 @@ export type Database = {
         Args: { p_segredos: string[]; p_tabela: string }
         Returns: undefined
       }
+      abrir_solicitacao_lgpd: {
+        Args: { p_descricao: string; p_tipo: string }
+        Returns: string
+      }
+      anonimizar_dados_usuario: {
+        Args: { p_executor: string; p_usuario_id: string }
+        Returns: string
+      }
       concluir_treinamento: {
         Args: {
           p_nota_avaliacao?: number
@@ -2021,6 +2139,7 @@ export type Database = {
         Returns: undefined
       }
       eh_admin_ou_master: { Args: { usuario_id: string }; Returns: boolean }
+      exportar_meus_dados: { Args: never; Returns: Json }
       get_empresa_id_do_usuario: {
         Args: { p_user_id: string }
         Returns: string
@@ -2067,6 +2186,19 @@ export type Database = {
           session_timeout_min: number
         }[]
       }
+      obter_politica_privacidade: {
+        Args: never
+        Returns: {
+          atualizada_em: string
+          controlador: string
+          email_contato: string
+          encarregado_email: string
+          encarregado_nome: string
+          nome_sistema: string
+          texto_md: string
+          versao: string
+        }[]
+      }
       obter_questoes_avaliacao: {
         Args: { p_treinamento_id: string }
         Returns: {
@@ -2094,6 +2226,10 @@ export type Database = {
         Args: { p_empresa_id: string }
         Returns: undefined
       }
+      registrar_ciencia_politica: {
+        Args: { p_user_agent?: string }
+        Returns: string
+      }
       registrar_cnpj_demo: {
         Args: { p_cnpj: string; p_empresa_id: string }
         Returns: undefined
@@ -2101,6 +2237,14 @@ export type Database = {
       registrar_tentativa_login: {
         Args: { p_email: string; p_sucesso: boolean }
         Returns: undefined
+      }
+      resumo_ciencia_politica: {
+        Args: { p_empresa_id?: string }
+        Returns: {
+          com_ciencia: number
+          total_pessoas: number
+          versao: string
+        }[]
       }
       verificar_cnpj_demo_disponivel: {
         Args: { p_cnpj: string }

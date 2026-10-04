@@ -157,12 +157,35 @@ const tables = {
     email_contato: "suporte@aprendamais.exemplo", telefone_contato: "(11) 4000-1000",
   }],
   auditoria: [], notificacoes: [],
+  // LGPD e e-mails
+  aceites_politica: Object.values(IDS).map((uid, i) => ({ id: `ac${i}`, usuario_id: uid, versao: "1.0", aceito_em: iso(20 - i) })),
+  solicitacoes_lgpd: [
+    { id: "sl1", usuario_id: IDS.usuario, empresa_id: E1, tipo: "acesso", descricao: "Gostaria de receber uma cópia dos meus dados de treinamento.", status: "aberta", resposta: null, prazo_em: new Date(now.getTime() + 12 * 86400000).toISOString(), criado_em: iso(3), concluida_em: null },
+    { id: "sl2", usuario_id: IDS.u7, empresa_id: E1, tipo: "correcao", descricao: "Meu cargo está desatualizado: hoje sou Supervisor de atendimento.", status: "em_andamento", resposta: "Estamos verificando com o RH.", prazo_em: new Date(now.getTime() + 2 * 86400000).toISOString(), criado_em: iso(13), concluida_em: null },
+    { id: "sl3", usuario_id: IDS.u5, empresa_id: E1, tipo: "compartilhamento", descricao: null, status: "concluida", resposta: "Seus dados são compartilhados apenas com o provedor de e-mail e de hospedagem, conforme a política.", prazo_em: iso(10), criado_em: iso(25), concluida_em: iso(20) },
+  ],
+  preferencias_notificacao: [],
+  emails_enviados: [
+    { id: "em1", empresa_id: E1, destinatario: "lucas.ferreira@horizonte.exemplo", tipo: "lembrete_prazo", assunto: "Lembrete: o prazo de LGPD na prática termina em 3 dias", status: "enviado", erro: null, criado_em: iso(0.2) },
+    { id: "em2", empresa_id: E1, destinatario: "rafael.souza@horizonte.exemplo", tipo: "conclusao", assunto: "Parabéns! Você concluiu Atendimento ao cliente", status: "enviado", erro: null, criado_em: iso(1) },
+    { id: "em3", empresa_id: E1, destinatario: "carlos.lima@horizonte.exemplo", tipo: "novo_treinamento", assunto: "Novo treinamento disponível: Reforma Tributária", status: "enviado", erro: null, criado_em: iso(2) },
+  ],
+  registro_backups: [{ iniciado_em: iso(0.3), concluido_em: iso(0.29), sucesso: true, tamanho_bytes: 48_500_000, mensagem: null }],
 };
 
 const rpcs = {
   listar_usuarios_visiveis_admin: () => perfis.map((p) => ({ ...p, papel: usuario_roles.find((r) => r.usuario_id === p.id).role })),
   obter_config_sistema_publica: () => [{ nome_sistema: "Aprenda Mais", logo_sidebar_url: null, favicon_url: null, session_timeout_min: 30, logoff_on_close: false }],
   obter_avisos_popup_pendentes: () => [],
+  obter_politica_privacidade: () => [{
+    texto_md: null, versao: "1.0", atualizada_em: iso(30), controlador: "Aprenda Mais Tecnologia",
+    email_contato: "suporte@aprendamais.exemplo", encarregado_nome: "Marina Duarte",
+    encarregado_email: "privacidade@aprendamais.exemplo", nome_sistema: "Aprenda Mais",
+  }],
+  resumo_ciencia_politica: () => [{ versao: "1.0", total_pessoas: 8, com_ciencia: 6 }],
+  registrar_ciencia_politica: () => "1.0",
+  abrir_solicitacao_lgpd: () => "sl-nova",
+  exportar_meus_dados: () => ({ gerado_em: iso(0) }),
   pode_tentar_login: () => ({ permitido: true, restantes: 5 }),
   get_empresa_id_do_usuario: () => null,
   // Como no servidor real, o gabarito não vai junto das questões
@@ -204,7 +227,7 @@ function applyFilters(rows, params) {
 
 const SUPABASE_HOST = "fakesupa.local";
 
-async function instalarBackendFicticio(page, { logado = true, como = "master", avisos = false, prova = "aprovado" } = {}) {
+async function instalarBackendFicticio(page, { logado = true, como = "master", avisos = false, prova = "aprovado", semCiencia = false } = {}) {
   const session = makeSession(IDS[como]);
   if (logado) {
     await page.addInitScript((s) => {
@@ -275,7 +298,9 @@ async function instalarBackendFicticio(page, { logado = true, como = "master", a
       const table = p.split("/")[3];
       if (req.method() !== "GET" && req.method() !== "HEAD") return json(single ? {} : [], 201);
       if (!tables[table]) desconhecidos.add("tabela:" + table);
-      const rows = applyFilters(tables[table] || [], url.searchParams);
+      // semCiencia: mostra o aviso de privacidade (prints do guia de LGPD)
+      const base = semCiencia && table === "aceites_politica" ? [] : tables[table] || [];
+      const rows = applyFilters(base, url.searchParams);
       const range = { "content-range": `0-${Math.max(rows.length - 1, 0)}/${rows.length}` };
       if (req.method() === "HEAD")
         return route.fulfill({ status: 200, headers: { ...range, "access-control-allow-origin": "*", "access-control-expose-headers": "content-range" }, body: "" });

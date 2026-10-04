@@ -115,7 +115,7 @@ export function htmlParaTexto(html: string): string {
 
 /** Mantém uma conexão SMTP aberta durante a rotina e registra cada envio. */
 export class Carteiro {
-  private cliente: ReturnType<typeof nodemailer.createTransport> | null = null;
+  private cliente: nodemailer.Transporter | null = null;
   enviados = 0;
   falhas = 0;
 
@@ -125,7 +125,7 @@ export class Carteiro {
     return this.enviados + this.falhas >= this.limite;
   }
 
-  private conectar() {
+  private conectar(): nodemailer.Transporter {
     if (!this.cliente) {
       const c = this.config;
       this.cliente = nodemailer.createTransport({

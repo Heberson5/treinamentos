@@ -66,6 +66,7 @@ const defaultMenuItems: MenuItemConfig[] = [
   { id: "analytics", title: "Analytics", url: "/admin/analytics", icon: "BarChart3", visible: true, order: 11, section: "admin" },
   { id: "permissoes", title: "Permissões", url: "/admin/permissoes", icon: "Shield", visible: true, order: 12, section: "admin" },
   { id: "configuracoes", title: "Configurações", url: "/admin/configuracoes", icon: "Settings", visible: true, order: 13, section: "admin" },
+  { id: "privacidade", title: "Privacidade (LGPD)", url: "/admin/privacidade", icon: "ShieldCheck", visible: true, order: 14, section: "admin" },
   { id: "landing-page", title: "Editor Landing Page", url: "/admin/landing-page", icon: "Palette", visible: true, order: 1, section: "master" },
   { id: "financeiro", title: "Financeiro", url: "/admin/financeiro", icon: "DollarSign", visible: true, order: 2, section: "master" },
   { id: "arquitetura", title: "Arquitetura do Sistema", url: "/admin/arquitetura", icon: "Settings2", visible: true, order: 3, section: "master" },

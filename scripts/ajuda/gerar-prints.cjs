@@ -103,6 +103,7 @@ async function capturar(browser, item, conversor) {
     como: item.como === "deslogado" ? "usuario" : item.como,
     avisos: !!item.avisos,
     prova: item.prova || "aprovado",
+    semCiencia: !!item.semCiencia,
   })
   // Relógio controlável (ex.: avançar o tempo mínimo de estudo sem esperar)
   if (item.relogio) await page.clock.install()

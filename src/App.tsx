@@ -48,6 +48,9 @@ const Categorias = lazy(() => import("./pages/admin/Categorias"));
 const ArquiteturaSistema = lazy(() => import("./pages/admin/ArquiteturaSistema"));
 const AvisosPopup = lazy(() => import("./pages/admin/AvisosPopup"));
 const Ajuda = lazy(() => import("./pages/Ajuda"));
+const Privacidade = lazy(() => import("./pages/Privacidade"));
+const MeusDados = lazy(() => import("./pages/MeusDados"));
+const PrivacidadeLGPD = lazy(() => import("./pages/admin/PrivacidadeLGPD"));
 const AjudaGuia = lazy(() => import("./pages/AjudaGuia"));
 
 const queryClient = new QueryClient({
@@ -124,6 +127,7 @@ function AppContent() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/termos-de-uso" element={<TermosDeUso />} />
           <Route path="/sobre-nos" element={<SobreNos />} />
+          <Route path="/privacidade" element={<Privacidade />} />
           <Route path="*" element={<Index />} />
         </Routes>
       </Suspense>
@@ -150,6 +154,9 @@ function AppContent() {
         <Route path="/executar-treinamento/:id" element={<ExecutarTreinamento />} />
         <Route path="/calendario" element={<Calendario />} />
         <Route path="/ajuda" element={<Ajuda />} />
+        <Route path="/privacidade" element={<Privacidade />} />
+        <Route path="/meus-dados" element={<MeusDados />} />
+        <Route path="/admin/privacidade" element={isAdminOrMaster ? <PrivacidadeLGPD /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/ajuda/:guiaId" element={<AjudaGuia />} />
 
         {/* Rotas para admin/instrutor/master */}

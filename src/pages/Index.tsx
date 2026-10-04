@@ -612,6 +612,9 @@ export default function Index() {
                 <Link to="/termos-de-uso" className="block text-muted-foreground hover:text-foreground transition-colors">
                   Termos de Uso
                 </Link>
+                <Link to="/privacidade" className="block text-muted-foreground hover:text-foreground transition-colors">
+                  Política de Privacidade
+                </Link>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client"
 export const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck,
 }
 
 interface MenuItemConfig {
@@ -58,6 +58,7 @@ export const defaultAdminItems = [
   { id: "departamentos", title: "Departamentos", url: "/admin/departamentos", icon: "Building2", roles: ["master", "admin"] },
   { id: "categorias", title: "Categorias", url: "/admin/categorias", icon: "Tag", roles: ["master", "admin"] },
   { id: "avisos-popup", title: "Avisos & Pop-ups", url: "/admin/avisos-popup", icon: "Megaphone", roles: ["master", "admin"] },
+  { id: "privacidade", title: "Privacidade (LGPD)", url: "/admin/privacidade", icon: "ShieldCheck", roles: ["master", "admin"] },
   { id: "empresas", title: "Empresas", url: "/admin/empresas", icon: "Building2", roles: ["master"] },
   { id: "planos", title: "Planos", url: "/admin/planos", icon: "CreditCard", roles: ["master"] },
   { id: "integracoes", title: "Integrações", url: "/admin/integracoes", icon: "Zap", roles: ["master", "admin"] },
@@ -91,6 +92,7 @@ const GROUP_BY_URL: Record<string, NavGroupId> = {
   "/admin/departamentos": "organizacao",
   "/admin/cargos": "organizacao",
   "/admin/categorias": "organizacao",
+  "/admin/privacidade": "organizacao",
   "/admin/planos": "sistema",
   "/admin/integracoes": "sistema",
   "/admin/permissoes": "sistema",
@@ -207,6 +209,8 @@ export function useBreadcrumbs(pathname: string): string[] {
   return useMemo(() => {
     if (pathname === AJUDA_URL) return [helpItem?.title || "Ajuda"]
     if (pathname.startsWith(AJUDA_URL + "/")) return [helpItem?.title || "Ajuda", "Guia"]
+    if (pathname === "/meus-dados") return ["Meus dados e privacidade"]
+    if (pathname === "/privacidade") return ["Política de Privacidade"]
     const extra: Array<[RegExp, string, string]> = [
       [/^\/executar-treinamento\//, "/meus-treinamentos", "Estudo"],
       [/^\/treinamento\//, "/catalogo", "Detalhes"],

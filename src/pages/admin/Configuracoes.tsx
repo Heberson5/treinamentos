@@ -10,12 +10,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel,
 } from "@/components/ui/select"
 import { TabsContent } from "@/components/ui/tabs"
+import { politicaPadrao, proximaVersao } from "@/content/lgpd/politica-padrao"
+import { renderSafeMarkdown } from "@/lib/markdown"
 import { PageHeader } from "@/components/layout/page-header"
 import {
   SettingsTabs, SettingsSection, SettingRow, SettingList, Field, InfoNote, StatusPill, type Tom,
 } from "@/components/layout/settings"
 import {
-  Save, Mail, Bell, Shield, Database, Building2, Send, RotateCcw,
+  Save, Mail, Bell, Shield, Database, Building2, Send, RotateCcw, ShieldCheck,
   Download, RefreshCw, AlertTriangle, FileText, Search,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -169,6 +171,7 @@ const COLUNAS_CONFIG = [
   "smtp_tls", "email_remetente", "email_template_html", "notificacoes_email", "notificacoes_push",
   "notificacoes_conclusao", "notificacoes_lembrete", "senha_min_length", "senha_requer_maiuscula",
   "senha_requer_numero", "senha_requer_especial",
+  "encarregado_nome", "encarregado_email", "politica_privacidade_md", "politica_versao", "politica_atualizada_em",
 ].join(", ")
 
 const todayIso = () => new Date().toISOString().split("T")[0]
@@ -180,6 +183,10 @@ export default function Configuracoes() {
   const [loading, setLoading] = useState(false)
   const [testingEmail, setTestingEmail] = useState(false)
   const [auditSearch, setAuditSearch] = useState("")
+  // Privacidade (LGPD)
+  const [privacidade, setPrivacidade] = useState({ encarregadoNome: "", encarregadoEmail: "", texto: "", versao: "1.0", atualizadaEm: "" })
+  const [novaVersao, setNovaVersao] = useState(false)
+  const [previaPolitica, setPreviaPolitica] = useState(false)
   const [auditDataInicio, setAuditDataInicio] = useState<string>(todayIso())
   const [auditDataFim, setAuditDataFim] = useState<string>(todayIso())
 
@@ -235,6 +242,13 @@ export default function Configuracoes() {
 
   useEffect(() => {
     if (!configData) return
+    setPrivacidade({
+      encarregadoNome: configData.encarregado_nome || "",
+      encarregadoEmail: configData.encarregado_email || "",
+      texto: configData.politica_privacidade_md || "",
+      versao: configData.politica_versao || "1.0",
+      atualizadaEm: configData.politica_atualizada_em || "",
+    })
     setConfig(prev => ({
       ...prev,
       nomeSistema: configData.nome_sistema || "Portal Treinamentos",
@@ -329,6 +343,41 @@ export default function Configuracoes() {
     } else {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
     }
+  }
+
+  const salvarPrivacidade = async () => {
+    if (user?.role !== "master") return
+    const email = privacidade.encarregadoEmail.trim()
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "E-mail do encarregado inválido", variant: "destructive" })
+      return
+    }
+    const versao = novaVersao ? proximaVersao(privacidade.versao) : privacidade.versao
+    setLoading(true)
+    const { error } = await supabase
+      .from("configuracoes_sistema" as any)
+      .update({
+        encarregado_nome: privacidade.encarregadoNome.trim() || null,
+        encarregado_email: email || null,
+        politica_privacidade_md: privacidade.texto.trim() || null,
+        politica_versao: versao,
+        ...(novaVersao ? { politica_atualizada_em: new Date().toISOString() } : {}),
+        atualizado_em: new Date().toISOString(),
+      } as any)
+      .not("id", "is", null)
+    setLoading(false)
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+      return
+    }
+    setNovaVersao(false)
+    queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
+    queryClient.invalidateQueries({ queryKey: ["politica-privacidade"] })
+    toast({
+      title: "Privacidade salva",
+      description: novaVersao ? `Versão ${versao} publicada. As pessoas verão o aviso no próximo acesso.` : "Dados atualizados.",
+    })
+    await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: "privacidade", descricao: novaVersao ? `Publicou a política de privacidade versão ${versao}` : "Atualizou dados de privacidade" })
   }
 
   const handleSave = async (categoria: string) => {
@@ -486,6 +535,7 @@ export default function Configuracoes() {
           { value: "seguranca", label: "Segurança", icon: Shield, hint: "Senhas e sessão" },
           { value: "auditoria", label: "Auditoria", icon: FileText, hint: "Histórico de ações" },
           { value: "backup", label: "Backup", icon: Database, hint: "Cópias dos dados" },
+          { value: "privacidade", label: "Privacidade", icon: ShieldCheck, hint: "LGPD e encarregado" },
         ]}
       >
         {/* Geral */}
@@ -854,6 +904,90 @@ export default function Configuracoes() {
             <InfoNote tom="alerta" icon={AlertTriangle}>
               A restauração substitui os dados atuais. Por segurança, ela é feita pelo suporte técnico diretamente no servidor, a partir dos
               backups automáticos. Gere uma cópia nova antes de pedir a restauração.
+            </InfoNote>
+          </SettingsSection>
+        </TabsContent>
+        {/* Privacidade (LGPD) */}
+        <TabsContent value="privacidade" className="mt-0 space-y-6">
+          <SettingsSection
+            title="Encarregado pelo tratamento de dados (DPO)"
+            description="Aparece na Política de Privacidade e em Meus dados e privacidade como canal para os titulares."
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Nome do encarregado" htmlFor="dpo-nome">
+                <Input id="dpo-nome" value={privacidade.encarregadoNome} onChange={(e) => setPrivacidade({ ...privacidade, encarregadoNome: e.target.value })} disabled={somenteLeitura} />
+              </Field>
+              <Field label="E-mail do encarregado" htmlFor="dpo-email">
+                <Input id="dpo-email" type="email" value={privacidade.encarregadoEmail} onChange={(e) => setPrivacidade({ ...privacidade, encarregadoEmail: e.target.value })} placeholder="privacidade@suaempresa.com.br" disabled={somenteLeitura} />
+              </Field>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            title="Política de Privacidade"
+            description={`Versão ${privacidade.versao}${privacidade.atualizadaEm ? ` · publicada em ${new Date(privacidade.atualizadaEm).toLocaleDateString("pt-BR")}` : ""}. Deixe em branco para usar o texto padrão.`}
+            actions={
+              <Button variant="outline" size="sm" asChild>
+                <a href="/privacidade" target="_blank" rel="noopener noreferrer">Ver página pública</a>
+              </Button>
+            }
+            footer={
+              <>
+                <label className="mr-auto flex items-center gap-2 text-sm">
+                  <Switch checked={novaVersao} onCheckedChange={setNovaVersao} disabled={somenteLeitura} />
+                  Publicar como nova versão ({proximaVersao(privacidade.versao)}) — todos verão o aviso de novo
+                </label>
+                <Button onClick={salvarPrivacidade} disabled={loading || somenteLeitura}>
+                  <Save className="mr-2 h-4 w-4" /> Salvar
+                </Button>
+              </>
+            }
+          >
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={somenteLeitura}
+                onClick={() => setPrivacidade({
+                  ...privacidade,
+                  texto: politicaPadrao({
+                    controlador: config.nomeEmpresa,
+                    nomeSistema: config.nomeSistema,
+                    emailContato: config.emailContato,
+                    encarregadoNome: privacidade.encarregadoNome,
+                    encarregadoEmail: privacidade.encarregadoEmail,
+                  }),
+                })}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" /> Começar do texto padrão
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setPreviaPolitica((v) => !v)}>
+                {previaPolitica ? "Editar texto" : "Pré-visualizar"}
+              </Button>
+            </div>
+            {previaPolitica ? (
+              <div
+                className="prose max-h-[520px] max-w-none overflow-y-auto rounded-lg border p-4 text-sm dark:prose-invert"
+                dangerouslySetInnerHTML={{
+                  __html: renderSafeMarkdown(privacidade.texto.trim() || politicaPadrao({
+                    controlador: config.nomeEmpresa, nomeSistema: config.nomeSistema, emailContato: config.emailContato,
+                    encarregadoNome: privacidade.encarregadoNome, encarregadoEmail: privacidade.encarregadoEmail,
+                  })),
+                }}
+              />
+            ) : (
+              <Textarea
+                value={privacidade.texto}
+                onChange={(e) => setPrivacidade({ ...privacidade, texto: e.target.value })}
+                rows={18}
+                spellCheck
+                placeholder="Em branco: a plataforma usa o texto padrão, que já descreve os dados tratados, as finalidades, os prazos e os direitos do titular."
+                className="font-mono text-xs leading-5"
+                disabled={somenteLeitura}
+              />
+            )}
+            <InfoNote>
+              Aceita títulos (#), negrito (**texto**), listas (-) e tabelas (| coluna |). Revise o texto com o seu jurídico antes de publicar.
             </InfoNote>
           </SettingsSection>
         </TabsContent>

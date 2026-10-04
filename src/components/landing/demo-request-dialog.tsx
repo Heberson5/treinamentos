@@ -123,6 +123,10 @@ export function DemoRequestDialog({ open, onOpenChange, defaultEmail }: DemoRequ
             "Solicitar Demonstração"
           )}
         </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Usamos esses dados só para retornar o seu pedido de demonstração. Veja a{" "}
+          <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Política de Privacidade</a>.
+        </p>
       </DialogContent>
     </Dialog>
   )

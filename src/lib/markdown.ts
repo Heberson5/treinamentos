@@ -48,6 +48,20 @@ export function renderSafeMarkdown(text: string): string {
     .replace(/^\* (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/^- (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal">$1</li>')
+
+  // Tabelas no formato | a | b | com linha separadora | --- | --- |
+  html = html.replace(/(^\|.*\|[ \t]*\n\|[ \t:|-]+\|[ \t]*\n(?:\|.*\|[ \t]*(?:\n|$))*)/gm, (bloco) => {
+    const linhas = bloco.trim().split("\n").filter((l) => !/^\|[\s:|-]+\|$/.test(l.trim()))
+    const celulas = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim())
+    const [cab, ...corpo] = linhas
+    const th = celulas(cab).map((c) => `<th class="border-b px-3 py-2 text-left font-semibold">${c}</th>`).join("")
+    const trs = corpo
+      .map((l) => `<tr>${celulas(l).map((c) => `<td class="border-b px-3 py-2 align-top">${c}</td>`).join("")}</tr>`)
+      .join("")
+    return `<div class="my-4 overflow-x-auto"><table class="w-full border-collapse text-sm"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>\n`
+  })
+
+  html = html
     .replace(/\n\n/g, '</p><p class="my-4">')
     .replace(/\n/g, "<br />");
 
@@ -59,6 +73,7 @@ export function renderSafeMarkdown(text: string): string {
       "h1", "h2", "h3", "h4", "h5", "h6",
       "ul", "ol", "li", "a", "span",
       "blockquote", "pre", "code", "hr",
+      "table", "thead", "tbody", "tr", "th", "td",
     ],
     ALLOWED_ATTR: ["href", "class", "target", "rel"],
     ALLOW_DATA_ATTR: false,

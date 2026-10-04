@@ -97,9 +97,9 @@ class Contexto {
   }
 
   rodapePreferencias(): string {
-    const href = this.link("/perfil");
+    const href = this.link("/meus-dados");
     return `<p style="font-size:12px;color:#6b7280;margin-top:28px">Você recebe este aviso porque participa de treinamentos em ${esc(this.config.nomeSistema)}.${
-      href ? ` Para deixar de receber, acesse <a href="${esc(href)}">Meu Perfil → Privacidade</a>.` : " Para deixar de receber, desative os avisos em Meu Perfil → Privacidade."
+      href ? ` Para deixar de receber, acesse <a href="${esc(href)}">Meus dados e privacidade</a>.` : " Para deixar de receber, desative os avisos em Meus dados e privacidade."
     }</p>`;
   }
 }
@@ -308,6 +308,7 @@ async function limpeza(admin: SupabaseClient) {
   await apagar("tentativas_login", "criado_em", dias(90));       // tentativas de login: 3 meses
   await apagar("lembretes_prazo_enviados", "enviado_em", dias(400));
   await apagar("auditoria", "criado_em", dias(730));             // auditoria: 2 anos
+  await apagar("leads_demonstracao", "criado_em", dias(365));    // pedidos de demonstração: 1 ano
   // Pedidos LGPD atendidos há mais de 5 anos (comprovação do atendimento)
   await apagar("solicitacoes_lgpd", "criado_em", dias(1825));
   return r;
