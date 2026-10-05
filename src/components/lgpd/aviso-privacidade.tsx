@@ -1,38 +1,42 @@
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
-import { usePoliticaPrivacidade } from "@/pages/Privacidade"
+import { usePoliticaPrivacidade } from "@/hooks/use-politica-privacidade"
 import { useToast } from "@/hooks/use-toast"
 
-// Aviso de privacidade (LGPD, art. 9º): no primeiro acesso e sempre que a
-// política muda de versão, a pessoa vê o resumo e registra a ciência.
-export function AvisoPrivacidade() {
+/**
+ * Situação da ciência da política atual para a pessoa logada.
+ * `jaCiente` fica indefinido enquanto carrega ou se o servidor falhar:
+ * um erro do servidor nunca deve ser tratado como "ainda não leu".
+ */
+export function useCienciaPolitica() {
   const { user } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { data: politica } = usePoliticaPrivacidade()
   const [salvando, setSalvando] = useState(false)
+  const chave = ["ciencia-politica", user?.id, politica?.versao]
 
-  const { data: jaCiente, isLoading } = useQuery({
-    queryKey: ["ciencia-politica", user?.id, politica?.versao],
+  const { data: jaCiente } = useQuery({
+    queryKey: chave,
     enabled: !!user?.id && !!politica?.versao,
+    retry: false,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("aceites_politica")
         .select("id")
         .eq("usuario_id", user!.id)
         .eq("versao", politica!.versao)
         .maybeSingle()
+      if (error) throw error
       return !!data
     },
   })
-
-  const aberto = !!user && !!politica && !isLoading && jaCiente === false
 
   const confirmar = async () => {
     setSalvando(true)
@@ -40,10 +44,25 @@ export function AvisoPrivacidade() {
     setSalvando(false)
     if (error) {
       toast({ title: "Não foi possível registrar", description: error.message, variant: "destructive" })
-      return
+      return false
     }
-    queryClient.setQueryData(["ciencia-politica", user?.id, politica?.versao], true)
+    queryClient.setQueryData(chave, true)
+    return true
   }
+
+  return { politica, jaCiente, salvando, confirmar }
+}
+
+// Aviso de privacidade (LGPD, art. 9º): no primeiro acesso e sempre que a
+// política muda de versão, a pessoa vê o resumo e registra a ciência.
+// Não aparece na própria página da política (para dar para ler) e não
+// trava o uso se o servidor estiver com problema.
+export function AvisoPrivacidade() {
+  const { user } = useAuth()
+  const { pathname } = useLocation()
+  const { politica, jaCiente, salvando, confirmar } = useCienciaPolitica()
+
+  const aberto = !!user && !!politica && jaCiente === false && pathname !== "/privacidade"
 
   return (
     <Dialog open={aberto}>
@@ -70,9 +89,9 @@ export function AvisoPrivacidade() {
         </div>
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-between">
           <Button asChild variant="ghost">
-            <Link to="/privacidade" target="_blank" rel="noopener noreferrer">Ler a política completa</Link>
+            <Link to="/privacidade">Ler a política completa</Link>
           </Button>
-          <Button onClick={confirmar} disabled={salvando}>
+          <Button onClick={() => void confirmar()} disabled={salvando}>
             {salvando ? "Registrando..." : "Li e estou ciente"}
           </Button>
         </div>

@@ -58,6 +58,15 @@ teste("Aviso de privacidade aparece até registrar ciência", { como: "usuario",
   await dialogo.getByRole("button", { name: "Li e estou ciente" }).click()
 })
 
+teste("Aviso de privacidade deixa ler a política completa e confirmar nela", { como: "usuario", url: "/meus-treinamentos", semCiencia: true }, async (p) => {
+  await p.getByRole("dialog").getByRole("link", { name: "Ler a política completa" }).click()
+  await p.waitForURL("**/privacidade")
+  await p.getByRole("heading", { name: "Política de Privacidade" }).first().waitFor()
+  assert.equal(await p.getByRole("dialog").count(), 0, "o aviso não pode cobrir a política")
+  await p.getByRole("button", { name: "Li e estou ciente" }).click()
+  await p.getByRole("button", { name: "Li e estou ciente" }).waitFor({ state: "detached" })
+})
+
 teste("Política de Privacidade é pública", { como: "deslogado", url: "/privacidade" }, async (p) => {
   await p.getByRole("heading", { name: "Política de Privacidade" }).first().waitFor()
 })
