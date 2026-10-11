@@ -4,11 +4,19 @@
 // Só a chave de serviço (que fica apenas no servidor) pode disparar.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import {
-  botao, Carteiro, carregarConfigEmail, corsHeaders, esc, iguaisSeguro, json, smtpConfigurado,
+  Carteiro, carregarConfigEmail, corsHeaders, iguaisSeguro, json, smtpConfigurado,
   type ConfigEmail,
 } from "../_shared/email.ts";
+import {
+  alertaServidor, conclusao, lembretePrazo, novoTreinamento, relatorioMensal as modeloRelatorioMensal,
+} from "../_shared/modelos-email.ts";
 
 const FUSO = "America/Sao_Paulo";
+
+/** Dados que os modelos de e-mail precisam da configuração (moldura, nome, endereço). */
+function modeloCfg(c: ConfigEmail) {
+  return { modeloHtml: c.modeloHtml, nomeSistema: c.nomeSistema, nomeEmpresa: c.nomeEmpresa, urlPlataforma: c.urlPlataforma };
+}
 
 /** Data de hoje (aaaa-mm-dd) no fuso de Brasília. */
 function hojeBR(base = new Date()): string {
@@ -96,12 +104,6 @@ class Contexto {
     return this.config.urlPlataforma ? this.config.urlPlataforma + caminho : "";
   }
 
-  rodapePreferencias(): string {
-    const href = this.link("/meus-dados");
-    return `<p style="font-size:12px;color:#6b7280;margin-top:28px">Você recebe este aviso porque participa de treinamentos em ${esc(this.config.nomeSistema)}.${
-      href ? ` Para deixar de receber, acesse <a href="${esc(href)}">Meus dados e privacidade</a>.` : " Para deixar de receber, desative os avisos em Meus dados e privacidade."
-    }</p>`;
-  }
 }
 
 // ------------------------------------------------------------------
@@ -133,13 +135,13 @@ async function notificacoes(ctx: Contexto) {
     for (const [pessoaId, lista] of porPessoa) {
       if (carteiro.esgotado) break;
       const p = ctx.pessoas.get(pessoaId)!;
-      const itens = lista.slice(0, 10).map((t) =>
-        `<li style="margin:6px 0"><strong>${esc(t.titulo)}</strong>${t.obrigatorio ? " (obrigatório)" : ""}${t.data_limite ? ` — prazo ${esc(dataBR(t.data_limite))}` : ""}</li>`).join("");
-      const mais = lista.length > 10 ? `<p>E mais ${lista.length - 10} treinamento(s).</p>` : "";
-      const assunto = lista.length === 1 ? `Novo treinamento disponível: ${lista[0].titulo}` : `${lista.length} novos treinamentos disponíveis`;
+      const modelo = novoTreinamento(modeloCfg(config), {
+        nome: p.nome,
+        treinamentos: lista.map((t) => ({ titulo: t.titulo, obrigatorio: !!t.obrigatorio, prazo: t.data_limite ? dataBR(t.data_limite) : null })),
+      });
       const ok = await carteiro.enviar({
-        para: p.email, tipo: "novo_treinamento", empresaId: p.empresa_id, usuarioId: p.id, assunto,
-        corpoHtml: `<p>Olá, ${esc(p.nome.split(" ")[0])}!</p><p>${lista.length === 1 ? "Um novo treinamento já está disponível" : "Novos treinamentos já estão disponíveis"} para você:</p><ul>${itens}</ul>${mais}${botao("Ver meus treinamentos", ctx.link("/meus-treinamentos"))}${ctx.rodapePreferencias()}`,
+        para: p.email, tipo: "novo_treinamento", empresaId: p.empresa_id, usuarioId: p.id,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
       });
       if (ok) resumo.avisos_novos++;
     }
@@ -165,10 +167,10 @@ async function notificacoes(ctx: Contexto) {
       const p = ctx.pessoas.get(c.usuario_id);
       if (!config.avisosLigados || !config.conclusaoLigada || !ctx.podeAvisar(p) || !ctx.pref(p.empresa_id).conclusao) continue;
       const t = titulo.get(c.treinamento_id) || "treinamento";
+      const modelo = conclusao(modeloCfg(config), { nome: p.nome, treinamento: t });
       const ok = await carteiro.enviar({
         para: p.email, tipo: "conclusao", empresaId: p.empresa_id, usuarioId: p.id,
-        assunto: `Parabéns! Você concluiu ${t}`,
-        corpoHtml: `<p>Olá, ${esc(p.nome.split(" ")[0])}!</p><p>Você concluiu o treinamento <strong>${esc(t)}</strong>. Parabéns pela dedicação!</p><p>O seu certificado já está disponível em <strong>Meus Treinamentos → Concluídos</strong>.</p>${botao("Abrir meus certificados", ctx.link("/meus-treinamentos"))}${ctx.rodapePreferencias()}`,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
       });
       if (ok) resumo.conclusoes++;
     }
@@ -214,11 +216,10 @@ async function lembretes(ctx: Contexto) {
       const { error } = await admin.from("lembretes_prazo_enviados").insert({ usuario_id: p.id, treinamento_id: t.id, marco });
       if (error) continue;
 
-      const quando = marco === "vencido" ? "venceu ontem" : marco === "hoje" ? "termina hoje" : dias === 1 ? "termina amanhã" : `termina em ${dias} dias`;
+      const modelo = lembretePrazo(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, prazo: dataBR(t.data_limite), dias });
       const ok = await carteiro.enviar({
         para: p.email, tipo: "lembrete_prazo", empresaId: p.empresa_id, usuarioId: p.id,
-        assunto: marco === "vencido" ? `Prazo vencido: ${t.titulo}` : `Lembrete: o prazo de ${t.titulo} ${quando}`,
-        corpoHtml: `<p>Olá, ${esc(p.nome.split(" ")[0])}!</p><p>O prazo do treinamento <strong>${esc(t.titulo)}</strong> ${esc(quando)} (${esc(dataBR(t.data_limite))}).</p><p>${marco === "vencido" ? "Conclua assim que possível e, se precisar, fale com o administrador da sua empresa." : "Reserve um tempo para concluir antes do prazo."}</p>${botao("Continuar treinamento", ctx.link(`/executar-treinamento/${t.id}`))}${ctx.rodapePreferencias()}`,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
       });
       if (ok) resumo.lembretes++;
     }
@@ -267,26 +268,21 @@ async function relatorioMensal(ctx: Contexto, forcar: boolean) {
       }
     }
     const top = [...porTreino.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
-    let topHtml = "";
+    let maisConcluidos: Array<{ titulo: string; total: number }> = [];
     if (top.length) {
       const { data: tt } = await admin.from("treinamentos").select("id, titulo").in("id", top.map(([id]) => id));
       const nome = new Map((tt || []).map((t: any) => [t.id, t.titulo]));
-      topHtml = `<p style="margin-top:20px"><strong>Mais concluídos</strong></p><ol>${top.map(([id, n]) => `<li>${esc(nome.get(id) || "Treinamento")} — ${n}</li>`).join("")}</ol>`;
+      maisConcluidos = top.map(([id, total]) => ({ titulo: nome.get(id) || "Treinamento", total }));
     }
-    const linha = (rotulo: string, valor: number | string) =>
-      `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${esc(rotulo)}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600">${esc(valor)}</td></tr>`;
-    const corpo = `<p>Olá!</p><p>Este é o resumo de <strong>${esc(nomeMes)}</strong> da empresa <strong>${esc(nomeEmpresa)}</strong>.</p>
-      <table role="presentation" style="border-collapse:collapse;width:100%;max-width:480px">
-        ${linha("Colaboradores ativos", pessoasEmpresa.length)}
-        ${linha("Treinamentos iniciados no mês", iniciados)}
-        ${linha("Treinamentos concluídos no mês", concluidos)}
-      </table>${topHtml}${botao("Ver relatórios completos", ctx.link("/relatorios"))}`;
+    const modelo = modeloRelatorioMensal(modeloCfg(config), {
+      nomeMes, nomeEmpresa, colaboradores: pessoasEmpresa.length, iniciados, concluidos, maisConcluidos,
+    });
 
     for (const a of admins) {
       if (carteiro.esgotado) break;
       const ok = await carteiro.enviar({
         para: a.email, tipo: "relatorio_mensal", empresaId, usuarioId: a.id,
-        assunto: `Resumo de ${nomeMes} — ${nomeEmpresa}`, corpoHtml: corpo,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
       });
       if (ok) resumo.relatorios++;
     }
@@ -328,6 +324,7 @@ async function alerta(admin: SupabaseClient, body: Record<string, unknown>) {
   if (ids.length === 0) return { enviados: 0 };
   const { data: masters } = await admin.from("perfis").select("id, nome, email, ativo").in("id", ids);
   const carteiro = new Carteiro(config, admin, 10);
+  const modelo = alertaServidor(modeloCfg(config), { assunto, linhas });
   try {
     for (const m of (masters || []) as any[]) {
       if (m.ativo === false) continue;
@@ -335,8 +332,8 @@ async function alerta(admin: SupabaseClient, body: Record<string, unknown>) {
         para: m.email,
         tipo: "alerta_servidor",
         usuarioId: m.id,
-        assunto: `[${config.nomeSistema}] ${assunto}`,
-        corpoHtml: `<p>O monitoramento do servidor encontrou o seguinte:</p><ul>${linhas.map((l) => `<li style="margin:4px 0">${esc(l)}</li>`).join("")}</ul><p style="color:#64748b;font-size:13px">Enviado automaticamente pelo script de monitoramento da VPS.</p>`,
+        assunto: modelo.assunto,
+        corpoHtml: modelo.corpoHtml,
       });
     }
   } finally {

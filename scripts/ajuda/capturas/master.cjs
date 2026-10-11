@@ -224,4 +224,23 @@ module.exports = [
     margem: 16,
   },
   { chave: "mast-config-privacidade", como: M, url: "/admin/configuracoes", viewport: { width: 1366, height: 1100 }, antes: aba(/Privacidade/) },
+  {
+    chave: "mast-config-email-previa",
+    como: M,
+    url: "/admin/configuracoes",
+    viewport: { width: 1366, height: 1000 },
+    antes: async (p) => {
+      await aba("Email")(p)
+      await p.getByRole("navigation", { name: "Modelos de e-mail" }).getByRole("button", { name: "Lembrete de prazo" }).click()
+      await p.getByRole("button", { name: "Termina amanhã" }).click()
+      await p.getByText("Pré-visualização dos e-mails").first().scrollIntoViewIfNeeded()
+      await p.waitForTimeout(700)
+    },
+    recorte: (p) => p.getByText("Pré-visualização dos e-mails").first().locator("xpath=ancestor::div[contains(@class,'overflow-hidden')][1]"),
+    marcas: [
+      { n: 1, alvo: (p) => p.getByRole("navigation", { name: "Modelos de e-mail" }) },
+      { n: 2, alvo: (p) => p.getByRole("group", { name: "Situação do e-mail" }) },
+      { n: 3, alvo: (p) => p.getByRole("group", { name: "Tamanho da tela" }) },
+    ],
+  },
 ]

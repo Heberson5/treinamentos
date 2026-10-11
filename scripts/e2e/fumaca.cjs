@@ -117,6 +117,26 @@ teste("Fora da avaliação, trocar de aba não recarrega a página", { como: "us
   assert.equal(await p.evaluate(() => window.__semRecarga === true), true, "a página foi recarregada")
 })
 
+teste("Cada modelo de e-mail tem a sua pré-visualização", { como: "master", url: "/admin/configuracoes" }, async (p) => {
+  await p.getByRole("tab", { name: "Email" }).click()
+  const lista = p.getByRole("navigation", { name: "Modelos de e-mail" })
+  const modelos = ["Novo treinamento", "Conclusão", "Lembrete de prazo", "Relatório mensal", "Pagamento confirmado", "Alerta do servidor", "E-mail de teste"]
+  const assuntos = new Set()
+  for (const nome of modelos) {
+    await lista.getByRole("button", { name: nome }).click()
+    const assunto = await p.getByTestId("assunto-previa").innerText()
+    assert.ok(assunto.length > 5, `${nome}: sem assunto`)
+    assuntos.add(assunto)
+    const html = await p.locator("iframe[title^='Pré-visualização']").getAttribute("srcdoc")
+    assert.ok(html && html.includes("<p>"), `${nome}: sem corpo`)
+  }
+  assert.equal(assuntos.size, modelos.length, "cada modelo deve ter um assunto diferente")
+  // Situações do lembrete de prazo
+  await lista.getByRole("button", { name: "Lembrete de prazo" }).click()
+  await p.getByRole("button", { name: "Prazo vencido" }).click()
+  assert.match(await p.getByTestId("assunto-previa").innerText(), /^Prazo vencido:/)
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)

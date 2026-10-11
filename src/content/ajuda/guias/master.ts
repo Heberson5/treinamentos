@@ -185,6 +185,14 @@ export const guiasMaster: Guia[] = [
         aviso: "A senha fica guardada só no servidor: depois de salva, ela não aparece mais na tela (o campo mostra “Senha cadastrada”). Para trocar, digite a nova.",
       },
       {
+        titulo: "Veja como cada e-mail fica",
+        texto:
+          "Logo abaixo do modelo, **Pré-visualização dos e-mails** mostra cada tipo de mensagem da plataforma — novo treinamento, conclusão, lembrete de prazo, relatório mensal, pagamento confirmado, alerta do servidor e teste — com a moldura que você está editando. Escolha o tipo na lista, a situação (por exemplo, “Prazo vencido”) e alterne entre **Computador** e **Celular**. Cada tipo mostra quando é enviado e quem recebe.",
+        print: "mast-config-email-previa",
+        pontos: ["Tipo de e-mail: cada um tem a sua pré-visualização.", "Situação do mesmo e-mail (ex.: faltam 7 dias, prazo vencido).", "Computador ou celular."],
+        dica: "**Enviar este exemplo para mim** manda aquele e-mail para a sua caixa de entrada, usando a moldura já salva. Se os botões não aparecerem, preencha o **Endereço da plataforma** na aba Geral.",
+      },
+      {
         titulo: "Escolha as notificações",
         texto: "Na aba **Notificações**, ligue ou desligue, para toda a plataforma, os e-mails, as notificações push, o aviso de conclusão e os lembretes de prazo. O que cada empresa recebe é ajustado pelo administrador dela em **Integrações → Notificações**.",
         print: "mast-config-notificacoes",

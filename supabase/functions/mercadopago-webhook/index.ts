@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0"
-import { Carteiro, botao, carregarConfigEmail, esc, smtpConfigurado } from "../_shared/email.ts"
+import { Carteiro, carregarConfigEmail, smtpConfigurado } from "../_shared/email.ts"
+import { pagamento } from "../_shared/modelos-email.ts"
 
 /** Avisa os administradores da empresa que o pagamento foi confirmado. */
 async function avisarPagamento(supabase: SupabaseClient, empresaId: string, valor: number, anual?: boolean) {
@@ -20,13 +21,17 @@ async function avisarPagamento(supabase: SupabaseClient, empresaId: string, valo
     const carteiro = new Carteiro(config, supabase, 20)
     for (const p of (pessoas || []) as any[]) {
       if (!admins.has(p.id) || p.ativo === false) continue
+      const modelo = pagamento(
+        { modeloHtml: config.modeloHtml, nomeSistema: config.nomeSistema, nomeEmpresa: config.nomeEmpresa, urlPlataforma: config.urlPlataforma },
+        { nome: String(p.nome || ''), nomeEmpresa, valor: valorBR, anual: !!anual },
+      )
       await carteiro.enviar({
         para: p.email,
         tipo: 'pagamento',
         empresaId,
         usuarioId: p.id,
-        assunto: `Pagamento confirmado — ${nomeEmpresa}`,
-        corpoHtml: `<p>Olá, ${esc(String(p.nome || '').split(' ')[0])}!</p><p>Recebemos o pagamento de <strong>${esc(valorBR)}</strong> (plano ${anual ? 'anual' : 'mensal'}) da empresa <strong>${esc(nomeEmpresa)}</strong>. O acesso à plataforma está liberado.</p><p>Para entrar, use o seu e-mail e a senha que você cadastrou.</p>${botao('Acessar a plataforma', config.urlPlataforma ? `${config.urlPlataforma}/login` : '')}`,
+        assunto: modelo.assunto,
+        corpoHtml: modelo.corpoHtml,
       })
     }
     await carteiro.fechar()

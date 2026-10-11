@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel,
 } from "@/components/ui/select"
 import { TabsContent } from "@/components/ui/tabs"
+import { PreviaEmails } from "@/components/email/previa-emails"
 import { politicaPadrao, proximaVersao } from "@/content/lgpd/politica-padrao"
 import { renderSafeMarkdown } from "@/lib/markdown"
 import { PageHeader } from "@/components/layout/page-header"
@@ -448,10 +449,10 @@ export default function Configuracoes() {
   }
 
   // Envia um e-mail real pelo SMTP salvo (função send-email no servidor)
-  const handleTestEmail = async () => {
+  const handleTestEmail = async (corpo: { modelo?: string; variante?: string } = {}) => {
     setTestingEmail(true)
     try {
-      const { data, error } = await supabase.functions.invoke("send-email", { body: { tipo: "teste" } })
+      const { data, error } = await supabase.functions.invoke("send-email", { body: { tipo: "teste", ...corpo } })
       if (error) {
         let mensagem = error.message
         try {
@@ -460,7 +461,7 @@ export default function Configuracoes() {
         } catch { /* mantém a mensagem padrão */ }
         throw new Error(mensagem)
       }
-      toast({ title: "E-mail de teste enviado!", description: `Verifique a caixa de entrada de ${(data as any)?.para || "seu e-mail"}.` })
+      toast({ title: corpo.modelo ? "Exemplo enviado!" : "E-mail de teste enviado!", description: `Verifique a caixa de entrada de ${(data as any)?.para || "seu e-mail"}.` })
     } catch (e) {
       toast({ title: "Não foi possível enviar", description: e instanceof Error ? e.message : String(e), variant: "destructive" })
     } finally {
@@ -603,7 +604,7 @@ export default function Configuracoes() {
             description="Usado nos avisos, lembretes e relatórios automáticos. Salve antes de testar: o teste vai para o seu e-mail."
             footer={
               <>
-                <Button variant="outline" onClick={handleTestEmail} disabled={testingEmail || somenteLeitura} className="mr-auto">
+                <Button variant="outline" onClick={() => handleTestEmail()} disabled={testingEmail || somenteLeitura} className="mr-auto">
                   <Send className="mr-2 h-4 w-4" /> {testingEmail ? "Enviando..." : "Testar Email"}
                 </Button>
                 <Button onClick={() => handleSave("email")} disabled={loading || somenteLeitura}>
@@ -677,6 +678,20 @@ export default function Configuracoes() {
               rows={16}
               spellCheck={false}
               className="bg-muted/30 font-mono text-xs leading-5"
+            />
+          </SettingsSection>
+        
+          <SettingsSection
+            title="Pré-visualização dos e-mails"
+            description="Cada tipo de e-mail da plataforma, como a pessoa vai ver, com a moldura acima. Escolha o tipo e a situação."
+          >
+            <PreviaEmails
+              modeloHtml={config.emailTemplateHtml}
+              nomeSistema={config.nomeSistema}
+              nomeEmpresa={config.nomeEmpresa}
+              urlPlataforma={config.urlPlataforma}
+              onEnviarExemplo={somenteLeitura ? undefined : (modelo, variante) => handleTestEmail({ modelo, variante })}
+              enviando={testingEmail}
             />
           </SettingsSection>
         </TabsContent>

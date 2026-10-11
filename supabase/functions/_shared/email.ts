@@ -4,6 +4,11 @@
 // @deno-types="npm:@types/nodemailer@6.4.17"
 import nodemailer from "npm:nodemailer@6.9.16";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { botao, esc, montarHtml } from "./modelos-email.ts";
+
+// O texto de cada e-mail fica em modelos-email.ts (também usado na tela de
+// pré-visualização); aqui só se reexportam as funções de uso comum.
+export { botao, esc, montarHtml };
 
 export interface ConfigEmail {
   host: string;
@@ -55,44 +60,8 @@ export function smtpConfigurado(c: ConfigEmail | null): c is ConfigEmail {
   return !!c && !!c.host && !!c.remetente;
 }
 
-/** Escapa texto para HTML (nomes, títulos — nunca confiar no conteúdo). */
-export function esc(texto: unknown): string {
-  return String(texto ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 export function emailValido(email: string): boolean {
   return /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(email) && email.length <= 254;
-}
-
-/** Botão de ação dentro do corpo do e-mail. */
-export function botao(texto: string, href: string): string {
-  if (!href) return "";
-  return `<p style="margin:24px 0"><a href="${esc(href)}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">${esc(texto)}</a></p>`;
-}
-
-/** Aplica o modelo HTML de Configurações (ou um simples) ao conteúdo. */
-export function montarHtml(c: ConfigEmail, corpoHtml: string, rodapeExtra = ""): string {
-  const ano = String(new Date().getFullYear());
-  const corpo = corpoHtml + rodapeExtra;
-  if (!c.modeloHtml.includes("{corpo}")) {
-    return `<!DOCTYPE html><html lang="pt-BR"><body style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.6;padding:16px"><div style="max-width:640px;margin:auto"><h2 style="margin:0 0 16px">${esc(c.nomeSistema)}</h2>${corpo}<hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0"><p style="font-size:12px;color:#6b7280">Mensagem automática de ${esc(c.nomeSistema)}. Não responda este e-mail.</p></div></body></html>`;
-  }
-  let html = c.modeloHtml;
-  // Redes sociais sem endereço cadastrado: remove o ícone
-  html = html.replace(/<a href="\{LINK_(WHATSAPP|INSTAGRAM|FACEBOOK|YOUTUBE|LINKEDIN)\}">[\s\S]*?<\/a>/g, "");
-  // Sem nenhuma rede social: some também o bloco "Siga-nos"
-  html = html.replace(/<div class="social">\s*<div class="social-title">[^<]*<\/div>\s*(<a href="\{LINK_SITE\}">[\s\S]*?<\/a>\s*)?<\/div>/g, "");
-  html = html
-    .replaceAll("{NOME_SISTEMA}", esc(c.nomeSistema))
-    .replaceAll("{NOME_EMPRESA}", esc(c.nomeEmpresa))
-    .replaceAll("{ANO}", ano)
-    .replaceAll("{LINK_SITE}", esc(c.urlPlataforma || "#"));
-  return html.replace("{corpo}", corpo);
 }
 
 /** Versão em texto simples (melhora a entrega e a leitura em leitores de tela). */
