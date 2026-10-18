@@ -357,4 +357,67 @@ export const guiasMaster: Guia[] = [
       },
     ],
   },
+
+  {
+    id: "master-erros-sistema",
+    papel: "master",
+    tema: "Sistema",
+    titulo: "Acompanhar os erros do sistema",
+    resumo: "Veja os erros em linguagem simples, o que fazer e envie o relatório ao suporte.",
+    icone: "Settings2",
+    minutos: 4,
+    rotas: ["/admin/erros"],
+    passos: [
+      {
+        titulo: "Veja o que aconteceu",
+        texto:
+          "Em **Sistema → Erros do Sistema**, cada erro aparece **agrupado** (o mesmo erro repetido vira um só, com a contagem de ocorrências, de pessoas e de empresas afetadas) e explicado em português: o que provavelmente significa e **o que fazer**.",
+      },
+      {
+        titulo: "Acompanhe e resolva",
+        texto:
+          "Marque cada erro como **Novo**, **Em análise** ou **Resolvido** e deixe uma anotação. Se um erro resolvido voltar a acontecer, ele é **reaberto** automaticamente. Use **Copiar relatório para o suporte** para enviar o resumo técnico sem expor dados pessoais: e-mails, CPF, endereços com parâmetros e chaves são removidos antes de gravar.",
+      },
+    ],
+  },
+
+  {
+    id: "master-notificacoes-push",
+    papel: "master",
+    tema: "Sistema",
+    titulo: "Ativar as notificações no aparelho (push)",
+    resumo: "Avisos no celular e no computador, sem serviço externo cadastrado.",
+    icone: "Smartphone",
+    minutos: 3,
+    passos: [
+      {
+        titulo: "Ative uma vez",
+        texto:
+          "Em **Configurações**, no quadro **Notificações push**, clique para ativar. O sistema cria sozinho, no seu servidor, o par de chaves de envio (uma única vez). Nenhuma conta externa é necessária.",
+      },
+      {
+        titulo: "Cada pessoa liga no próprio aparelho",
+        texto:
+          "Em **Meus dados e privacidade**, a pessoa ativa **Avisos neste aparelho**. No iPhone, é preciso antes **Adicionar à Tela de Início**. O quadro do Master mostra quantos aparelhos e pessoas estão inscritos.",
+        dica: "Os avisos push são de novos treinamentos, prazos e renovações, e seguem as mesmas regras dos e-mails.",
+      },
+    ],
+  },
+
+  {
+    id: "master-revisao-lgpd",
+    papel: "master",
+    tema: "Privacidade",
+    titulo: "Revisão semestral da LGPD",
+    resumo: "Registre a revisão da política e do inventário a cada 6 meses.",
+    icone: "ShieldCheck",
+    minutos: 2,
+    passos: [
+      {
+        titulo: "Receba o lembrete e revise",
+        texto:
+          "A cada 6 meses sem revisão, você recebe um e-mail (repetido a cada 30 dias até registrar). Abra **Organização → Privacidade (LGPD)**, confira a política e o **Inventário de dados pessoais** e clique em **Registrar revisão**.",
+      },
+    ],
+  },
 ]

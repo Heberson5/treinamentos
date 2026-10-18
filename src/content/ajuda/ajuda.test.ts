@@ -6,12 +6,12 @@ import { perguntasFrequentes } from "./perguntas"
 const manifesto = prints as unknown as Record<string, { w: number; h: number; marcas: { n: number }[] }>
 
 describe("Central de Ajuda — conteúdo", () => {
-  it("tem os 30 guias previstos", () => {
+  it("tem os guias previstos", () => {
     const porPapel = (p: string) => todosOsGuias.filter((g) => g.papel === p).length
-    expect(porPapel("usuario")).toBe(7)
+    expect(porPapel("usuario")).toBe(9)
     expect(porPapel("instrutor")).toBe(5)
-    expect(porPapel("admin")).toBe(10)
-    expect(porPapel("master")).toBe(8)
+    expect(porPapel("admin")).toBe(15)
+    expect(porPapel("master")).toBe(11)
   })
 
   it("não repete o id de nenhum guia", () => {

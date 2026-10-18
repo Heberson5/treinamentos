@@ -373,10 +373,161 @@ export const guiasAdministrador: Guia[] = [
         dica: "Para corrigir dados como cargo, departamento ou e-mail, edite o usuário em **Usuários** e depois conclua o pedido.",
       },
       {
+        titulo: "Consulte o inventário de dados pessoais",
+        texto:
+          "Mais abaixo, o **Inventário de dados pessoais** é montado automaticamente a partir do banco: para cada tipo de dado, mostra para que serve, a base legal, quais campos são pessoais, **quem consegue acessar**, quanto tempo fica guardado e como é eliminado, além dos serviços externos que recebem dados. Baixe em **CSV** ou **PDF** quando precisar apresentar à autoridade ou a um cliente.",
+        dica: "O Master recebe um lembrete a cada 6 meses para revisar a política e o inventário e registra a revisão no próprio quadro. Os administradores recebem avisos quando um pedido de titular está perto do prazo de 15 dias.",
+      },
+      {
         titulo: "Anonimize quem saiu da empresa",
         texto:
           "Em **Anonimizar um usuário**, busque a pessoa e confirme digitando **ANONIMIZAR**. O nome, o e-mail, o telefone e o histórico de contato são apagados, e a conta deixa de entrar. Os números de progresso continuam nos relatórios, sem identificar ninguém, e os certificados dela deixam de valer na validação.",
         aviso: "Não dá para desfazer. Antes, exporte os relatórios de que a empresa precisa guardar.",
+      },
+    ],
+  },
+
+  {
+    id: "admin-importar-usuarios",
+    papel: "admin",
+    tema: "Usuários",
+    titulo: "Importar vários usuários por planilha",
+    resumo: "Cadastre dezenas de pessoas de uma vez, conferindo tudo antes de criar.",
+    icone: "FileSpreadsheet",
+    minutos: 4,
+    passos: [
+      {
+        titulo: "Prepare a planilha",
+        texto:
+          "Monte um arquivo CSV ou Excel com as colunas **nome**, **email**, **departamento**, **cargo**, **papel** e **data_nascimento**. Só **nome** e **email** são obrigatórios. Se o departamento ou o cargo ainda não existir, ele é criado na importação.",
+        dica: "No Excel, use **Salvar como → CSV UTF-8** para os acentos saírem certos.",
+      },
+      {
+        titulo: "Envie e confira antes de criar",
+        texto:
+          "Em **Usuários**, clique em **Importar**, escolha a empresa e o arquivo. O sistema mostra **linha por linha** o que vai acontecer: quem será criado, quem já existe e quem tem problema (e-mail inválido, repetido ou papel desconhecido), com o motivo explicado para você corrigir na planilha.",
+        aviso: "Nada é criado enquanto você não confirmar. Linhas com problema ficam de fora e podem ser reenviadas depois de corrigidas.",
+      },
+      {
+        titulo: "Confirme e avise as pessoas",
+        texto:
+          "Ao confirmar, as contas são criadas e cada pessoa recebe o e-mail de primeiro acesso para definir a senha. O resultado mostra quantos foram criados e quais falharam.",
+      },
+    ],
+  },
+
+  {
+    id: "admin-regras-avaliacao",
+    papel: "admin",
+    tema: "Treinamentos",
+    titulo: "Regras da avaliação, sorteio e validade",
+    resumo: "Defina nota mínima, tempo, tentativas, perguntas sorteadas e quando o treinamento vence.",
+    icone: "ClipboardCheck",
+    minutos: 5,
+    passos: [
+      {
+        titulo: "Abra as regras do treinamento",
+        texto:
+          "Ao criar ou editar um treinamento com avaliação, use o quadro de regras. Ative **Avaliação obrigatória para concluir e emitir o certificado** e defina a **nota mínima para aprovar (0 a 10)**.",
+      },
+      {
+        titulo: "Limite tempo e tentativas",
+        texto:
+          "**Tempo limite** (0 = sem limite), **Máximo de tentativas** (0 = ilimitadas) e **Intervalo entre tentativas** em horas (0 = sem espera). Quem esgotar as tentativas precisa pedir a liberação ao administrador.",
+      },
+      {
+        titulo: "Sorteie as perguntas",
+        texto:
+          "Em **Perguntas por prova (sorteio)**, informe quantas perguntas cada pessoa recebe. Cada pessoa recebe um conjunto diferente do banco de questões, o que reduz a cópia entre colegas. Use 0 para aplicar todas.",
+      },
+      {
+        titulo: "Defina a validade",
+        texto:
+          "Em **Validade do treinamento (meses)**, informe quanto tempo o certificado vale (0 = não vence). A pessoa é avisada **30 e 7 dias antes**, no dia e depois do vencimento, e pode renovar. O certificado antigo continua válido como registro.",
+        dica: "O relatório **Vencimentos** lista quem está vencido ou perto de vencer.",
+      },
+    ],
+  },
+
+  {
+    id: "admin-modelo-certificado",
+    papel: "admin",
+    tema: "Treinamentos",
+    titulo: "Personalizar o modelo do certificado",
+    resumo: "Título, textos, assinatura, cor e QR Code, com pré-visualização na hora.",
+    icone: "Award",
+    minutos: 4,
+    rotas: ["/admin/certificado"],
+    passos: [
+      {
+        titulo: "Edite os textos e a assinatura",
+        texto:
+          "Em **Organização → Modelo do certificado**, altere o **título**, o texto **antes** e **depois do nome**, o **rodapé** e o nome e cargo de **quem assina**. A pré-visualização ao lado muda enquanto você digita.",
+      },
+      {
+        titulo: "Cor, logotipo e QR Code",
+        texto:
+          "Escolha a **cor de destaque** e envie o logotipo e a assinatura (PNG, JPG ou WebP). Mantenha ligado **Mostrar QR Code de validação** para que qualquer pessoa confira se o certificado é autêntico.",
+      },
+      {
+        titulo: "Salve",
+        texto: "O novo modelo vale para os próximos certificados. Os já emitidos continuam como foram gerados.",
+      },
+    ],
+  },
+
+  {
+    id: "admin-relatorios-avancados",
+    papel: "admin",
+    tema: "Relatórios",
+    titulo: "Satisfação, vencimentos, apresentação e exportação",
+    resumo: "NPS, validade dos certificados, qualidade das questões e a apresentação em PowerPoint para a diretoria.",
+    icone: "ChartColumnBig",
+    minutos: 6,
+    passos: [
+      {
+        titulo: "Satisfação (NPS)",
+        texto:
+          "Depois de concluir um treinamento, a pessoa dá uma nota de **0 a 10** e pode comentar. Em **Relatórios → Satisfação (NPS)** você vê o NPS geral, a distribuição das notas, o resultado por treinamento e por instrutor, a evolução mês a mês e os comentários **com o nome de quem respondeu**.",
+        pontos: ["**Promotores:** notas 9 e 10.", "**Neutros:** 7 e 8.", "**Detratores:** 0 a 6.", "**NPS** = % de promotores menos % de detratores."],
+      },
+      {
+        titulo: "Vencimentos e qualidade das questões",
+        texto:
+          "A aba **Vencimentos** lista quem está com o certificado vencido ou vencendo em 30 dias. A aba **Avaliações** mostra, para cada questão, quanto as pessoas acertam, ajudando a achar perguntas confusas ou fáceis demais.",
+      },
+      {
+        titulo: "Baixe a apresentação em PowerPoint",
+        texto:
+          "Clique em **Apresentação** no alto da tela de Relatórios. O sistema monta, no seu navegador, um arquivo **.pptx** com as cores da empresa: capa, resumo executivo, indicadores, evolução, departamentos, treinamentos em destaque, satisfação, validade dos certificados, recomendações e encerramento. Os gráficos são editáveis no PowerPoint e cada slide tem notas do apresentador.",
+        dica: "Ajuste o período no filtro antes de baixar: a apresentação usa o mesmo período e a mesma empresa da tela.",
+      },
+      {
+        titulo: "Exporte em CSV ou PDF",
+        texto: "Em **Exportar**, escolha **CSV (abre no Excel)** ou **PDF** para a aba que você está vendo.",
+      },
+    ],
+  },
+
+  {
+    id: "admin-emails-com-problema",
+    papel: "admin",
+    tema: "Usuários",
+    titulo: "E-mails que não chegam",
+    resumo: "Veja quem teve o e-mail recusado, corrija o endereço e reative os avisos.",
+    icone: "UserCog",
+    minutos: 3,
+    passos: [
+      {
+        titulo: "Entenda o aviso",
+        texto:
+          "Se o servidor de e-mail recusar o endereço de uma pessoa **3 vezes seguidas** (por exemplo, caixa inexistente), o sistema **para de enviar** para ela, para não insistir num endereço errado. Em **Usuários** aparece o aviso “e-mail com problema”.",
+        aviso: "Erros passageiros, como servidor fora do ar ou caixa cheia, não contam: só recusas definitivas do destinatário.",
+      },
+      {
+        titulo: "Corrija e reative",
+        texto:
+          "Abra o aviso para ver a lista com o motivo de cada recusa. Use **Corrigir e-mail** para trocar o endereço (isso reativa os avisos) ou **Reativar envio** se o endereço estava certo e o problema foi resolvido.",
       },
     ],
   },

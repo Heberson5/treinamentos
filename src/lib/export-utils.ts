@@ -45,8 +45,8 @@ export function exportToExcel(options: ExportOptions): void {
   ].map(row => row.join(';')).join('\n');
   
   // Criar blob e download
-  const blob = new Blob([BOM + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-  downloadBlob(blob, `${filename}.xlsx`);
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `${filename}.csv`);
 }
 
 // Exportar para PDF

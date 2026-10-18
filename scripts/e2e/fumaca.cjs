@@ -292,6 +292,19 @@ teste("Administrador vê o inventário, mas não registra a revisão", { como: "
   assert.equal(await p.getByRole("button", { name: "Registrar revisão" }).count(), 0)
 })
 
+teste("Relatórios geram a apresentação em PowerPoint e o CSV", { como: "admin", url: "/relatorios" }, async (p) => {
+  const [ppt] = await Promise.all([p.waitForEvent("download", { timeout: 60000 }), p.getByRole("button", { name: "Apresentação" }).click()])
+  assert.match(ppt.suggestedFilename(), /^apresentacao-treinamentos-\d{4}-\d{2}-\d{2}\.pptx$/)
+  const fs = require("fs")
+  const caminho = await ppt.path()
+  const bytes = fs.readFileSync(caminho)
+  assert.equal(bytes.slice(0, 2).toString(), "PK", "arquivo PowerPoint é um pacote zip")
+  assert.ok(bytes.length > 20000, "apresentação com conteúdo")
+  await p.getByRole("button", { name: "Exportar" }).click()
+  const [csv] = await Promise.all([p.waitForEvent("download"), p.getByRole("menuitem", { name: /CSV/ }).click()])
+  assert.match(csv.suggestedFilename(), /\.csv$/)
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)

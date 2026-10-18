@@ -58,6 +58,23 @@ treinamentos**: avisa a pessoa 30 e 7 dias antes de vencer, no dia e uma vez
 depois de vencido, e às segundas manda um resumo aos administradores. Rodar só
 essa parte: `scripts/vps/rotinas.sh recertificacao`.
 
+O mesmo lembrete diário também cuida da **conformidade LGPD** (`rotinas.sh
+conformidade` roda só essa parte): lembra os Masters a cada 6 meses de revisar a
+política e o inventário, e avisa os administradores quando um pedido de titular
+está a 5 dias, 2 dias, no dia ou depois do prazo de 15 dias.
+
+**E-mails com problema**: depois de 3 recusas definitivas seguidas do servidor
+de e-mail (caixa inexistente etc.), o envio para aquele endereço é pausado. A
+lista aparece em Usuários, onde o administrador corrige o endereço ou reativa.
+
+**Erros do sistema**: erros das telas e das funções ficam em Sistema → Erros do
+Sistema (só Master), sem e-mail, CPF, chaves ou parâmetros de endereço. Os
+registros resolvidos são apagados pela limpeza automática.
+
+**Inventário LGPD**: o catálogo está na tabela `lgpd_inventario_tabelas`. Ao criar
+uma tabela nova, inclua uma linha ali (migração): o teste `inventario.sql`
+falha enquanto houver tabela sem classificação.
+
 **Testes do banco** (`supabase/tests/*.sql`): rodam sozinhos no ensaio do
 `atualizar.sh`. Para rodar à mão num banco de teste (nunca no de produção):
 `PGHOST=... PGUSER=... scripts/db/testar-banco.sh <banco>`.

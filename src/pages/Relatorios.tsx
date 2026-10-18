@@ -10,7 +10,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Download, FileText, FileSpreadsheet, Users, Clock, Award, Target, Building2, BookOpen, Star,
+  Download, FileText, FileSpreadsheet, Presentation, Loader2, Users, Clock, Award, Target, Building2, BookOpen, Star,
 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
@@ -22,6 +22,7 @@ import ExamAttemptsReport from "@/components/training/exam-attempts-report"
 import { NpsReport } from "@/components/reports/nps-report"
 import { VencimentosReport } from "@/components/reports/vencimentos-report"
 import { AnaliseQuestoes } from "@/components/reports/analise-questoes"
+import { useSystemBranding } from "@/hooks/use-system-branding"
 import { cn } from "@/lib/utils"
 
 const monthlyConfig = {
@@ -194,6 +195,8 @@ export default function Relatorios() {
   const { empresaSelecionada, isMaster: isMasterFilter, empresaSelecionadaNome } = useEmpresaFilter()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { systemNameFull } = useSystemBranding()
+  const [gerandoApresentacao, setGerandoApresentacao] = useState(false)
 
   const empresaFilter = isMasterFilter && empresaSelecionada && empresaSelecionada !== "todas"
     ? empresaSelecionada : null
@@ -311,6 +314,67 @@ export default function Relatorios() {
     }
   }
 
+  /** Apresentação executiva em PowerPoint, com a cor da empresa (sem enviar nada para fora do navegador). */
+  const baixarApresentacao = async () => {
+    setGerandoApresentacao(true)
+    try {
+      const { montarApresentacao, lerHsl, hslParaHex } = await import("@/lib/apresentacao-pptx")
+      const hsl = lerHsl(getComputedStyle(document.documentElement).getPropertyValue("--primary"))
+      const corPrincipal = hsl ? hslParaHex(...hsl) : "2563EB"
+
+      const [npsRes, vencRes] = await Promise.all([
+        supabase.rpc("relatorio_nps", {
+          p_empresa_id: empresaFilter ?? undefined,
+          p_inicio: startDate.toISOString(),
+          p_fim: new Date(endDate.getTime() + 86400000).toISOString(),
+        }),
+        supabase.rpc("vencimentos_treinamentos", { p_empresa_id: empresaFilter ?? undefined }),
+      ])
+      const nps = npsRes.error ? null : (npsRes.data as unknown as {
+        geral: { total: number; promotores: number; neutros: number; detratores: number; nps: number | null; media: number | null }
+        por_treinamento: Array<{ titulo: string; nps: number; total: number }>
+      } | null)
+      const venc = vencRes.error ? [] : ((vencRes.data || []) as unknown as Array<{ nome: string; titulo: string; vence_em: string; dias_restantes: number; estado: string }>)
+      const atencao = venc.filter((v) => v.estado === "vencido" || v.estado === "vence_em_breve").sort((a, b) => a.dias_restantes - b.dias_restantes)
+
+      const arquivo = await montarApresentacao({
+        empresa: empresaSelecionadaNome,
+        sistema: systemNameFull,
+        periodo: getPeriodLabel(),
+        corPrincipal,
+        resumo: {
+          treinamentos: reportData.totalTreinamentos, participantes: reportData.totalParticipantes, taxaConclusao: reportData.taxaConclusao,
+          horas: reportData.horasTreinamento, certificados: reportData.certificadosEmitidos,
+        },
+        mensal: monthlyData.map((m) => ({ mes: m.mes, iniciados: m.iniciados, concluidos: m.concluidos })),
+        departamentos: departmentReports.map((d) => ({ nome: d.nome, participantes: d.participantes, taxa: d.taxa })),
+        treinamentos: trainingReports.map((t) => ({ titulo: t.titulo, participantes: t.participantes, taxa: t.taxa })),
+        nps: nps?.geral ? { ...nps.geral, porTreinamento: nps.por_treinamento || [] } : null,
+        vencimentos: {
+          vencidos: venc.filter((v) => v.estado === "vencido").length,
+          aVencer: venc.filter((v) => v.estado === "vence_em_breve").length,
+          itens: atencao.slice(0, 7).map((v) => ({
+            pessoa: v.nome, treinamento: v.titulo,
+            venceEm: new Date(v.vence_em).toLocaleDateString("pt-BR"), dias: v.dias_restantes,
+          })),
+        },
+      })
+      const url = URL.createObjectURL(new Blob([arquivo], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" }))
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `apresentacao-treinamentos-${new Date().toISOString().split("T")[0]}.pptx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      toast({ title: "Apresentação pronta", description: "O arquivo PowerPoint foi baixado." })
+    } catch {
+      toast({ title: "Não foi possível gerar a apresentação", description: "Tente novamente. Se continuar, avise o suporte.", variant: "destructive" })
+    } finally {
+      setGerandoApresentacao(false)
+    }
+  }
+
   const TABS: { value: string; label: string; exportavel: boolean }[] = [
     { value: "geral", label: "Visão geral", exportavel: true },
     { value: "departamentos", label: "Departamentos", exportavel: true },
@@ -382,6 +446,9 @@ export default function Relatorios() {
               customEndDate={customEndDate}
               onCustomDateChange={(s, e) => { setCustomStartDate(s); setCustomEndDate(e) }}
             />
+            <Button variant="outline" onClick={baixarApresentacao} disabled={isLoading || gerandoApresentacao}>
+              {gerandoApresentacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Presentation className="mr-2 h-4 w-4" />} Apresentação
+            </Button>
             {tabAtual.exportavel && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -391,7 +458,7 @@ export default function Relatorios() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => exportReport('excel', tabAtual.value)}>
-                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel
+                    <FileSpreadsheet className="mr-2 h-4 w-4" /> CSV (abre no Excel)
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => exportReport('pdf', tabAtual.value)}>
                     <FileText className="mr-2 h-4 w-4" /> PDF

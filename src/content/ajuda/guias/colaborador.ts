@@ -369,4 +369,48 @@ export const guiasColaborador: Guia[] = [
       },
     ],
   },
+
+  {
+    id: "colaborador-renovar",
+    papel: "usuario",
+    tema: "Treinamentos",
+    titulo: "Renovar um treinamento que vence",
+    resumo: "Alguns certificados têm validade: saiba quando e como renovar.",
+    icone: "Award",
+    minutos: 2,
+    passos: [
+      {
+        titulo: "Veja o aviso em Meus Treinamentos",
+        texto:
+          "Quando um treinamento está perto de vencer (ou já venceu), aparece um aviso no alto de **Meus Treinamentos** e você recebe lembretes por e-mail e notificação. Clique em **Renovar** para reabrir o treinamento.",
+      },
+      {
+        titulo: "Conclua de novo",
+        texto: "Refaça o conteúdo e a avaliação. Ao concluir, você recebe um novo certificado. O certificado anterior continua válido como registro.",
+      },
+    ],
+  },
+
+  {
+    id: "colaborador-busca-avisos",
+    papel: "usuario",
+    tema: "Primeiros passos",
+    titulo: "Busca rápida e avisos no aparelho",
+    resumo: "Encontre telas e treinamentos rapidamente e receba avisos no celular.",
+    icone: "Smartphone",
+    minutos: 2,
+    passos: [
+      {
+        titulo: "Use a busca",
+        texto:
+          "Pressione **Ctrl + K** (ou **⌘ + K** no Mac) ou clique na busca no topo e digite. O resultado mostra só o que você tem permissão de acessar.",
+      },
+      {
+        titulo: "Receba avisos no aparelho",
+        texto:
+          "Em **Meus dados e privacidade**, ative **Avisos neste aparelho** para receber notificações de novos treinamentos, prazos e renovações. Para desligar, use **Desativar neste aparelho**.",
+        dica: "No iPhone, primeiro use **Compartilhar → Adicionar à Tela de Início** e abra o portal pelo ícone.",
+      },
+    ],
+  },
 ]

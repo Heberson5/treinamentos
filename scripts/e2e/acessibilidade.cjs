@@ -29,6 +29,8 @@ const TELAS = [
   ["admin", "/admin/usuarios", "Usuários"],
   ["admin", "/admin/certificado", "Modelo do certificado"],
   ["admin", "/relatorios", "Relatórios"],
+  ["master", "/admin/erros", "Erros do sistema"],
+  ["master", "/admin/privacidade", "Privacidade (LGPD)"],
   ["master", "/admin/configuracoes", "Configurações"],
 ]
 const VIEWPORTS = [["computador", { width: 1366, height: 860 }], ["celular", { width: 390, height: 800 }]]
