@@ -200,6 +200,35 @@ export function alertaServidor(c: ConfigModelo, d: DadosAlertaServidor): EmailMo
   };
 }
 
+export interface DadosRevisaoLgpd {
+  nome: string;
+  /** Data da última revisão (dd/mm/aaaa) ou vazio se nunca foi feita */
+  ultima: string;
+}
+export function revisaoLgpd(c: ConfigModelo, d: DadosRevisaoLgpd): EmailMontado {
+  return {
+    assunto: "Hora de revisar a política de privacidade e o inventário de dados",
+    corpoHtml: `<p>Olá, ${esc(primeiroNome(d.nome))}!</p><p>${d.ultima ? `A última revisão foi em <strong>${esc(d.ultima)}</strong>.` : "A revisão ainda não foi registrada."} A cada 6 meses vale conferir a política de privacidade e o inventário de dados pessoais (LGPD), que é montado automaticamente pelo sistema.</p><p>Depois de conferir, clique em “Registrar revisão” para zerar o lembrete.</p>${botao("Abrir Privacidade (LGPD)", link(c, "/admin/privacidade"))}`,
+  };
+}
+
+export interface DadosPrazoLgpd {
+  nome: string;
+  /** Tipo do pedido, em texto (ex.: "Correção de dados") */
+  tipoPedido: string;
+  /** Prazo legal (dd/mm/aaaa) */
+  prazo: string;
+  /** Dias até o prazo: negativo = vencido */
+  dias: number;
+}
+export function prazoLgpd(c: ConfigModelo, d: DadosPrazoLgpd): EmailMontado {
+  const quando = d.dias < 0 ? `venceu há ${-d.dias} dia${d.dias === -1 ? "" : "s"}` : d.dias === 0 ? "vence hoje" : d.dias === 1 ? "vence amanhã" : `vence em ${d.dias} dias`;
+  return {
+    assunto: d.dias < 0 ? `Pedido de titular VENCIDO: ${d.tipoPedido}` : `Pedido de titular: o prazo ${quando}`,
+    corpoHtml: `<p>Olá, ${esc(primeiroNome(d.nome))}!</p><p>Há um pedido de titular de dados (<strong>${esc(d.tipoPedido)}</strong>) aguardando resposta. O prazo de 15 dias, previsto na LGPD, ${esc(quando)} (${esc(d.prazo)}).</p>${botao("Atender o pedido", link(c, "/admin/privacidade"))}`,
+  };
+}
+
 export function teste(c: ConfigModelo): EmailMontado {
   return {
     assunto: `Teste de e-mail — ${c.nomeSistema}`,
@@ -211,7 +240,7 @@ export function teste(c: ConfigModelo): EmailMontado {
 // Catálogo — usado pela pré-visualização em Configurações → Email
 // ------------------------------------------------------------------
 
-export type ModeloEmailId = "novo_treinamento" | "conclusao" | "lembrete_prazo" | "recertificacao" | "recertificacao_gestao" | "relatorio_mensal" | "pagamento" | "alerta_servidor" | "teste";
+export type ModeloEmailId = "novo_treinamento" | "conclusao" | "lembrete_prazo" | "recertificacao" | "recertificacao_gestao" | "relatorio_mensal" | "pagamento" | "alerta_servidor" | "revisao_lgpd" | "prazo_lgpd" | "teste";
 
 export interface VarianteModelo {
   id: string;
@@ -369,6 +398,26 @@ export const MODELOS_EMAIL: InfoModeloEmail[] = [
         montar: (c) => alertaServidor(c, { assunto: "Problema no servidor (vps-01)", linhas: ["Disco / com 91% de uso", "Último backup concluído há 30 horas"] }),
       },
       { id: "normalizado", nome: "Voltou ao normal", montar: (c) => alertaServidor(c, { assunto: "Servidor normalizado (vps-01)", linhas: ["Tudo voltou ao normal."] }) },
+    ],
+  },
+  {
+    id: "revisao_lgpd",
+    nome: "Revisão da LGPD (a cada 6 meses)",
+    quando: "Quando passam 6 meses sem o Master registrar a revisão da política e do inventário (repete a cada 30 dias até registrar).",
+    para: "Usuários Master.",
+    variantes: [
+      { id: "primeira", nome: "Nunca revisado", montar: (c) => revisaoLgpd(c, { nome: "Heberson Souza", ultima: "" }) },
+      { id: "semestre", nome: "Passaram 6 meses", montar: (c) => revisaoLgpd(c, { nome: "Heberson Souza", ultima: dataBR(-190) }) },
+    ],
+  },
+  {
+    id: "prazo_lgpd",
+    nome: "Prazo de pedido de titular (LGPD)",
+    quando: "Quando um pedido de titular está a 5 dias, 2 dias, no dia ou depois do prazo legal de 15 dias.",
+    para: "Administradores da empresa (e Masters quando o pedido venceu).",
+    variantes: [
+      { id: "proximo", nome: "Faltam 2 dias", montar: (c) => prazoLgpd(c, { nome: "Juliana Martins", tipoPedido: "Correção de dados", prazo: dataBR(2), dias: 2 }) },
+      { id: "vencido", nome: "Vencido", montar: (c) => prazoLgpd(c, { nome: "Juliana Martins", tipoPedido: "Eliminação de dados", prazo: dataBR(-3), dias: -3 }) },
     ],
   },
   {

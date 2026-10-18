@@ -3,6 +3,7 @@
 //   Authorization: Bearer <SERVICE_ROLE_KEY>
 // Só a chave de serviço (que fica apenas no servidor) pode disparar.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { registrarErroFuncao } from "../_shared/erros.ts";
 import {
   Carteiro, carregarConfigEmail, corsHeaders, iguaisSeguro, json, smtpConfigurado,
   type ConfigEmail,
@@ -10,7 +11,7 @@ import {
 import { assuntoVapid, carregarChavesPush, Mensageiro } from "../_shared/push.ts";
 import {
   alertaServidor, conclusao, lembretePrazo, novoTreinamento, recertificacao as modeloRecertificacao,
-  recertificacaoGestao, relatorioMensal as modeloRelatorioMensal,
+  recertificacaoGestao, relatorioMensal as modeloRelatorioMensal, revisaoLgpd, prazoLgpd,
 } from "../_shared/modelos-email.ts";
 
 const FUSO = "America/Sao_Paulo";
@@ -53,6 +54,8 @@ interface Pessoa {
   empresa_id: string | null;
   departamento_id: string | null;
   receber_emails: boolean;
+  /** Endereço com recusas seguidas: avisos por e-mail pausados */
+  email_suspenso: boolean;
   papel: string;
 }
 
@@ -83,12 +86,12 @@ class Contexto {
     const papeis = await todos<any>((de, ate) => this.admin.from("usuario_roles").select("usuario_id, role").range(de, ate));
     const papelDe = new Map(papeis.map((p) => [p.usuario_id, p.role]));
     const perfis = await todos<any>((de, ate) =>
-      this.admin.from("perfis").select("id, nome, email, empresa_id, departamento_id, ativo, receber_emails").range(de, ate));
+      this.admin.from("perfis").select("id, nome, email, empresa_id, departamento_id, ativo, receber_emails, email_suspenso_em").range(de, ate));
     for (const p of perfis) {
       if (p.ativo === false) continue;
       this.pessoas.set(p.id, {
         id: p.id, nome: p.nome, email: p.email, empresa_id: p.empresa_id, departamento_id: p.departamento_id,
-        receber_emails: p.receber_emails !== false, papel: papelDe.get(p.id) || "usuario",
+        receber_emails: p.receber_emails !== false, email_suspenso: !!p.email_suspenso_em, papel: papelDe.get(p.id) || "usuario",
       });
     }
     const prefs = await todos<any>((de, ate) => this.admin.from("preferencias_notificacao").select("*").range(de, ate));
@@ -101,7 +104,7 @@ class Contexto {
 
   /** Pessoa pode receber aviso? (ativa, empresa ativa, não recusou e-mails) */
   podeAvisar(p: Pessoa | undefined): p is Pessoa {
-    return !!p && p.papel !== "master" && p.receber_emails && !!p.empresa_id && this.empresasAtivas.has(p.empresa_id) && !!p.email;
+    return !!p && p.papel !== "master" && p.receber_emails && !p.email_suspenso && !!p.empresa_id && this.empresasAtivas.has(p.empresa_id) && !!p.email;
   }
 
   /** Pessoa pode receber notificação push? (ativa, empresa ativa; vale para quem tem aparelho inscrito) */
@@ -344,6 +347,66 @@ async function recertificacao(ctx: Contexto, forcar = false) {
 }
 
 // ------------------------------------------------------------------
+// Conformidade LGPD: revisão semestral e prazo dos pedidos dos titulares
+// ------------------------------------------------------------------
+const TIPOS_PEDIDO: Record<string, string> = {
+  confirmacao: "Confirmação de tratamento", acesso: "Acesso aos dados", correcao: "Correção de dados", anonimizacao: "Anonimização",
+  portabilidade: "Portabilidade", eliminacao: "Eliminação de dados", compartilhamento: "Informação sobre compartilhamento",
+  revogacao: "Revogação de consentimento", oposicao: "Oposição ao tratamento", outro: "Outro pedido",
+};
+
+async function conformidade(ctx: Contexto) {
+  const resumo = { revisao: 0, prazos: 0 };
+  const { admin, config, carteiro } = ctx;
+  if (!config.avisosLigados) return resumo;
+  const cfg = modeloCfg(config);
+  const hoje = hojeBR();
+
+  // Revisão a cada 6 meses (lembra a cada 30 dias até o Master registrar)
+  const { data: sis } = await admin.from("configuracoes_sistema").select("id, lgpd_revisado_em, lgpd_lembrete_enviado_em").limit(1).maybeSingle();
+  if (sis) {
+    const ultima: string | null = sis.lgpd_revisado_em;
+    const venceu = !ultima || diasEntre(hojeBR(new Date(ultima)), hoje) > 180;
+    const ultimoAviso: string | null = sis.lgpd_lembrete_enviado_em;
+    const avisouRecente = !!ultimoAviso && diasEntre(hojeBR(new Date(ultimoAviso)), hoje) < 30;
+    if (venceu && !avisouRecente) {
+      const masters = [...ctx.pessoas.values()].filter((p) => p.papel === "master" && p.email && !p.email_suspenso);
+      const modelo = revisaoLgpd(cfg, { nome: "", ultima: ultima ? dataBR(ultima) : "" });
+      let algum = false;
+      for (const m of masters) {
+        if (carteiro.esgotado) break;
+        const m2 = revisaoLgpd(cfg, { nome: m.nome, ultima: ultima ? dataBR(ultima) : "" });
+        if (await carteiro.enviar({ para: m.email, tipo: "revisao_lgpd", usuarioId: m.id, assunto: modelo.assunto, corpoHtml: m2.corpoHtml })) { resumo.revisao++; algum = true; }
+      }
+      if (algum) await admin.from("configuracoes_sistema").update({ lgpd_lembrete_enviado_em: new Date().toISOString() }).eq("id", sis.id);
+    }
+  }
+
+  // Prazo dos pedidos dos titulares: 5 dias, 2 dias, no dia e vencido (a cada 7 dias)
+  const pedidos = await todos<any>((de, ate) =>
+    admin.from("solicitacoes_lgpd").select("id, empresa_id, tipo, prazo_em").in("status", ["aberta", "em_andamento"]).range(de, ate));
+  for (const s of pedidos) {
+    if (carteiro.esgotado) break;
+    const dias = diasEntre(hoje, hojeBR(new Date(s.prazo_em)));
+    let marco: string | null = null;
+    if (dias === 5) marco = "5d";
+    else if (dias === 2) marco = "2d";
+    else if (dias === 0) marco = "hoje";
+    else if (dias < 0) marco = `vencido-${Math.floor(-dias / 7)}`;
+    if (!marco) continue;
+    const { error } = await admin.from("lgpd_avisos_prazo_enviados").insert({ solicitacao_id: s.id, marco });
+    if (error) continue;
+    const destinos = [...ctx.pessoas.values()].filter((p) =>
+      p.email && !p.email_suspenso && ((p.papel === "admin" && p.empresa_id === s.empresa_id) || (p.papel === "master" && (dias < 0 || !s.empresa_id))));
+    for (const d of destinos) {
+      const m = prazoLgpd(cfg, { nome: d.nome, tipoPedido: TIPOS_PEDIDO[s.tipo] || s.tipo, prazo: dataBR(s.prazo_em), dias });
+      if (await carteiro.enviar({ para: d.email, tipo: "prazo_lgpd", empresaId: s.empresa_id, usuarioId: d.id, assunto: m.assunto, corpoHtml: m.corpoHtml })) resumo.prazos++;
+    }
+  }
+  return resumo;
+}
+
+// ------------------------------------------------------------------
 // Relatório mensal para administradores (dia 1 de cada mês)
 // ------------------------------------------------------------------
 async function relatorioMensal(ctx: Contexto, forcar: boolean) {
@@ -426,6 +489,8 @@ async function limpeza(admin: SupabaseClient) {
   await apagar("registro_backups", "iniciado_em", dias(365));    // registro dos backups: 1 ano
   await apagar("mfa_recuperacao_falhas", "criado_em", dias(1));  // tentativas de código de recuperação
   await apagar("avaliacoes_sorteios", "criado_em", dias(7));     // provas sorteadas não enviadas
+  await apagar("erros_ocorrencias", "criado_em", dias(90));      // quem foi afetado por um erro: 90 dias
+  await apagar("erros_sistema", "ultima_em", dias(365));         // erros do sistema: 1 ano depois da última vez
   return r;
 }
 
@@ -494,6 +559,7 @@ Deno.serve(async (req) => {
         if (tarefa === "notificacoes" || tarefa === "todas") resultado.notificacoes = await notificacoes(ctx);
         if (tarefa === "lembretes" || tarefa === "todas") resultado.lembretes = await lembretes(ctx);
         if (tarefa === "lembretes" || tarefa === "recertificacao" || tarefa === "todas") resultado.recertificacao = await recertificacao(ctx, !!body?.forcar);
+        if (tarefa === "lembretes" || tarefa === "conformidade" || tarefa === "todas") resultado.conformidade = await conformidade(ctx);
         if (tarefa === "relatorio_mensal" || tarefa === "todas") resultado.relatorio_mensal = await relatorioMensal(ctx, !!body?.forcar);
       } finally {
         await carteiro.fechar();
@@ -505,6 +571,7 @@ Deno.serve(async (req) => {
     return json(resultado);
   } catch (e) {
     console.error("rotinas:", e);
+    await registrarErroFuncao("rotinas", e);
     return json({ ...resultado, error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });

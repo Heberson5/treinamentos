@@ -16,6 +16,7 @@ import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useToast } from "@/hooks/use-toast"
 import { STATUS_SOLICITACAO, TIPOS_SOLICITACAO } from "@/pages/MeusDados"
 import { cn } from "@/lib/utils"
+import { InventarioLGPD } from "@/components/admin/inventario-lgpd"
 
 interface Solicitacao {
   id: string
@@ -277,6 +278,8 @@ export default function PrivacidadeLGPD() {
           A anonimização não pode ser desfeita. Antes, gere uma cópia dos dados se a empresa precisar guardá-los por obrigação legal (por exemplo, comprovação de treinamentos obrigatórios).
         </InfoNote>
       </SettingsSection>
+
+      <InventarioLGPD isMaster={isMaster} />
 
       {/* Atender solicitação */}
       <Dialog open={!!aberta} onOpenChange={(o) => !o && setAberta(null)}>

@@ -197,6 +197,34 @@ const rpcs = {
   },
   codigos_recuperacao_mfa_restantes: () => 8,
   obter_chave_push_publica: () => null,
+  registrar_revisao_lgpd: () => null,
+  inventario_lgpd: () => ({
+    gerado_em: new Date().toISOString(), mostra_contagens: true, sem_catalogo: [],
+    resumo: { tabelas: 3, com_dados_pessoais: 2, colunas_pessoais: 6, operadores: 2 },
+    tabelas: [
+      { tabela: "perfis", titulo: "Cadastro das pessoas", descricao: "Nome, e-mail, telefone, cargo e foto.", tem_dados_pessoais: true, finalidade: "Identificar a pessoa e enviar avisos.",
+        base_legal: "Execução de contrato (art. 7º, V)", titulares: "Colaboradores e instrutores", categorias: ["Identificação", "Contato"], retencao: "Enquanto o vínculo existir.",
+        eliminacao: "Anonimização a pedido ou ao sair da empresa.", operadores: ["Servidor próprio (VPS)"], colunas_pessoais: ["email", "nome", "telefone"],
+        acesso: ["Master", "Administrador da empresa", "A própria pessoa"], rls: true, linhas: 48 },
+      { tabela: "solicitacoes_lgpd", titulo: "Pedidos dos titulares (LGPD)", descricao: "Pedidos e respostas.", tem_dados_pessoais: true, finalidade: "Atender os direitos do titular.",
+        base_legal: "Obrigação legal (art. 18)", titulares: "Qualquer pessoa com cadastro", categorias: ["Pedido"], retencao: "5 anos.", eliminacao: "Rotina automática.",
+        operadores: [], colunas_pessoais: ["descricao", "usuario_id"], acesso: ["Master", "Administrador da empresa"], rls: true, linhas: 2 },
+      { tabela: "categorias", titulo: "Categorias de treinamento", descricao: "Lista de categorias.", tem_dados_pessoais: false, finalidade: "Organizar os treinamentos.",
+        base_legal: "Execução de contrato (art. 7º, V)", titulares: "—", categorias: [], retencao: "Enquanto a empresa as mantiver.", eliminacao: "—",
+        operadores: [], colunas_pessoais: [], acesso: ["Qualquer pessoa conectada"], rls: true, linhas: 9 },
+    ],
+    operadores: [
+      { nome: "Servidor próprio (VPS)", finalidade: "Hospedar o banco e a aplicação.", dados: "Todos.", observacao: "Nenhum serviço de nuvem de terceiros." },
+      { nome: "Servidor de e-mail (SMTP): smtp.exemplo.com", finalidade: "Entregar os avisos.", dados: "Nome, e-mail e avisos.", observacao: "Configurações → Email." },
+    ],
+  }),
+  reativar_envio_email: () => null,
+  atualizar_erro_sistema: () => null,
+  listar_erros_sistema: () => [
+    { id: "e1", origem: "tela", mensagem: "TypeError: Cannot read properties of undefined (reading 'map')", rota: "/relatorios", pilha: "at Relatorios (Relatorios.tsx:210:18)", contexto: { papel: "admin", navegador: "Chrome 130", tela: "1366x768" }, ocorrencias: 7, primeira_em: iso(3), ultima_em: iso(0.2), status: "novo", nota: null, reaberto_em: null, pessoas: 3, empresas: 1 },
+    { id: "e2", origem: "funcao", mensagem: "Invalid login: 535 Authentication failed", rota: "funcao:rotinas", pilha: null, contexto: {}, ocorrencias: 2, primeira_em: iso(2), ultima_em: iso(1), status: "em_analise", nota: "Senha do e-mail trocada", reaberto_em: null, pessoas: 0, empresas: 0 },
+    { id: "e3", origem: "tela", mensagem: "TypeError: Failed to fetch", rota: "/meus-treinamentos", pilha: null, contexto: { papel: "usuario" }, ocorrencias: 12, primeira_em: iso(9), ultima_em: iso(5), status: "resolvido", nota: null, reaberto_em: null, pessoas: 5, empresas: 2 },
+  ],
   resumo_push: () => ({ configurado: false, dispositivos: 0, pessoas: 0 }),
   // Situação da avaliação calculada no servidor (o colaborador não lê as questões da tabela)
   status_avaliacao: (b) => {
@@ -270,7 +298,7 @@ function applyFilters(rows, params) {
 
 const SUPABASE_HOST = "fakesupa.local";
 
-async function instalarBackendFicticio(page, { logado = true, como = "master", avisos = false, prova = "aprovado", semCiencia = false, segundoFator = false } = {}) {
+async function instalarBackendFicticio(page, { logado = true, como = "master", avisos = false, prova = "aprovado", semCiencia = false, segundoFator = false, emailsComProblema = false } = {}) {
   // segundoFator: a conta tem verificação em duas etapas e a sessão é só de senha;
   // o código correto no backend fictício é 123456
   let session = makeSession(IDS[como], { aal: "aal1", comFator: segundoFator });
@@ -352,7 +380,15 @@ async function instalarBackendFicticio(page, { logado = true, como = "master", a
       if (req.method() !== "GET" && req.method() !== "HEAD") return json(single ? {} : [], 201);
       if (!tables[table]) desconhecidos.add("tabela:" + table);
       // semCiencia: mostra o aviso de privacidade (prints do guia de LGPD)
-      const base = semCiencia && table === "aceites_politica" ? [] : tables[table] || [];
+      let base = semCiencia && table === "aceites_politica" ? [] : tables[table] || [];
+      // Lista "E-mails com problema" (Usuários): vazia, a menos que o teste peça
+      if (table === "perfis" && url.searchParams.get("email_suspenso_em") === "not.is.null") {
+        base = emailsComProblema
+          ? [{ id: IDS.u5, nome: "Rafael Souza", email: "rafael.souza@horizonte.exempl", email_suspenso_em: iso(1), email_ultima_falha: "550 5.1.1 User unknown" }]
+          : [];
+        const sozinho = new URLSearchParams(url.searchParams); sozinho.delete("email_suspenso_em");
+        url.search = sozinho.toString();
+      }
       const rows = applyFilters(base, url.searchParams);
       const range = { "content-range": `0-${Math.max(rows.length - 1, 0)}/${rows.length}` };
       if (req.method() === "HEAD")

@@ -5,6 +5,7 @@
 // Quem pode: Master (qualquer usuário, exceto Master) e Administrador
 // (colaboradores e instrutores da própria empresa).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { registrarErroFuncao } from "../_shared/erros.ts";
 import { MSG_SEGUNDO_FATOR, segundoFatorPendente } from "../_shared/seguranca.ts";
 import { corsHeaders, json } from "../_shared/email.ts";
 
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (e) {
     console.error("lgpd-anonimizar:", e);
+    await registrarErroFuncao("lgpd-anonimizar", e);
     return json({ error: e instanceof Error ? e.message : "Falha ao anonimizar" }, 500);
   }
 });

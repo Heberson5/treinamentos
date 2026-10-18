@@ -5,6 +5,7 @@
 import nodemailer from "npm:nodemailer@6.9.16";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { botao, esc, montarHtml } from "./modelos-email.ts";
+import { classificarFalhaEnvio, type ErroEnvio } from "./entrega.ts";
 
 // O texto de cada e-mail fica em modelos-email.ts (também usado na tela de
 // pré-visualização); aqui só se reexportam as funções de uso comum.
@@ -129,6 +130,7 @@ export class Carteiro {
     if (!emailValido(para)) return false;
     const html = montarHtml(this.config, opcoes.corpoHtml);
     let erro: string | null = null;
+    let recusadoPeloEndereco = false;
     try {
       await this.conectar().sendMail({
         from: { name: this.config.nomeSistema.replace(/[<>"\r\n]/g, ""), address: this.config.remetente },
@@ -142,6 +144,8 @@ export class Carteiro {
       this.falhas++;
       // Nunca registra a senha: só a mensagem do servidor de e-mail
       erro = (e instanceof Error ? e.message : String(e)).slice(0, 300);
+      // O servidor de e-mail recusou ESTE endereço de forma definitiva? (conta para a pausa dos avisos)
+      recusadoPeloEndereco = classificarFalhaEnvio(e as ErroEnvio, para) === "destinatario";
       // Conexão pode ter caído; tenta uma nova no próximo envio
       try { this.cliente?.close(); } catch { /* ignora */ }
       this.cliente = null;
@@ -155,6 +159,11 @@ export class Carteiro {
       status: erro ? "falhou" : "enviado",
       erro,
     });
+    // Três recusas seguidas do endereço pausam os avisos automáticos dessa pessoa
+    if (opcoes.usuarioId) {
+      if (!erro) await this.admin.rpc("registrar_sucesso_email", { p_usuario: opcoes.usuarioId });
+      else if (recusadoPeloEndereco) await this.admin.rpc("registrar_falha_email", { p_usuario: opcoes.usuarioId, p_erro: erro });
+    }
     return !erro;
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ErrorBoundary from "./ErrorBoundary";
+vi.mock("@/lib/registrar-erro", () => ({ registrarErro: vi.fn(), iniciarRegistroDeErros: vi.fn() }));
 
 function Bomb(): JSX.Element {
   throw new Error("Boom");

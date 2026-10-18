@@ -48,6 +48,7 @@ import { useOnlineUsers } from "@/hooks/use-online-users"
 import { usePagination } from "@/hooks/use-pagination"
 import { ListPagination } from "@/components/shared/list-pagination"
 import { PageHeader } from "@/components/layout/page-header"
+import { EmailsComProblema } from "@/components/admin/emails-com-problema"
 import { ImportarUsuariosDialog } from "@/components/admin/importar-usuarios-dialog"
 import {
   DropdownMenu,
@@ -870,6 +871,13 @@ export default function Usuarios() {
         departamentos={departamentos}
         emailsExistentes={usuarios.map((u) => u.email)}
         onConcluido={() => queryClient.invalidateQueries({ queryKey: [USUARIOS_QUERY_KEY] })}
+      />
+
+      <EmailsComProblema
+        onCorrigir={(id) => {
+          const alvo = usuarios.find((u) => u.id === id)
+          if (alvo) handleOpenEdit(alvo)
+        }}
       />
 
       {/* Métricas */}

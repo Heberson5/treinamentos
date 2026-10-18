@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award, Bug,
   type LucideIcon,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client"
 export const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award, Bug,
 }
 
 interface MenuItemConfig {
@@ -66,6 +66,7 @@ export const defaultAdminItems = [
   { id: "analytics", title: "Analytics", url: "/admin/analytics", icon: "BarChart3", roles: ["master", "admin"] },
   { id: "permissoes", title: "Permissões", url: "/admin/permissoes", icon: "Shield", roles: ["master"] },
   { id: "configuracoes", title: "Configurações", url: "/admin/configuracoes", icon: "Settings", roles: ["master"] },
+  { id: "erros", title: "Erros do Sistema", url: "/admin/erros", icon: "Bug", roles: ["master"] },
 ]
 
 export const defaultMasterItems = [
@@ -99,6 +100,7 @@ const GROUP_BY_URL: Record<string, NavGroupId> = {
   "/admin/integracoes": "sistema",
   "/admin/permissoes": "sistema",
   "/admin/configuracoes": "sistema",
+  "/admin/erros": "sistema",
   "/admin/landing-page": "sistema",
   "/admin/financeiro": "sistema",
   "/admin/arquitetura": "sistema",

@@ -2,6 +2,7 @@
 // um teste para os próprios aparelhos.
 //   POST /functions/v1/push   { "acao": "gerar_chaves" | "teste" }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { registrarErroFuncao } from "../_shared/erros.ts";
 import { carregarConfigEmail, corsHeaders, json } from "../_shared/email.ts";
 import { MSG_SEGUNDO_FATOR, segundoFatorPendente } from "../_shared/seguranca.ts";
 import { assuntoVapid, carregarChavesPush, garantirChavesPush, Mensageiro } from "../_shared/push.ts";
@@ -47,6 +48,7 @@ Deno.serve(async (req) => {
     return json({ error: "Ação desconhecida" }, 400);
   } catch (e) {
     console.error("push:", e);
+    await registrarErroFuncao("push", e);
     return json({ error: "Erro inesperado" }, 500);
   }
 });

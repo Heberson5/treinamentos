@@ -744,6 +744,9 @@ export type Database = {
           favicon_url: string | null
           id: string
           idioma: string
+          lgpd_lembrete_enviado_em: string | null
+          lgpd_revisado_em: string | null
+          lgpd_revisado_por: string | null
           logo_sidebar_url: string | null
           logoff_on_close: boolean
           nome_empresa: string
@@ -787,6 +790,9 @@ export type Database = {
           favicon_url?: string | null
           id?: string
           idioma?: string
+          lgpd_lembrete_enviado_em?: string | null
+          lgpd_revisado_em?: string | null
+          lgpd_revisado_por?: string | null
           logo_sidebar_url?: string | null
           logoff_on_close?: boolean
           nome_empresa?: string
@@ -830,6 +836,9 @@ export type Database = {
           favicon_url?: string | null
           id?: string
           idioma?: string
+          lgpd_lembrete_enviado_em?: string | null
+          lgpd_revisado_em?: string | null
+          lgpd_revisado_por?: string | null
           logo_sidebar_url?: string | null
           logoff_on_close?: boolean
           nome_empresa?: string
@@ -1028,6 +1037,88 @@ export type Database = {
           responsavel?: string | null
           telefone?: string | null
           tema_cor?: string | null
+        }
+        Relationships: []
+      }
+      erros_ocorrencias: {
+        Row: {
+          criado_em: string
+          empresa_id: string | null
+          erro_id: string
+          id: number
+          usuario_id: string | null
+        }
+        Insert: {
+          criado_em?: string
+          empresa_id?: string | null
+          erro_id: string
+          id?: number
+          usuario_id?: string | null
+        }
+        Update: {
+          criado_em?: string
+          empresa_id?: string | null
+          erro_id?: string
+          id?: number
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erros_ocorrencias_erro_id_fkey"
+            columns: ["erro_id"]
+            referencedRelation: "erros_sistema"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erros_sistema: {
+        Row: {
+          assinatura: string
+          contexto: Json
+          id: string
+          mensagem: string
+          nota: string | null
+          ocorrencias: number
+          origem: string
+          pilha: string | null
+          primeira_em: string
+          reaberto_em: string | null
+          resolvido_em: string | null
+          rota: string | null
+          status: string
+          ultima_em: string
+        }
+        Insert: {
+          assinatura: string
+          contexto?: Json
+          id?: string
+          mensagem: string
+          nota?: string | null
+          ocorrencias?: number
+          origem: string
+          pilha?: string | null
+          primeira_em?: string
+          reaberto_em?: string | null
+          resolvido_em?: string | null
+          rota?: string | null
+          status?: string
+          ultima_em?: string
+        }
+        Update: {
+          assinatura?: string
+          contexto?: Json
+          id?: string
+          mensagem?: string
+          nota?: string | null
+          ocorrencias?: number
+          origem?: string
+          pilha?: string | null
+          primeira_em?: string
+          reaberto_em?: string | null
+          resolvido_em?: string | null
+          rota?: string | null
+          status?: string
+          ultima_em?: string
         }
         Relationships: []
       }
@@ -1289,6 +1380,76 @@ export type Database = {
           },
         ]
       }
+      lgpd_avisos_prazo_enviados: {
+        Row: {
+          enviado_em: string
+          marco: string
+          solicitacao_id: string
+        }
+        Insert: {
+          enviado_em?: string
+          marco: string
+          solicitacao_id: string
+        }
+        Update: {
+          enviado_em?: string
+          marco?: string
+          solicitacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_avisos_prazo_enviados_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            referencedRelation: "solicitacoes_lgpd"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgpd_inventario_tabelas: {
+        Row: {
+          base_legal: string | null
+          categorias: string[]
+          colunas_extras: string[]
+          descricao: string | null
+          eliminacao: string | null
+          finalidade: string | null
+          operadores: string[]
+          retencao: string | null
+          tabela: string
+          tem_dados_pessoais: boolean
+          titulares: string | null
+          titulo: string
+        }
+        Insert: {
+          base_legal?: string | null
+          categorias?: string[]
+          colunas_extras?: string[]
+          descricao?: string | null
+          eliminacao?: string | null
+          finalidade?: string | null
+          operadores?: string[]
+          retencao?: string | null
+          tabela: string
+          tem_dados_pessoais: boolean
+          titulares?: string | null
+          titulo: string
+        }
+        Update: {
+          base_legal?: string | null
+          categorias?: string[]
+          colunas_extras?: string[]
+          descricao?: string | null
+          eliminacao?: string | null
+          finalidade?: string | null
+          operadores?: string[]
+          retencao?: string | null
+          tabela?: string
+          tem_dados_pessoais?: boolean
+          titulares?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
       mfa_codigos_recuperacao: {
         Row: {
           codigo_hash: string
@@ -1405,6 +1566,9 @@ export type Database = {
           departamento_id: string | null
           dias_para_trocar_senha: number | null
           email: string
+          email_falhas_seguidas: number
+          email_suspenso_em: string | null
+          email_ultima_falha: string | null
           empresa_id: string | null
           id: string
           nome: string
@@ -1426,6 +1590,9 @@ export type Database = {
           departamento_id?: string | null
           dias_para_trocar_senha?: number | null
           email: string
+          email_falhas_seguidas?: number
+          email_suspenso_em?: string | null
+          email_ultima_falha?: string | null
           empresa_id?: string | null
           id: string
           nome: string
@@ -1447,6 +1614,9 @@ export type Database = {
           departamento_id?: string | null
           dias_para_trocar_senha?: number | null
           email?: string
+          email_falhas_seguidas?: number
+          email_suspenso_em?: string | null
+          email_ultima_falha?: string | null
           empresa_id?: string | null
           id?: string
           nome?: string
@@ -2475,6 +2645,8 @@ export type Database = {
     }
     Functions: {
       _acesso_avaliacao: { Args: { p_treinamento: string }; Returns: boolean }
+      _acesso_tabela: { Args: { p_tabela: string }; Returns: string[] }
+      _coluna_dado_pessoal: { Args: { p_coluna: string }; Returns: boolean }
       _gerar_codigo_certificado: { Args: never; Returns: string }
       _inicio_ciclo: {
         Args: { p_treinamento: string; p_usuario: string }
@@ -2482,6 +2654,19 @@ export type Database = {
       }
       _liberar_leitura_colunas: {
         Args: { p_segredos: string[]; p_tabela: string }
+        Returns: undefined
+      }
+      _limpar_texto_erro: { Args: { p_texto: string }; Returns: string }
+      _registrar_erro: {
+        Args: {
+          p_contexto: Json
+          p_empresa: string
+          p_mensagem: string
+          p_origem: string
+          p_pilha: string
+          p_rota: string
+          p_usuario: string
+        }
         Returns: undefined
       }
       abrir_solicitacao_lgpd: {
@@ -2503,6 +2688,10 @@ export type Database = {
       anonimizar_dados_usuario: {
         Args: { p_executor: string; p_usuario_id: string }
         Returns: string
+      }
+      atualizar_erro_sistema: {
+        Args: { p_id: string; p_nota?: string; p_status: string }
+        Returns: undefined
       }
       codigos_recuperacao_mfa_restantes: { Args: never; Returns: number }
       concluir_treinamento: {
@@ -2641,6 +2830,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      inventario_lgpd: { Args: never; Returns: Json }
+      listar_erros_sistema: {
+        Args: { p_dias?: number; p_status?: string }
+        Returns: {
+          contexto: Json
+          empresas: number
+          id: string
+          mensagem: string
+          nota: string
+          ocorrencias: number
+          origem: string
+          pessoas: number
+          pilha: string
+          primeira_em: string
+          reaberto_em: string
+          rota: string
+          status: string
+          ultima_em: string
+        }[]
+      }
       listar_usuarios_visiveis_admin: {
         Args: never
         Returns: {
@@ -2743,12 +2952,35 @@ export type Database = {
         Args: { p_empresa_id: string }
         Returns: undefined
       }
+      reativar_envio_email: { Args: { p_usuario: string }; Returns: undefined }
       registrar_ciencia_politica: {
         Args: { p_user_agent?: string }
         Returns: string
       }
       registrar_cnpj_demo: {
         Args: { p_cnpj: string; p_empresa_id: string }
+        Returns: undefined
+      }
+      registrar_erro_funcao: {
+        Args: { p_funcao: string; p_mensagem: string; p_pilha?: string }
+        Returns: undefined
+      }
+      registrar_erro_sistema: {
+        Args: {
+          p_contexto?: Json
+          p_mensagem: string
+          p_pilha?: string
+          p_rota?: string
+        }
+        Returns: undefined
+      }
+      registrar_falha_email: {
+        Args: { p_erro: string; p_limite?: number; p_usuario: string }
+        Returns: boolean
+      }
+      registrar_revisao_lgpd: { Args: never; Returns: undefined }
+      registrar_sucesso_email: {
+        Args: { p_usuario: string }
         Returns: undefined
       }
       registrar_tentativa_login: {

@@ -57,6 +57,7 @@ const MeusDados = lazy(() => import("./pages/MeusDados"));
 const PrivacidadeLGPD = lazy(() => import("./pages/admin/PrivacidadeLGPD"));
 const AjudaGuia = lazy(() => import("./pages/AjudaGuia"));
 const ModeloCertificado = lazy(() => import("./pages/admin/ModeloCertificado"));
+const ErrosSistema = lazy(() => import("./pages/admin/ErrosSistema"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -205,6 +206,7 @@ function AppContent() {
         <Route path="/admin/configuracoes" element={isMaster ? <Configuracoes /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/landing-page" element={isMaster ? <LandingPageEditor /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/financeiro" element={isMaster ? <Financeiro /> : <Navigate to="/meus-treinamentos" replace />} />
+        <Route path="/admin/erros" element={isMaster ? <ErrosSistema /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/arquitetura" element={isMaster ? <ArquiteturaSistema /> : <Navigate to="/meus-treinamentos" replace />} />
 
         <Route path="*" element={<NotFound />} />

@@ -250,6 +250,48 @@ teste("Teclado: o primeiro Tab oferece pular para o conteúdo e o foco vai para 
   assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), "conteudo-principal")
 })
 
+teste("Usuários: lista de e-mails com problema com correção e reativação", { como: "admin", url: "/admin/usuarios", emailsComProblema: true }, async (p) => {
+  const aviso = p.getByTestId("emails-com-problema")
+  await aviso.getByText("1 e-mail com problema").waitFor()
+  await aviso.getByRole("button", { name: /1 e-mail com problema/ }).click()
+  await aviso.getByText("rafael.souza@horizonte.exempl").waitFor()
+  await aviso.getByText(/User unknown/).waitFor()
+  await aviso.getByRole("button", { name: "Corrigir e-mail" }).waitFor()
+  await aviso.getByRole("button", { name: "Reativar envio" }).waitFor()
+})
+
+teste("Master vê os erros do sistema explicados, com relatório para o suporte", { como: "master", url: "/admin/erros" }, async (p) => {
+  const tela = p.getByTestId("erros-sistema")
+  await tela.getByText("Erro de programação na tela").waitFor()
+  await tela.getByText("Problema no servidor de e-mail").waitFor()
+  assert.equal(await tela.getByText("Falha de conexão").count(), 0, "resolvidos ficam fora do filtro Abertos")
+  await tela.getByRole("button", { name: /Erro de programação na tela/ }).click()
+  await tela.getByText("O que provavelmente significa").waitFor()
+  await tela.getByText("O que fazer", { exact: true }).waitFor()
+  await tela.getByRole("button", { name: "Copiar relatório para o suporte" }).waitFor()
+  await tela.getByRole("button", { name: "Resolvidos" }).click()
+  await tela.getByText("Falha de conexão").waitFor()
+})
+
+teste("Colaborador não abre a tela de erros do sistema", { como: "usuario", url: "/admin/erros" }, async (p) => {
+  await p.waitForURL("**/meus-treinamentos")
+})
+
+teste("Inventário LGPD vem do sistema, abre os detalhes e permite registrar a revisão", { como: "master", url: "/admin/privacidade" }, async (p) => {
+  await p.getByText("Inventário de dados pessoais").waitFor()
+  await p.getByText("Cadastro das pessoas").waitFor()
+  assert.equal(await p.getByText("Categorias de treinamento").count(), 0, "sem dados pessoais fica oculto por padrão")
+  await p.getByRole("button", { name: /Cadastro das pessoas/ }).click()
+  await p.getByText("Quanto tempo fica", { exact: true }).waitFor()
+  await p.getByRole("button", { name: "Registrar revisão" }).waitFor()
+  await p.getByRole("button", { name: "PDF" }).waitFor()
+})
+
+teste("Administrador vê o inventário, mas não registra a revisão", { como: "admin", url: "/admin/privacidade" }, async (p) => {
+  await p.getByText("Inventário de dados pessoais").waitFor()
+  assert.equal(await p.getByRole("button", { name: "Registrar revisão" }).count(), 0)
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)
@@ -285,6 +327,7 @@ async function main() {
           como: t.opcoes.como === "deslogado" ? "usuario" : t.opcoes.como,
           semCiencia: !!t.opcoes.semCiencia,
           segundoFator: !!t.opcoes.segundoFator,
+          emailsComProblema: !!t.opcoes.emailsComProblema,
         })
         if (t.opcoes.relogio) await page.clock.install()
         await page.goto(BASE + t.opcoes.url, { waitUntil: "networkidle" }).catch(() => {})

@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { registrarErro } from "@/lib/registrar-erro";
 
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean; error?: Error };
@@ -17,6 +18,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("UI error:", error, info);
+    void registrarErro(`${error.name}: ${error.message}`, `${error.stack || ""}\n${info.componentStack || ""}`);
   }
 
   render() {

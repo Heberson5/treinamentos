@@ -4,6 +4,7 @@
 // Funciona com a sessão só de senha (aal1), que é o que a pessoa tem nesse caso.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { registrarErroFuncao } from "../_shared/erros.ts";
 import { corsHeaders, json } from "../_shared/email.ts";
 
 Deno.serve(async (req) => {
@@ -54,6 +55,7 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (e) {
     console.error("mfa-recuperar:", e);
+    await registrarErroFuncao("mfa-recuperar", e);
     return json({ error: "Erro inesperado" }, 500);
   }
 });
