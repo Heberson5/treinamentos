@@ -46,6 +46,7 @@ import { useOnlineUsers } from "@/hooks/use-online-users"
 import { usePagination } from "@/hooks/use-pagination"
 import { ListPagination } from "@/components/shared/list-pagination"
 import { PageHeader } from "@/components/layout/page-header"
+import { ImportarUsuariosDialog } from "@/components/admin/importar-usuarios-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +58,7 @@ import { cn } from "@/lib/utils"
 
 import {
   Building2,
+  FileSpreadsheet,
   Filter,
   Search,
   Shield,
@@ -345,6 +347,7 @@ export default function Usuarios() {
 
   // Modal states
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -832,11 +835,28 @@ export default function Usuarios() {
         title="Usuários"
         description="Gerencie acessos, papéis e o progresso de cada colaborador"
         actions={
-          <Button onClick={handleOpenCreate}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Novo usuário
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Importar planilha
+            </Button>
+            <Button onClick={handleOpenCreate}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Novo usuário
+            </Button>
+          </div>
         }
+      />
+
+      <ImportarUsuariosDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        isMaster={isMaster}
+        empresas={empresas}
+        empresaInicial={isMaster ? (empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : "") : (user?.empresa_id || "")}
+        departamentos={departamentos}
+        emailsExistentes={usuarios.map((u) => u.email)}
+        onConcluido={() => queryClient.invalidateQueries({ queryKey: [USUARIOS_QUERY_KEY] })}
       />
 
       {/* Métricas */}

@@ -84,8 +84,9 @@ fi
 FALHOU=0
 shopt -s nullglob
 for t in supabase/tests/*.sql; do
-  if psql_teste -f - <"$t" >"$TMP/teste.log" 2>&1; then
-    log "  teste OK: $(basename "$t") — $(grep -o 'Acesso por papel:.*' "$TMP/teste.log" | tail -n1)"
+  [[ "$(basename "$t")" == _* ]] && continue
+  if cat supabase/tests/_harness.sql "$t" supabase/tests/_resultado.sql | psql_teste -f - >"$TMP/teste.log" 2>&1; then
+    log "  teste OK: $(basename "$t") — $(grep -o 'Verificações:.*' "$TMP/teste.log" | tail -n1)"
   else
     FALHOU=1
     erro "teste FALHOU: $(basename "$t")"

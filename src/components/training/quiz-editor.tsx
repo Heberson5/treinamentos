@@ -11,6 +11,7 @@ import { Plus, Trash2, GripVertical, HelpCircle, Sparkles, Loader2, Clock, Lock 
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { RegrasAvaliacao } from "@/components/training/regras-avaliacao"
 import {
   Select,
   SelectContent,
@@ -504,36 +505,14 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
             Avaliação do Treinamento
           </CardTitle>
           <CardDescription>
-            Crie questões de múltiplos tipos. Nota distribuída automaticamente (10 pts / nº de questões). Mínimo: <strong>7,0</strong>.
+            Crie questões de múltiplos tipos. A nota é distribuída automaticamente (10 pontos divididos pelas questões da prova). Defina abaixo a nota mínima, as tentativas, o sorteio e a validade.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-3">
-              <Switch checked={obrigatoria} onCheckedChange={(v) => { setObrigatoria(v); onSettingsChange?.({ avaliacao_obrigatoria: v, nota_minima: notaMinima, tempo_avaliacao_minutos: tempo }) }} />
-              <Label>Avaliação obrigatória para certificado</Label>
-            </div>
-            {questoes.length > 0 && (
-              <Badge variant="outline">{questoes.length} questão(ões) • {pontoPorQuestao} pts cada</Badge>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-sm">Tempo limite (minutos)</Label>
-            <Input
-              type="number"
-              value={tempo || ""}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || 0
-                setTempo(val)
-                onSettingsChange?.({ avaliacao_obrigatoria: obrigatoria, nota_minima: notaMinima, tempo_avaliacao_minutos: val })
-              }}
-              placeholder="0 = sem limite"
-              className="w-24 h-8"
-            />
-            <span className="text-xs text-muted-foreground">(0 = sem limite)</span>
-          </div>
+          {questoes.length > 0 && (
+            <Badge variant="outline">{questoes.length} questão(ões) no banco • {pontoPorQuestao} pts cada</Badge>
+          )}
+          <RegrasAvaliacao treinamentoId={treinamentoId} totalQuestoes={questoes.length} />
         </CardContent>
       </Card>
 

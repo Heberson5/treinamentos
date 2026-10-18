@@ -17,6 +17,8 @@ export interface SupabaseTraining {
   empresa_id: string | null;
   departamento_id: string | null;
   instrutor_id: string | null;
+  /** Meses de validade do treinamento (recertificação); null = não vence */
+  validade_meses?: number | null;
   criado_em: string | null;
   atualizado_em: string | null;
   // Dados do progresso

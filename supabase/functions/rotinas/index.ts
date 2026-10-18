@@ -1,5 +1,5 @@
 // Rotinas agendadas da plataforma. Chamada pelo agendador (cron) da VPS:
-//   POST /functions/v1/rotinas   { "tarefa": "notificacoes" | "lembretes" | "relatorio_mensal" | "limpeza" | "todas" | "alerta" }
+//   POST /functions/v1/rotinas   { "tarefa": "notificacoes" | "lembretes" | "recertificacao" | "relatorio_mensal" | "limpeza" | "todas" | "alerta" }
 //   Authorization: Bearer <SERVICE_ROLE_KEY>
 // Só a chave de serviço (que fica apenas no servidor) pode disparar.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
@@ -8,7 +8,8 @@ import {
   type ConfigEmail,
 } from "../_shared/email.ts";
 import {
-  alertaServidor, conclusao, lembretePrazo, novoTreinamento, relatorioMensal as modeloRelatorioMensal,
+  alertaServidor, conclusao, lembretePrazo, novoTreinamento, recertificacao as modeloRecertificacao,
+  recertificacaoGestao, relatorioMensal as modeloRelatorioMensal,
 } from "../_shared/modelos-email.ts";
 
 const FUSO = "America/Sao_Paulo";
@@ -228,6 +229,94 @@ async function lembretes(ctx: Contexto) {
 }
 
 // ------------------------------------------------------------------
+// Validade dos treinamentos (recertificação): avisa quem precisa renovar e,
+// às segundas, resume os vencimentos para os administradores
+// ------------------------------------------------------------------
+function somarMeses(iso: string, meses: number): string {
+  const d = new Date(iso);
+  d.setUTCMonth(d.getUTCMonth() + meses);
+  return d.toISOString();
+}
+
+async function recertificacao(ctx: Contexto, forcar = false) {
+  const resumo = { avisos: 0, resumos_gestao: 0 };
+  const { admin, config, carteiro } = ctx;
+  if (!config.avisosLigados || !config.lembretesLigados) return resumo;
+
+  const hoje = hojeBR();
+  const treinos = await todos<any>((de, ate) =>
+    admin.from("treinamentos").select("id, titulo, empresa_id, validade_meses").eq("publicado", true).not("validade_meses", "is", null).range(de, ate));
+  if (!treinos.length) return resumo;
+
+  // empresa → itens para o resumo da gestão
+  const porEmpresa = new Map<string, Array<{ pessoa: string; treinamento: string; venceEm: string; dias: number; ordem: number }>>();
+
+  for (const t of treinos) {
+    const validade = Number(t.validade_meses) || 0;
+    if (!validade) continue;
+    const concl = await todos<any>((de, ate) =>
+      admin.from("progresso_treinamentos").select("usuario_id, data_conclusao").eq("treinamento_id", t.id).eq("concluido", true)
+        .not("data_conclusao", "is", null).range(de, ate));
+
+    for (const c of concl) {
+      const p = ctx.pessoas.get(c.usuario_id);
+      if (!p || p.papel === "master" || !p.empresa_id || !ctx.empresasAtivas.has(p.empresa_id)) continue;
+      const venceIso = somarMeses(c.data_conclusao, validade);
+      const dias = diasEntre(hoje, hojeBR(new Date(venceIso)));
+      if (dias > 30) continue;
+
+      const lista = porEmpresa.get(p.empresa_id) || [];
+      lista.push({ pessoa: p.nome, treinamento: t.titulo, venceEm: dataBR(venceIso), dias, ordem: dias });
+      porEmpresa.set(p.empresa_id, lista);
+
+      const tipo = dias === 30 ? "aviso_30" : dias === 7 ? "aviso_7" : dias === 0 ? "vence_hoje" : dias < 0 && dias >= -7 ? "vencido" : null;
+      if (!tipo || carteiro.esgotado) continue;
+      if (!ctx.podeAvisar(p) || !ctx.pref(p.empresa_id).lembrete_prazo) continue;
+      // Registra antes de enviar: o mesmo aviso não sai duas vezes no mesmo ciclo
+      const { error } = await admin.from("recertificacao_avisos_enviados")
+        .insert({ usuario_id: p.id, treinamento_id: t.id, concluido_em: c.data_conclusao, tipo });
+      if (error) continue;
+      const modelo = modeloRecertificacao(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, venceEm: dataBR(venceIso), dias });
+      const ok = await carteiro.enviar({
+        para: p.email, tipo: "recertificacao", empresaId: p.empresa_id, usuarioId: p.id,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+      });
+      if (ok) resumo.avisos++;
+    }
+  }
+
+  // Resumo semanal para os administradores (segundas-feiras)
+  const diaSemana = new Intl.DateTimeFormat("en-US", { timeZone: FUSO, weekday: "short" }).format(new Date());
+  if (diaSemana === "Mon" || forcar) {
+    const inicioDia = new Date(hoje + "T00:00:00-03:00").toISOString();
+    for (const [empresaId, itens] of porEmpresa) {
+      if (carteiro.esgotado) break;
+      const admins = [...ctx.pessoas.values()].filter((p) => p.empresa_id === empresaId && p.papel === "admin" && p.receber_emails && p.email);
+      if (!admins.length) continue;
+      itens.sort((a, b) => a.ordem - b.ordem);
+      const modelo = recertificacaoGestao(modeloCfg(config), {
+        nomeEmpresa: ctx.empresasAtivas.get(empresaId) || "",
+        vencidos: itens.filter((i) => i.dias < 0).length,
+        aVencer: itens.filter((i) => i.dias >= 0).length,
+        itens: itens.slice(0, 15),
+      });
+      for (const a of admins) {
+        if (carteiro.esgotado) break;
+        const { count } = await admin.from("emails_enviados").select("id", { count: "exact", head: true })
+          .eq("destinatario", a.email).eq("tipo", "recertificacao_gestao").gte("criado_em", inicioDia);
+        if ((count || 0) > 0) continue;
+        const ok = await carteiro.enviar({
+          para: a.email, tipo: "recertificacao_gestao", empresaId, usuarioId: a.id,
+          assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+        });
+        if (ok) resumo.resumos_gestao++;
+      }
+    }
+  }
+  return resumo;
+}
+
+// ------------------------------------------------------------------
 // Relatório mensal para administradores (dia 1 de cada mês)
 // ------------------------------------------------------------------
 async function relatorioMensal(ctx: Contexto, forcar: boolean) {
@@ -309,6 +398,7 @@ async function limpeza(admin: SupabaseClient) {
   await apagar("solicitacoes_lgpd", "criado_em", dias(1825));
   await apagar("registro_backups", "iniciado_em", dias(365));    // registro dos backups: 1 ano
   await apagar("mfa_recuperacao_falhas", "criado_em", dias(1));  // tentativas de código de recuperação
+  await apagar("avaliacoes_sorteios", "criado_em", dias(7));     // provas sorteadas não enviadas
   return r;
 }
 
@@ -372,6 +462,7 @@ Deno.serve(async (req) => {
       try {
         if (tarefa === "notificacoes" || tarefa === "todas") resultado.notificacoes = await notificacoes(ctx);
         if (tarefa === "lembretes" || tarefa === "todas") resultado.lembretes = await lembretes(ctx);
+        if (tarefa === "lembretes" || tarefa === "recertificacao" || tarefa === "todas") resultado.recertificacao = await recertificacao(ctx, !!body?.forcar);
         if (tarefa === "relatorio_mensal" || tarefa === "todas") resultado.relatorio_mensal = await relatorioMensal(ctx, !!body?.forcar);
       } finally {
         await carteiro.fechar();

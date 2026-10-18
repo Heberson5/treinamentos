@@ -120,6 +120,40 @@ export type Database = {
         }
         Relationships: []
       }
+      avaliacoes_sorteios: {
+        Row: {
+          criado_em: string
+          id: string
+          questoes: string[]
+          treinamento_id: string
+          usado_em: string | null
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          questoes: string[]
+          treinamento_id: string
+          usado_em?: string | null
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          questoes?: string[]
+          treinamento_id?: string
+          usado_em?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_sorteios_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacoes_treinamentos: {
         Row: {
           atualizado_em: string
@@ -127,6 +161,7 @@ export type Database = {
           criado_em: string
           id: string
           nota: number
+          nps: number | null
           numero: number | null
           treinamento_id: string
           usuario_id: string
@@ -137,6 +172,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nota: number
+          nps?: number | null
           numero?: number | null
           treinamento_id: string
           usuario_id: string
@@ -147,6 +183,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nota?: number
+          nps?: number | null
           numero?: number | null
           treinamento_id?: string
           usuario_id?: string
@@ -410,6 +447,7 @@ export type Database = {
           empresa_id: string | null
           treinamento_id: string
           usuario_id: string
+          valido_ate: string | null
         }
         Insert: {
           codigo: string
@@ -417,6 +455,7 @@ export type Database = {
           empresa_id?: string | null
           treinamento_id: string
           usuario_id: string
+          valido_ate?: string | null
         }
         Update: {
           codigo?: string
@@ -424,6 +463,7 @@ export type Database = {
           empresa_id?: string | null
           treinamento_id?: string
           usuario_id?: string
+          valido_ate?: string | null
         }
         Relationships: [
           {
@@ -474,6 +514,61 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cnpj_demo_usado_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracoes_certificado: {
+        Row: {
+          assinante_cargo: string | null
+          assinante_nome: string | null
+          assinatura_url: string | null
+          atualizado_em: string
+          atualizado_por: string | null
+          cor_destaque: string | null
+          empresa_id: string | null
+          id: string
+          logo_url: string | null
+          mostrar_qr: boolean
+          rodape: string | null
+          texto: string
+          titulo: string
+        }
+        Insert: {
+          assinante_cargo?: string | null
+          assinante_nome?: string | null
+          assinatura_url?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cor_destaque?: string | null
+          empresa_id?: string | null
+          id?: string
+          logo_url?: string | null
+          mostrar_qr?: boolean
+          rodape?: string | null
+          texto?: string
+          titulo?: string
+        }
+        Update: {
+          assinante_cargo?: string | null
+          assinante_nome?: string | null
+          assinatura_url?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cor_destaque?: string | null
+          empresa_id?: string | null
+          id?: string
+          logo_url?: string | null
+          mostrar_qr?: boolean
+          rodape?: string | null
+          texto?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracoes_certificado_empresa_id_fkey"
             columns: ["empresa_id"]
             referencedRelation: "empresas"
             referencedColumns: ["id"]
@@ -651,6 +746,7 @@ export type Database = {
           telefone_contato: string | null
           tentativas_login_max: number
           timezone: string
+          trilhas_habilitadas: boolean
           url_plataforma: string | null
         }
         Insert: {
@@ -693,6 +789,7 @@ export type Database = {
           telefone_contato?: string | null
           tentativas_login_max?: number
           timezone?: string
+          trilhas_habilitadas?: boolean
           url_plataforma?: string | null
         }
         Update: {
@@ -735,6 +832,7 @@ export type Database = {
           telefone_contato?: string | null
           tentativas_login_max?: number
           timezone?: string
+          trilhas_habilitadas?: boolean
           url_plataforma?: string | null
         }
         Relationships: []
@@ -908,6 +1006,46 @@ export type Database = {
           tema_cor?: string | null
         }
         Relationships: []
+      }
+      historico_conclusoes: {
+        Row: {
+          arquivado_em: string
+          certificado_codigo: string | null
+          concluido_em: string | null
+          empresa_id: string | null
+          id: string
+          nota_avaliacao: number | null
+          treinamento_id: string
+          usuario_id: string
+        }
+        Insert: {
+          arquivado_em?: string
+          certificado_codigo?: string | null
+          concluido_em?: string | null
+          empresa_id?: string | null
+          id?: string
+          nota_avaliacao?: number | null
+          treinamento_id: string
+          usuario_id: string
+        }
+        Update: {
+          arquivado_em?: string
+          certificado_codigo?: string | null
+          concluido_em?: string | null
+          empresa_id?: string | null
+          id?: string
+          nota_avaliacao?: number | null
+          treinamento_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_conclusoes_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       landing_page_config: {
         Row: {
@@ -1126,6 +1264,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mfa_codigos_recuperacao: {
+        Row: {
+          codigo_hash: string
+          criado_em: string
+          id: string
+          usado_em: string | null
+          usuario_id: string
+        }
+        Insert: {
+          codigo_hash: string
+          criado_em?: string
+          id?: string
+          usado_em?: string | null
+          usuario_id: string
+        }
+        Update: {
+          codigo_hash?: string
+          criado_em?: string
+          id?: string
+          usado_em?: string | null
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      mfa_recuperacao_falhas: {
+        Row: {
+          criado_em: string
+          id: number
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: number
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: number
+          usuario_id?: string
+        }
+        Relationships: []
       }
       pagamentos: {
         Row: {
@@ -1626,6 +1806,37 @@ export type Database = {
           },
         ]
       }
+      recertificacao_avisos_enviados: {
+        Row: {
+          concluido_em: string
+          enviado_em: string
+          tipo: string
+          treinamento_id: string
+          usuario_id: string
+        }
+        Insert: {
+          concluido_em: string
+          enviado_em?: string
+          tipo: string
+          treinamento_id: string
+          usuario_id: string
+        }
+        Update: {
+          concluido_em?: string
+          enviado_em?: string
+          tipo?: string
+          treinamento_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recertificacao_avisos_enviados_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registro_backups: {
         Row: {
           arquivo: string | null
@@ -1977,6 +2188,34 @@ export type Database = {
         }
         Relationships: []
       }
+      treinamento_prerequisitos: {
+        Row: {
+          prerequisito_id: string
+          treinamento_id: string
+        }
+        Insert: {
+          prerequisito_id: string
+          treinamento_id: string
+        }
+        Update: {
+          prerequisito_id?: string
+          treinamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treinamento_prerequisitos_prerequisito_id_fkey"
+            columns: ["prerequisito_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treinamento_prerequisitos_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       treinamentos: {
         Row: {
           atualizado_em: string | null
@@ -1991,6 +2230,8 @@ export type Database = {
           empresa_id: string | null
           id: string
           instrutor_id: string | null
+          intervalo_tentativas_horas: number
+          max_tentativas: number | null
           media_avaliacao: number | null
           nivel: string | null
           nota_minima: number | null
@@ -1998,10 +2239,12 @@ export type Database = {
           numero: number | null
           obrigatorio: boolean | null
           publicado: boolean | null
+          questoes_por_prova: number | null
           tempo_avaliacao_minutos: number | null
           thumbnail_url: string | null
           titulo: string
           total_avaliacoes: number | null
+          validade_meses: number | null
         }
         Insert: {
           atualizado_em?: string | null
@@ -2016,6 +2259,8 @@ export type Database = {
           empresa_id?: string | null
           id?: string
           instrutor_id?: string | null
+          intervalo_tentativas_horas?: number
+          max_tentativas?: number | null
           media_avaliacao?: number | null
           nivel?: string | null
           nota_minima?: number | null
@@ -2023,10 +2268,12 @@ export type Database = {
           numero?: number | null
           obrigatorio?: boolean | null
           publicado?: boolean | null
+          questoes_por_prova?: number | null
           tempo_avaliacao_minutos?: number | null
           thumbnail_url?: string | null
           titulo: string
           total_avaliacoes?: number | null
+          validade_meses?: number | null
         }
         Update: {
           atualizado_em?: string | null
@@ -2041,6 +2288,8 @@ export type Database = {
           empresa_id?: string | null
           id?: string
           instrutor_id?: string | null
+          intervalo_tentativas_horas?: number
+          max_tentativas?: number | null
           media_avaliacao?: number | null
           nivel?: string | null
           nota_minima?: number | null
@@ -2048,10 +2297,12 @@ export type Database = {
           numero?: number | null
           obrigatorio?: boolean | null
           publicado?: boolean | null
+          questoes_por_prova?: number | null
           tempo_avaliacao_minutos?: number | null
           thumbnail_url?: string | null
           titulo?: string
           total_avaliacoes?: number | null
+          validade_meses?: number | null
         }
         Relationships: [
           {
@@ -2062,6 +2313,71 @@ export type Database = {
           },
           {
             foreignKeyName: "treinamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trilha_treinamentos: {
+        Row: {
+          ordem: number
+          treinamento_id: string
+          trilha_id: string
+        }
+        Insert: {
+          ordem?: number
+          treinamento_id: string
+          trilha_id: string
+        }
+        Update: {
+          ordem?: number
+          treinamento_id?: string
+          trilha_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trilha_treinamentos_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trilha_treinamentos_trilha_id_fkey"
+            columns: ["trilha_id"]
+            referencedRelation: "trilhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trilhas: {
+        Row: {
+          ativa: boolean
+          criado_em: string
+          descricao: string | null
+          empresa_id: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativa?: boolean
+          criado_em?: string
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativa?: boolean
+          criado_em?: string
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trilhas_empresa_id_fkey"
             columns: ["empresa_id"]
             referencedRelation: "empresas"
             referencedColumns: ["id"]
@@ -2134,7 +2450,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _acesso_avaliacao: { Args: { p_treinamento: string }; Returns: boolean }
       _gerar_codigo_certificado: { Args: never; Returns: string }
+      _inicio_ciclo: {
+        Args: { p_treinamento: string; p_usuario: string }
+        Returns: string
+      }
       _liberar_leitura_colunas: {
         Args: { p_segredos: string[]; p_tabela: string }
         Returns: undefined
@@ -2143,10 +2464,23 @@ export type Database = {
         Args: { p_descricao: string; p_tipo: string }
         Returns: string
       }
+      analise_questoes: {
+        Args: { p_treinamento_id: string }
+        Returns: {
+          acertos: number
+          ordem: number
+          pct_acerto: number
+          pergunta: string
+          questao_id: string
+          respondidas: number
+          tipo: string
+        }[]
+      }
       anonimizar_dados_usuario: {
         Args: { p_executor: string; p_usuario_id: string }
         Returns: string
       }
+      codigos_recuperacao_mfa_restantes: { Args: never; Returns: number }
       concluir_treinamento: {
         Args: {
           p_nota_avaliacao?: number
@@ -2174,6 +2508,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      consumir_codigo_recuperacao_mfa: {
+        Args: { p_codigo: string; p_uid: string }
+        Returns: boolean
       }
       copiar_modelos_para_empresa: {
         Args: { p_empresa_id: string }
@@ -2249,10 +2587,35 @@ export type Database = {
         Returns: string
       }
       exportar_meus_dados: { Args: never; Returns: Json }
+      gerar_codigos_recuperacao_mfa: { Args: never; Returns: string[] }
       gerar_token_calendario: { Args: never; Returns: string }
       get_empresa_id_do_usuario: {
         Args: { p_user_id: string }
         Returns: string
+      }
+      iniciar_recertificacao: {
+        Args: { p_treinamento_id: string }
+        Returns: {
+          atualizado_em: string | null
+          concluido: boolean | null
+          criado_em: string | null
+          data_conclusao: string | null
+          data_inicio: string | null
+          email_conclusao_em: string | null
+          id: string
+          nota_avaliacao: number | null
+          numero: number | null
+          percentual_concluido: number | null
+          tempo_assistido_minutos: number | null
+          treinamento_id: string
+          usuario_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "progresso_treinamentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       listar_usuarios_visiveis_admin: {
         Args: never
@@ -2327,11 +2690,19 @@ export type Database = {
           valor_minimo: number
         }[]
       }
+      pode_gerenciar_questoes_treinamento: {
+        Args: { p_treinamento: string }
+        Returns: boolean
+      }
       pode_gerenciar_usuario_alvo: {
         Args: { p_usuario_alvo: string }
         Returns: boolean
       }
       pode_tentar_login: { Args: { p_email: string }; Returns: Json }
+      pode_ver_questoes_treinamento: {
+        Args: { p_treinamento: string }
+        Returns: boolean
+      }
       prazos_calendario: {
         Args: { p_token: string }
         Returns: {
@@ -2359,6 +2730,10 @@ export type Database = {
         Args: { p_email: string; p_sucesso: boolean }
         Returns: undefined
       }
+      relatorio_nps: {
+        Args: { p_empresa_id?: string; p_fim?: string; p_inicio?: string }
+        Returns: Json
+      }
       resumo_ciencia_politica: {
         Args: { p_empresa_id?: string }
         Returns: {
@@ -2368,7 +2743,28 @@ export type Database = {
         }[]
       }
       revogar_token_calendario: { Args: never; Returns: undefined }
+      segundo_fator_pendente: { Args: { p_uid: string }; Returns: boolean }
+      status_avaliacao: { Args: { p_treinamento_id: string }; Returns: Json }
+      treinamento_liberado: {
+        Args: { p_treinamento_id: string }
+        Returns: boolean
+      }
+      usuario_tem_segundo_fator: { Args: { p_uid: string }; Returns: boolean }
       validar_certificado: { Args: { p_codigo: string }; Returns: Json }
+      vencimentos_treinamentos: {
+        Args: { p_empresa_id?: string }
+        Returns: {
+          concluido_em: string
+          dias_restantes: number
+          email: string
+          estado: string
+          nome: string
+          titulo: string
+          treinamento_id: string
+          usuario_id: string
+          vence_em: string
+        }[]
+      }
       verificar_cnpj_demo_disponivel: {
         Args: { p_cnpj: string }
         Returns: boolean

@@ -120,7 +120,7 @@ teste("Fora da avaliação, trocar de aba não recarrega a página", { como: "us
 teste("Cada modelo de e-mail tem a sua pré-visualização", { como: "master", url: "/admin/configuracoes" }, async (p) => {
   await p.getByRole("tab", { name: "Email" }).click()
   const lista = p.getByRole("navigation", { name: "Modelos de e-mail" })
-  const modelos = ["Novo treinamento", "Conclusão", "Lembrete de prazo", "Relatório mensal", "Pagamento confirmado", "Alerta do servidor", "E-mail de teste"]
+  const modelos = ["Novo treinamento", "Conclusão", "Lembrete de prazo", "Renovação de treinamento", "Vencimentos (gestão)", "Relatório mensal", "Pagamento confirmado", "Alerta do servidor", "E-mail de teste"]
   const assuntos = new Set()
   for (const nome of modelos) {
     await lista.getByRole("button", { name: nome }).click()
@@ -151,6 +151,37 @@ teste("Master vê o cartão de verificação em duas etapas em Segurança", { co
   await p.getByRole("tab", { name: "Segurança" }).click()
   await p.getByText("Verificação em duas etapas").first().waitFor()
   await p.getByRole("button", { name: /Ativar verificação em duas etapas/ }).waitFor()
+})
+
+teste("Relatórios mostram a satisfação (NPS) com gráficos e comentários identificados", { como: "master", url: "/relatorios" }, async (p) => {
+  await p.getByRole("button", { name: "Satisfação (NPS)" }).click()
+  await p.getByTestId("nps-valor").waitFor()
+  assert.match(await p.getByTestId("nps-valor").innerText(), /44,4/)
+  await p.getByText("Promotores (9–10)").waitFor()
+  await p.getByText("Conteúdo claro e direto ao ponto.").waitFor()
+  await p.getByText(/Lucas Ferreira · LGPD na prática/).waitFor()
+  await p.getByRole("button", { name: "Vencimentos" }).click()
+  await p.getByTestId("vencimentos-report").waitFor()
+})
+
+teste("Importar usuários: confere a planilha antes de criar", { como: "admin", url: "/admin/usuarios" }, async (p) => {
+  await p.getByRole("button", { name: "Importar planilha" }).click()
+  const csv = "nome;email;departamento;papel\nAna Lima;ana.lima@exemplo.com;;colaborador\nBruno;email-invalido;;\nCarla;carla@exemplo.com;;chefe\n"
+  await p.getByLabel("Arquivo da planilha").setInputFiles({ name: "usuarios.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") })
+  await p.getByText("1 prontos").waitFor()
+  await p.getByText("2 com problema").waitFor()
+  await p.getByText("E-mail inválido").waitFor()
+  await p.getByText(/Papel desconhecido/).waitFor()
+  await p.getByRole("button", { name: "Importar 1 usuário" }).waitFor()
+})
+
+teste("Admin vê o modelo do certificado com pré-visualização", { como: "admin", url: "/admin/certificado" }, async (p) => {
+  await p.getByRole("heading", { name: "Modelo do certificado" }).waitFor()
+  await p.getByTestId("certificado-visual").waitFor()
+  await p.getByLabel("Título").fill("Certificado de Participação")
+  await p.getByTestId("certificado-visual").getByText("PARTICIPAÇÃO").waitFor()
+  await p.getByLabel("Nome de quem assina").fill("Helena Prado")
+  await p.getByTestId("certificado-visual").getByText("Helena Prado").waitFor()
 })
 
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {

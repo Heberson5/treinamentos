@@ -29,6 +29,22 @@ interface Questao {
   passo?: number
 }
 
+interface StatusAvaliacao {
+  total_questoes: number
+  questoes_por_prova: number
+  sorteia: boolean
+  nota_minima: number
+  tempo_minutos: number
+  max_tentativas: number | null
+  intervalo_horas: number
+  tentativas_feitas: number
+  tentativas_restantes: number | null
+  aprovado: boolean
+  pode_iniciar: boolean
+  motivo: "limite" | "aguarde" | null
+  proxima_em: string | null
+}
+
 interface QuizViewerProps {
   treinamentoId: string
   notaMinima?: number
@@ -56,7 +72,7 @@ const KAHOOT_COLORS = [
   "bg-orange-500 hover:bg-orange-600",
 ]
 
-export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tempoEstudoSegundos = 0, onAprovado, onTentativaFinalizada }: QuizViewerProps) {
+export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, tempoLimite: tempoLimiteProp = 0, tempoEstudoSegundos = 0, onAprovado, onTentativaFinalizada }: QuizViewerProps) {
   const { toast } = useToast()
   const { user } = useAuth()
   const [questoes, setQuestoes] = useState<Questao[]>([])
@@ -69,7 +85,11 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
   const [timeLeft, setTimeLeft] = useState(0)
   const [quizStarted, setQuizStarted] = useState(false)
   const [puzzleOrders, setPuzzleOrders] = useState<Record<string, number[]>>({})
+  const [status, setStatus] = useState<StatusAvaliacao | null>(null)
   const quizStartRef = useRef<number>(0)
+  // As regras vêm do servidor (nota mínima, tempo); as props são só o valor padrão
+  const notaMinima = status?.nota_minima ?? notaMinimaProp
+  const tempoLimite = status?.tempo_minutos ?? tempoLimiteProp
 
   useEffect(() => { loadData() }, [treinamentoId])
 
@@ -102,10 +122,12 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
 
   const loadData = async () => {
     setIsLoading(true)
-    const [questoesRes, tentativasRes] = await Promise.all([
+    const [questoesRes, statusRes] = await Promise.all([
       supabase.rpc("obter_questoes_avaliacao", { p_treinamento_id: treinamentoId }),
-      user ? supabase.from("tentativas_avaliacao").select("id").eq("treinamento_id", treinamentoId).eq("usuario_id", user.id).eq("aprovado", true).limit(1) : null
+      supabase.rpc("status_avaliacao", { p_treinamento_id: treinamentoId }),
     ])
+    const st = (statusRes.data || null) as unknown as StatusAvaliacao | null
+    setStatus(st)
 
     if (questoesRes.data) {
       const letterKeys = "abcdefghij".split("")
@@ -131,7 +153,7 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
         })
       setQuestoes(shuffleArray(mappedQuestions))
     }
-    if (tentativasRes?.data?.length) setJaAprovado(true)
+    setJaAprovado(!!st?.aprovado)
     setIsLoading(false)
   }
 
@@ -235,6 +257,7 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
     setResultado(null)
     setCurrentIndex(0)
     setQuizStarted(false)
+    void loadData()
     toast({
       title: "Estude novamente",
       description: "Revise o conteúdo do treinamento antes de tentar novamente.",
@@ -256,7 +279,7 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
   }
 
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Carregando avaliação...</div>
-  if (questoes.length === 0) return null
+  if (questoes.length === 0 && !(status && status.total_questoes > 0)) return null
 
   if (jaAprovado && !resultado) {
     return (
@@ -282,10 +305,26 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
           <div>
             <h2 className="text-2xl font-bold mb-2">Avaliação do Treinamento</h2>
             <p className="text-muted-foreground">
-              {questoes.length} questão(ões) • Nota mínima: {notaMinima}
+              {status?.sorteia ? `${questoes.length} questões sorteadas de ${status.total_questoes}` : `${questoes.length} questão(ões)`} • Nota mínima: {notaMinima.toLocaleString("pt-BR")}
               {tempoLimite > 0 && ` • Tempo: ${tempoLimite} min`}
             </p>
+            {status && status.max_tentativas != null && (
+              <p className="mt-1 text-sm text-muted-foreground" data-testid="info-tentativas">
+                Tentativa {Math.min(status.tentativas_feitas + 1, status.max_tentativas)} de {status.max_tentativas}
+                {status.tentativas_restantes === 1 && " — é a última"}
+              </p>
+            )}
+            {status && status.intervalo_horas > 0 && (
+              <p className="text-xs text-muted-foreground">Intervalo mínimo entre tentativas: {status.intervalo_horas} h</p>
+            )}
           </div>
+          {status && !status.pode_iniciar && (
+            <div role="alert" className="mx-auto max-w-md rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200" data-testid="avaliacao-bloqueada">
+              {status.motivo === "limite"
+                ? `Você usou todas as ${status.max_tentativas} tentativas desta avaliação. Fale com o administrador ou o instrutor para pedir uma nova chance.`
+                : `Você poderá tentar de novo em ${status.proxima_em ? new Date(status.proxima_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "breve"}. Aproveite para rever o conteúdo.`}
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 justify-center">
             {Object.entries(questoes.reduce((acc, q) => {
               acc[q.tipo] = (acc[q.tipo] || 0) + 1
@@ -294,7 +333,7 @@ export function QuizViewer({ treinamentoId, notaMinima = 7, tempoLimite = 0, tem
               <Badge key={tipo} variant="secondary">{count}x {tipo}</Badge>
             ))}
           </div>
-          <Button size="lg" onClick={startQuiz} className="gap-2">
+          <Button size="lg" onClick={startQuiz} className="gap-2" disabled={!!status && !status.pode_iniciar}>
             Iniciar Avaliação <ArrowRight className="h-4 w-4" />
           </Button>
         </CardContent>

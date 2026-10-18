@@ -19,6 +19,9 @@ import { useToast } from "@/hooks/use-toast"
 import { PeriodFilter, PeriodValue, getStartDateFromPeriod } from "@/components/shared/PeriodFilter"
 import { PageHeader } from "@/components/layout/page-header"
 import ExamAttemptsReport from "@/components/training/exam-attempts-report"
+import { NpsReport } from "@/components/reports/nps-report"
+import { VencimentosReport } from "@/components/reports/vencimentos-report"
+import { AnaliseQuestoes } from "@/components/reports/analise-questoes"
 import { cn } from "@/lib/utils"
 
 const monthlyConfig = {
@@ -313,6 +316,8 @@ export default function Relatorios() {
     { value: "departamentos", label: "Departamentos", exportavel: true },
     { value: "treinamentos", label: "Treinamentos", exportavel: true },
     { value: "avaliacoes", label: "Avaliações", exportavel: false },
+    { value: "satisfacao", label: "Satisfação (NPS)", exportavel: false },
+    { value: "vencimentos", label: "Vencimentos", exportavel: false },
     { value: "participantes", label: "Participantes", exportavel: true },
     { value: "mensal", label: "Evolução", exportavel: true },
   ]
@@ -545,7 +550,18 @@ export default function Relatorios() {
       )}
 
       {/* Avaliações */}
-      {activeTab === "avaliacoes" && <ExamAttemptsReport />}
+      {activeTab === "avaliacoes" && (
+        <div className="space-y-6">
+          <ExamAttemptsReport />
+          <AnaliseQuestoes />
+        </div>
+      )}
+
+      {/* Satisfação (NPS) */}
+      {activeTab === "satisfacao" && <NpsReport empresaId={empresaFilter} inicio={startDate} fim={endDate} />}
+
+      {/* Vencimentos (recertificação) */}
+      {activeTab === "vencimentos" && <VencimentosReport empresaId={empresaFilter} />}
 
       {/* Participantes */}
       {activeTab === "participantes" && (

@@ -53,6 +53,15 @@ scripts/vps/monitorar.sh
 
 Logs: `/var/log/treinamentos/*.log`.
 
+O lembrete diário das 8h (`rotinas.sh lembretes`) também cuida da **validade dos
+treinamentos**: avisa a pessoa 30 e 7 dias antes de vencer, no dia e uma vez
+depois de vencido, e às segundas manda um resumo aos administradores. Rodar só
+essa parte: `scripts/vps/rotinas.sh recertificacao`.
+
+**Testes do banco** (`supabase/tests/*.sql`): rodam sozinhos no ensaio do
+`atualizar.sh`. Para rodar à mão num banco de teste (nunca no de produção):
+`PGHOST=... PGUSER=... scripts/db/testar-banco.sh <banco>`.
+
 ## 2. Atualizações seguintes
 
 ```bash
@@ -198,6 +207,8 @@ A rotina `limpeza` (diária, 03:30) aplica os prazos da Política de Privacidade
 | Pedidos de demonstração | 1 ano |
 | Pedidos LGPD | 5 anos |
 | Registro de backups | 1 ano |
+| Provas sorteadas não enviadas | 7 dias |
+| Tentativas de código de recuperação (2FA) | 1 dia |
 | Arquivos de backup | 14 dias (cópia externa: 30 dias) |
 
 Se mudar algum prazo, atualize também a política em Configurações → Privacidade.

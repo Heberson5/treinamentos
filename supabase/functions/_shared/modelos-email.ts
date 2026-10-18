@@ -141,6 +141,40 @@ export function relatorioMensal(c: ConfigModelo, d: DadosRelatorioMensal): Email
   };
 }
 
+export interface DadosRecertificacao {
+  nome: string;
+  titulo: string;
+  treinamentoId: string;
+  /** Data de vencimento já formatada (dd/mm/aaaa) */
+  venceEm: string;
+  /** Dias até vencer: n = faltam n dias, 0 = vence hoje, negativo = já venceu */
+  dias: number;
+}
+export function recertificacao(c: ConfigModelo, d: DadosRecertificacao): EmailMontado {
+  const vencido = d.dias < 0;
+  const quando = vencido ? "venceu" : d.dias === 0 ? "vence hoje" : d.dias === 1 ? "vence amanhã" : `vence em ${d.dias} dias`;
+  return {
+    assunto: vencido ? `Treinamento vencido: ${d.titulo}` : `Renove seu treinamento: ${d.titulo} ${quando}`,
+    corpoHtml: `<p>Olá, ${esc(primeiroNome(d.nome))}!</p><p>A validade do treinamento <strong>${esc(d.titulo)}</strong> ${esc(quando)} (${esc(d.venceEm)}).</p><p>${vencido ? "Para manter o certificado em dia, refaça o treinamento o quanto antes." : "Você já pode renová-lo: o treinamento é reaberto e, ao concluir, você recebe um novo certificado. O certificado atual continua válido como registro."}</p>${botao("Renovar treinamento", link(c, "/meus-treinamentos"))}${rodapePreferencias(c)}`,
+  };
+}
+
+export interface DadosRecertificacaoGestao {
+  nomeEmpresa: string;
+  vencidos: number;
+  aVencer: number;
+  /** Até 15 itens, os mais urgentes primeiro */
+  itens: Array<{ pessoa: string; treinamento: string; venceEm: string; dias: number }>;
+}
+export function recertificacaoGestao(c: ConfigModelo, d: DadosRecertificacaoGestao): EmailMontado {
+  const linhas = d.itens.map((i) =>
+    `<tr><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb">${esc(i.pessoa)}</td><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb">${esc(i.treinamento)}</td><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;white-space:nowrap;color:${i.dias < 0 ? "#b91c1c" : "#92400e"}">${i.dias < 0 ? "Vencido em" : "Vence em"} ${esc(i.venceEm)}</td></tr>`).join("");
+  return {
+    assunto: `Vencimentos de treinamentos — ${d.nomeEmpresa}`,
+    corpoHtml: `<p>Olá!</p><p>Resumo semanal de validade dos treinamentos da empresa <strong>${esc(d.nomeEmpresa)}</strong>: <strong>${d.vencidos}</strong> vencido${d.vencidos === 1 ? "" : "s"} e <strong>${d.aVencer}</strong> vencendo nos próximos 30 dias.</p><table role="presentation" style="border-collapse:collapse;width:100%;font-size:14px">${linhas}</table>${botao("Ver relatórios", link(c, "/relatorios"))}`,
+  };
+}
+
 export interface DadosPagamento {
   nome: string;
   nomeEmpresa: string;
@@ -177,7 +211,7 @@ export function teste(c: ConfigModelo): EmailMontado {
 // Catálogo — usado pela pré-visualização em Configurações → Email
 // ------------------------------------------------------------------
 
-export type ModeloEmailId = "novo_treinamento" | "conclusao" | "lembrete_prazo" | "relatorio_mensal" | "pagamento" | "alerta_servidor" | "teste";
+export type ModeloEmailId = "novo_treinamento" | "conclusao" | "lembrete_prazo" | "recertificacao" | "recertificacao_gestao" | "relatorio_mensal" | "pagamento" | "alerta_servidor" | "teste";
 
 export interface VarianteModelo {
   id: string;
@@ -246,6 +280,42 @@ export const MODELOS_EMAIL: InfoModeloEmail[] = [
       { id: "amanha", nome: "Termina amanhã", montar: (c) => lembretePrazo(c, { nome: "Carlos Eduardo Lima", titulo: "Reforma Tributária — Módulo 1", treinamentoId: ID_EXEMPLO, prazo: dataBR(1), dias: 1 }) },
       { id: "hoje", nome: "Termina hoje", montar: (c) => lembretePrazo(c, { nome: "Carlos Eduardo Lima", titulo: "Reforma Tributária — Módulo 1", treinamentoId: ID_EXEMPLO, prazo: dataBR(0), dias: 0 }) },
       { id: "vencido", nome: "Prazo vencido", montar: (c) => lembretePrazo(c, { nome: "Carlos Eduardo Lima", titulo: "Reforma Tributária — Módulo 1", treinamentoId: ID_EXEMPLO, prazo: dataBR(-1), dias: -1 }) },
+    ],
+  },
+  {
+    id: "recertificacao",
+    nome: "Renovação de treinamento",
+    quando: "Todo dia às 8h: 30 e 7 dias antes de vencer a validade do treinamento, no dia do vencimento e uma vez depois de vencido.",
+    para: "Colaboradores que concluíram um treinamento com validade.",
+    variantes: [
+      { id: "trinta", nome: "Vence em 30 dias", montar: (c) => recertificacao(c, { nome: "Carlos Eduardo Lima", titulo: "Segurança da informação", treinamentoId: ID_EXEMPLO, venceEm: dataBR(30), dias: 30 }) },
+      { id: "sete", nome: "Vence em 7 dias", montar: (c) => recertificacao(c, { nome: "Carlos Eduardo Lima", titulo: "Segurança da informação", treinamentoId: ID_EXEMPLO, venceEm: dataBR(7), dias: 7 }) },
+      { id: "hoje", nome: "Vence hoje", montar: (c) => recertificacao(c, { nome: "Carlos Eduardo Lima", titulo: "Segurança da informação", treinamentoId: ID_EXEMPLO, venceEm: dataBR(0), dias: 0 }) },
+      { id: "vencido", nome: "Já venceu", montar: (c) => recertificacao(c, { nome: "Carlos Eduardo Lima", titulo: "Segurança da informação", treinamentoId: ID_EXEMPLO, venceEm: dataBR(-3), dias: -3 }) },
+    ],
+  },
+  {
+    id: "recertificacao_gestao",
+    nome: "Vencimentos (gestão)",
+    quando: "Toda segunda-feira às 8h, quando há treinamentos vencidos ou vencendo em 30 dias.",
+    para: "Administradores de cada empresa.",
+    variantes: [
+      {
+        id: "padrao",
+        nome: "Resumo semanal",
+        montar: (c) => recertificacaoGestao(c, {
+          nomeEmpresa: c.nomeEmpresa || "Horizonte Alimentos",
+          vencidos: 2,
+          aVencer: 3,
+          itens: [
+            { pessoa: "Carlos Eduardo Lima", treinamento: "Segurança da informação", venceEm: dataBR(-5), dias: -5 },
+            { pessoa: "Juliana Martins", treinamento: "LGPD na prática", venceEm: dataBR(-1), dias: -1 },
+            { pessoa: "Rafael Souza", treinamento: "Segurança da informação", venceEm: dataBR(6), dias: 6 },
+            { pessoa: "Ana Beatriz Rocha", treinamento: "Prevenção de incêndio", venceEm: dataBR(14), dias: 14 },
+            { pessoa: "Marcos Vinícius", treinamento: "LGPD na prática", venceEm: dataBR(27), dias: 27 },
+          ],
+        }),
+      },
     ],
   },
   {

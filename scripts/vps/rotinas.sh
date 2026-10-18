@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Executa uma tarefa da função "rotinas" (chamado pelo cron).
-# Uso: scripts/vps/rotinas.sh notificacoes|lembretes|relatorio_mensal|limpeza
+# Uso: scripts/vps/rotinas.sh notificacoes|lembretes|recertificacao|relatorio_mensal|limpeza
 source "$(dirname "$(readlink -f "$0")")/comum.sh"
 
 TAREFA="${1:-}"
 case "$TAREFA" in
-  notificacoes|lembretes|relatorio_mensal|limpeza) ;;
-  *) morrer "uso: $0 notificacoes|lembretes|relatorio_mensal|limpeza" ;;
+  notificacoes|lembretes|recertificacao|relatorio_mensal|limpeza) ;;
+  *) morrer "uso: $0 notificacoes|lembretes|recertificacao|relatorio_mensal|limpeza" ;;
 esac
 
 garantir_pastas

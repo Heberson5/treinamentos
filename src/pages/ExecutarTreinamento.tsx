@@ -17,7 +17,6 @@ import {
   EyeOff,
   Award,
   Lock,
-  Star,
   CircleHelp,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,6 +60,9 @@ interface ProgressData {
   data_inicio: string | null;
 }
 
+// Estrelas (1 a 5) que acompanham o NPS; o servidor aplica a mesma conversão
+const estrelasDoNps = (n: number) => (n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 5);
+
 export default function ExecutarTreinamento() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -73,8 +75,8 @@ export default function ExecutarTreinamento() {
   const [quizApproved, setQuizApproved] = useState(false);
   const [hasQuiz, setHasQuiz] = useState(false);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
-  const [selectedRating, setSelectedRating] = useState(0);
-  const [ratingHover, setRatingHover] = useState(0);
+  // Satisfação (NPS): nota de 0 a 10; null = ainda não escolheu
+  const [npsNota, setNpsNota] = useState<number | null>(null);
   const [ratingComment, setRatingComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -137,28 +139,12 @@ export default function ExecutarTreinamento() {
         });
       }
 
-      // Check if training has quiz questions
-      const { count } = await supabase
-        .from("questoes_treinamento")
-        .select("id", { count: "exact", head: true })
-        .eq("treinamento_id", id);
-      
-      setHasQuiz((count || 0) > 0);
-
-      // Check if user already approved
-      if (user?.id) {
-        const { data: approvedData } = await supabase
-          .from("tentativas_avaliacao")
-          .select("id")
-          .eq("treinamento_id", id)
-          .eq("usuario_id", user.id)
-          .eq("aprovado", true)
-          .limit(1);
-        
-        if (approvedData && approvedData.length > 0) {
-          setQuizApproved(true);
-        }
-      }
+      // Situação da avaliação (calculada no servidor: o colaborador não lê as
+      // questões direto da tabela, e a aprovação vale só para o ciclo atual)
+      const { data: statusAvaliacao } = await supabase.rpc("status_avaliacao", { p_treinamento_id: id });
+      const st = (statusAvaliacao || {}) as { total_questoes?: number; aprovado?: boolean };
+      setHasQuiz((st.total_questoes || 0) > 0);
+      setQuizApproved(!!st.aprovado);
 
       setLoading(false);
     }
@@ -326,8 +312,8 @@ export default function ExecutarTreinamento() {
   };
 
   const handleSubmitRating = async () => {
-    if (selectedRating === 0) {
-      toast.error("Por favor, selecione uma nota de 1 a 5 estrelas.");
+    if (npsNota === null) {
+      toast.error("Escolha uma nota de 0 a 10.");
       return;
     }
 
@@ -341,7 +327,8 @@ export default function ExecutarTreinamento() {
         .upsert({
           treinamento_id: id,
           usuario_id: user.id,
-          nota: selectedRating,
+          nota: estrelasDoNps(npsNota),
+          nps: npsNota,
           comentario: ratingComment || null
         }, { onConflict: 'treinamento_id,usuario_id' });
 
@@ -355,7 +342,7 @@ export default function ExecutarTreinamento() {
       const { error } = await supabase.rpc("concluir_treinamento", {
         p_treinamento_id: id,
         p_tempo_assistido_minutos: Math.floor(timer.activeTime / 60),
-        p_nota_avaliacao: selectedRating
+        p_nota_avaliacao: estrelasDoNps(npsNota)
       });
 
       if (error) {
@@ -2187,36 +2174,37 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
           </DialogHeader>
           
           <div className="space-y-6 py-4">
-            {/* Estrelas de avaliação */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
+            {/* NPS: de 0 a 10 */}
+            <div className="space-y-2">
+              <p id="nps-pergunta" className="text-sm font-medium text-center">
+                De 0 a 10, quanto você recomendaria este treinamento a um colega?
+              </p>
+              <div role="radiogroup" aria-labelledby="nps-pergunta" className="grid grid-cols-6 gap-1.5 sm:grid-cols-11">
+                {Array.from({ length: 11 }, (_, n) => (
                   <button
-                    key={star}
+                    key={n}
                     type="button"
-                    onClick={() => setSelectedRating(star)}
-                    onMouseEnter={() => setRatingHover(star)}
-                    onMouseLeave={() => setRatingHover(0)}
-                    className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                    role="radio"
+                    aria-checked={npsNota === n}
+                    onClick={() => setNpsNota(n)}
+                    className={cn(
+                      "h-10 rounded-md border text-sm font-semibold tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                      npsNota === n
+                        ? n >= 9 ? "border-emerald-600 bg-emerald-600 text-white" : n >= 7 ? "border-amber-500 bg-amber-500 text-white" : "border-red-600 bg-red-600 text-white"
+                        : "bg-background hover:bg-muted"
+                    )}
                   >
-                    <Star
-                      className={`h-10 w-10 transition-colors ${
-                        star <= (ratingHover || selectedRating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-muted-foreground'
-                      }`}
-                    />
+                    {n}
                   </button>
                 ))}
               </div>
-              <span className="text-sm text-muted-foreground">
-                {selectedRating === 0 && "Selecione uma nota"}
-                {selectedRating === 1 && "Muito ruim"}
-                {selectedRating === 2 && "Ruim"}
-                {selectedRating === 3 && "Regular"}
-                {selectedRating === 4 && "Bom"}
-                {selectedRating === 5 && "Excelente"}
-              </span>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0 = nada provável</span>
+                <span>10 = muito provável</span>
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Sua resposta é <strong className="text-foreground">identificada</strong>: o administrador e o instrutor veem seu nome, a nota e o comentário.
+              </p>
             </div>
 
             {/* Comentário opcional */}
@@ -2243,7 +2231,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
             </Button>
             <Button
               onClick={handleSubmitRating}
-              disabled={selectedRating === 0 || isSubmitting}
+              disabled={npsNota === null || isSubmitting}
               className="gap-2"
             >
               {isSubmitting ? (

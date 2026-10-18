@@ -174,6 +174,7 @@ const COLUNAS_CONFIG = [
   "notificacoes_conclusao", "notificacoes_lembrete", "senha_min_length", "senha_requer_maiuscula",
   "senha_requer_numero", "senha_requer_especial",
   "encarregado_nome", "encarregado_email", "politica_privacidade_md", "politica_versao", "politica_atualizada_em",
+  "trilhas_habilitadas",
 ].join(", ")
 
 const todayIso = () => new Date().toISOString().split("T")[0]
@@ -595,6 +596,23 @@ export default function Configuracoes() {
             <Field label="Endereço" htmlFor="cfg-endereco">
               <Textarea id="cfg-endereco" value={config.endereco} onChange={(e) => setConfig({ ...config, endereco: e.target.value })} disabled={somenteLeitura} rows={2} />
             </Field>
+          </SettingsSection>
+
+          <SettingsSection
+            title="Recursos preparados"
+            description="Funções que já têm a estrutura pronta no banco de dados, mas ainda não têm telas. Ficam desligadas até você decidir ativá-las."
+          >
+            <SettingRow
+              label="Trilhas de aprendizagem e pré-requisitos"
+              description="Sequência de treinamentos em que o próximo só abre quando o anterior é concluído. Nenhum treinamento fica bloqueado enquanto estiver desligado."
+              htmlFor="cfg-trilhas"
+              className="rounded-lg border px-4 py-3 first:pt-3 last:pb-3"
+            >
+              <div className="flex items-center gap-3">
+                <StatusPill tom={configData?.trilhas_habilitadas ? "sucesso" : "neutro"}>{configData?.trilhas_habilitadas ? "Ligado" : "Desligado"}</StatusPill>
+                <Switch id="cfg-trilhas" checked={!!configData?.trilhas_habilitadas} disabled aria-label="Trilhas e pré-requisitos (em preparação)" />
+              </div>
+            </SettingRow>
           </SettingsSection>
         </TabsContent>
 

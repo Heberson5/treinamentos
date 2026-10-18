@@ -196,6 +196,34 @@ const rpcs = {
       carga_horaria_minutos: 90, concluido_em: iso(6), emitido_em: iso(6), empresa: "Horizonte Alimentos" };
   },
   codigos_recuperacao_mfa_restantes: () => 8,
+  // Situação da avaliação calculada no servidor (o colaborador não lê as questões da tabela)
+  status_avaliacao: (b) => {
+    const total = questoes.filter((q) => q.treinamento_id === (b && b.p_treinamento_id)).length;
+    return { total_questoes: total, questoes_por_prova: total, sorteia: false, nota_minima: 7, tempo_minutos: 0, max_tentativas: null,
+      intervalo_horas: 0, tentativas_feitas: 0, tentativas_restantes: null, aprovado: false, pode_iniciar: true, motivo: null, proxima_em: null, validade_meses: null };
+  },
+  relatorio_nps: () => ({
+    geral: { total: 18, promotores: 11, neutros: 4, detratores: 3, nps: 44.4, media: 8.2 },
+    distribuicao: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => ({ nota: n, total: [0, 0, 1, 1, 0, 0, 1, 2, 2, 4, 7][n] })),
+    por_treinamento: [
+      { treinamento_id: "t1", titulo: "LGPD na prática", total: 9, nps: 55.6, media: 8.6 },
+      { treinamento_id: "t2", titulo: "Atendimento ao cliente", total: 9, nps: 33.3, media: 7.8 },
+    ],
+    por_instrutor: [{ instrutor_id: "i1", instrutor: "Rafael Souza", total: 18, nps: 44.4, media: 8.2 }],
+    por_mes: [{ mes: "2026-08", total: 5, nps: 20 }, { mes: "2026-09", total: 6, nps: 33.3 }, { mes: "2026-10", total: 7, nps: 71.4 }],
+    comentarios: [
+      { usuario: "Lucas Ferreira", email: "lucas@exemplo.com", treinamento: "LGPD na prática", nps: 10, comentario: "Conteúdo claro e direto ao ponto.", data: iso(2) },
+      { usuario: "Marina Costa", email: "marina@exemplo.com", treinamento: "Atendimento ao cliente", nps: 5, comentario: "Faltaram exemplos do dia a dia.", data: iso(4) },
+    ],
+  }),
+  vencimentos_treinamentos: () => [
+    { usuario_id: "u1", nome: "Lucas Ferreira", email: "lucas@exemplo.com", treinamento_id: "t1", titulo: "LGPD na prática", concluido_em: iso(400), vence_em: iso(-35), dias_restantes: -35, estado: "vencido" },
+    { usuario_id: "u2", nome: "Marina Costa", email: "marina@exemplo.com", treinamento_id: "t1", titulo: "LGPD na prática", concluido_em: iso(340), vence_em: iso(-25), dias_restantes: 25, estado: "vence_em_breve" },
+  ],
+  analise_questoes: (b) =>
+    questoes.filter((q) => q.treinamento_id === (b && b.p_treinamento_id)).map((q, i) => ({
+      questao_id: q.id, pergunta: q.pergunta, tipo: q.tipo, ordem: q.ordem, respondidas: 12, acertos: [3, 11, 9, 6, 12][i % 5], pct_acerto: [25, 91.7, 75, 50, 100][i % 5],
+    })),
   gerar_token_calendario: () => "3f9c2a7e5b1d48c6a0e9f7b2d4c6a8e13f9c2a7e5b1d48c6a0e9f7b2d4c6a8e1",
   revogar_token_calendario: () => null,
   pode_tentar_login: () => ({ permitido: true, restantes: 5 }),

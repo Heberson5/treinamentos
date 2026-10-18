@@ -1,17 +1,18 @@
 import { useMemo, useState, type ReactNode } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
   AlertCircle, ArrowRight, ArrowUpDown, Award, BookOpen, Building2, Check, ChevronRight,
-  Clock, Eye, Play, Search, SignalMedium,
+  Clock, Eye, Play, RefreshCw, Search, SignalMedium,
 } from "lucide-react"
 import { useSupabaseTrainings, type SupabaseTraining } from "@/hooks/use-supabase-trainings"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,6 +40,9 @@ interface Item {
   lastActivity: string | null
   instructor: string
   empresaNome: string
+  /** Dias até o vencimento (negativo = vencido); null se o treinamento não vence */
+  diasParaVencer: number | null
+  venceEm: Date | null
   original: SupabaseTraining
 }
 
@@ -64,8 +68,19 @@ function formatNota(nota: number) {
   return nota.toLocaleString("pt-BR", { maximumFractionDigits: 1 })
 }
 
+// A renovação abre 30 dias antes de vencer (mesma regra do servidor)
+const JANELA_RENOVACAO_DIAS = 30
+const podeRenovar = (item: Item) => item.status === "concluido" && item.diasParaVencer !== null && item.diasParaVencer <= JANELA_RENOVACAO_DIAS
+
 function prazoInfo(item: Item, notas: Record<string, number>): { text: string; tone: "danger" | "warning" | "success" | "muted" } {
   if (item.status === "concluido") {
+    if (item.diasParaVencer !== null && item.venceEm) {
+      const d = item.diasParaVencer
+      if (d < 0) return { text: `Vencido há ${-d} dia${d === -1 ? "" : "s"} — renove`, tone: "danger" }
+      if (d === 0) return { text: "Vence hoje — renove", tone: "danger" }
+      if (d <= JANELA_RENOVACAO_DIAS) return { text: `Vence em ${d} dia${d === 1 ? "" : "s"} — renove`, tone: "warning" }
+      return { text: `Válido até ${item.venceEm.toLocaleDateString("pt-BR")}`, tone: "success" }
+    }
     const nota = notas[item.id]
     return { text: nota != null ? `Concluído · nota ${formatNota(nota)}` : "Concluído", tone: "success" }
   }
@@ -108,6 +123,8 @@ export default function MeusTreinamentos() {
   const [viewingTraining, setViewingTraining] = useState<SupabaseTraining | null>(null)
   const [isViewOpen, setIsViewOpen] = useState(false)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
   const isMobile = useIsMobile()
   const { trainings: supabaseTrainings, isLoading, error, startTraining } = useSupabaseTrainings()
   const { user } = useAuth()
@@ -159,6 +176,11 @@ export default function MeusTreinamentos() {
       supabaseTrainings.map((t) => {
         const progress = Math.round(t.progresso?.percentual_concluido || 0)
         const completed = !!t.progresso?.concluido
+        let venceEm: Date | null = null
+        if (completed && t.validade_meses && t.progresso?.data_conclusao) {
+          venceEm = new Date(t.progresso.data_conclusao)
+          venceEm.setMonth(venceEm.getMonth() + t.validade_meses)
+        }
         return {
           id: t.id,
           title: t.titulo,
@@ -171,6 +193,8 @@ export default function MeusTreinamentos() {
           lastActivity: t.progresso?.atualizado_em || null,
           instructor: t.instrutor?.nome || "Não definido",
           empresaNome: t.empresa?.nome_fantasia || t.empresa?.nome || "Não definida",
+          venceEm,
+          diasParaVencer: venceEm ? Math.floor((venceEm.getTime() - Date.now()) / 86400000) : null,
           original: t,
         }
       }),
@@ -211,10 +235,24 @@ export default function MeusTreinamentos() {
     })
   }, [items, filtro, searchTerm, ordem])
 
+  const renovar = async (item: Item) => {
+    const { error: erro } = await supabase.rpc("iniciar_recertificacao", { p_treinamento_id: item.id })
+    if (erro) {
+      toast({ title: "Não foi possível renovar", description: erro.message, variant: "destructive" })
+      return
+    }
+    await queryClient.invalidateQueries({ queryKey: ["treinamentos"] })
+    toast({ title: "Renovação iniciada", description: "Refaça o treinamento para emitir um novo certificado." })
+    navigate(`/executar-treinamento/${item.id}`)
+  }
+
   const handleStartOrContinue = async (item: Item) => {
+    if (podeRenovar(item)) return renovar(item)
     if (item.progress === 0) await startTraining(item.id)
     navigate(`/executar-treinamento/${item.id}`)
   }
+
+  const paraRenovar = items.filter(podeRenovar)
 
   const openPreview = (item: Item) => {
     setViewingTraining(item.original)
@@ -272,6 +310,23 @@ export default function MeusTreinamentos() {
           <CardContent className="flex items-center gap-3 py-4">
             <AlertCircle className="h-5 w-5 text-destructive" />
             <span className="text-destructive">{error}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {paraRenovar.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/[0.06]" data-testid="aviso-renovacao">
+          <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+            <RefreshCw className="h-5 w-5 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1 text-sm">
+              <div className="font-medium">
+                {paraRenovar.length === 1 ? "1 treinamento precisa ser renovado" : `${paraRenovar.length} treinamentos precisam ser renovados`}
+              </div>
+              <div className="text-muted-foreground">
+                {paraRenovar.slice(0, 3).map((i) => i.title).join(", ")}{paraRenovar.length > 3 ? " e outros" : ""}. A renovação reabre o treinamento e gera um novo certificado ao concluir.
+              </div>
+            </div>
+            <Button size="sm" onClick={() => void renovar(paraRenovar[0])}>Renovar agora</Button>
           </CardContent>
         </Card>
       )}
@@ -461,12 +516,19 @@ export default function MeusTreinamentos() {
                         <Eye className="h-4 w-4" />
                       </Button>
                       {done ? (
-                        certificate(
-                          item,
-                          <Button variant="ghost" size="sm" className="h-8 px-2 text-[13px] font-semibold text-foreground">
-                            Certificado <Award className="h-3.5 w-3.5" />
-                          </Button>
-                        )
+                        <>
+                          {podeRenovar(item) && (
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-[13px] font-semibold text-primary hover:text-primary" onClick={() => void renovar(item)}>
+                              Renovar <RefreshCw className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          {certificate(
+                            item,
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-[13px] font-semibold text-foreground">
+                              Certificado <Award className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </>
                       ) : (
                         <Button variant="ghost" size="sm" className="h-8 px-2 text-[13px] font-semibold text-primary hover:text-primary" onClick={() => handleStartOrContinue(item)}>
                           {actionLabel(item)} <ArrowRight className="h-3.5 w-3.5" />

@@ -55,6 +55,7 @@ const ValidarCertificado = lazy(() => import("./pages/ValidarCertificado"));
 const MeusDados = lazy(() => import("./pages/MeusDados"));
 const PrivacidadeLGPD = lazy(() => import("./pages/admin/PrivacidadeLGPD"));
 const AjudaGuia = lazy(() => import("./pages/AjudaGuia"));
+const ModeloCertificado = lazy(() => import("./pages/admin/ModeloCertificado"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -175,6 +176,7 @@ function AppContent() {
         <Route path="/validar" element={<ValidarCertificado />} />
         <Route path="/validar/:codigo" element={<ValidarCertificado />} />
         <Route path="/meus-dados" element={<MeusDados />} />
+        <Route path="/admin/certificado" element={isAdminOrMaster ? <ModeloCertificado /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/privacidade" element={isAdminOrMaster ? <PrivacidadeLGPD /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/ajuda/:guiaId" element={<AjudaGuia />} />
 

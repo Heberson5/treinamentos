@@ -1,129 +1,5 @@
--- Testes de acesso por papel (RLS).
---
--- Cria duas empresas, um Master e usuários de cada papel, e confere o que
--- cada um consegue ler e alterar. Tudo roda numa transação que é desfeita no
--- final: nada fica no banco. Rode SEMPRE em um banco de teste (scripts/vps/
--- testar-atualizacao.sh faz isso num banco temporário restaurado do backup).
---
---   psql -v ON_ERROR_STOP=1 -f supabase/tests/acesso.sql <banco>
---
--- Termina com erro (e lista as falhas) se qualquer regra de acesso estiver
--- quebrada. Ao criar uma tabela nova com dados de empresa ou de pessoas,
--- acrescente aqui os casos dela.
-
-BEGIN;
-
-CREATE SCHEMA tst;
-GRANT USAGE ON SCHEMA tst TO anon, authenticated;
-CREATE TABLE tst.falhas (descricao text);
-CREATE TABLE tst.total (n int);
-INSERT INTO tst.total VALUES (0);
-
--- Registra o resultado de uma verificação
-CREATE FUNCTION tst.checar(descricao text, ok boolean) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, tst AS $$
-BEGIN
-  UPDATE tst.total SET n = n + 1;
-  IF NOT coalesce(ok, false) THEN
-    INSERT INTO tst.falhas VALUES (descricao);
-  END IF;
-END $$;
-
--- Passa a agir como uma pessoa autenticada (aal2 = com segundo fator, se houver)
-CREATE FUNCTION tst.como(p_uid uuid, p_aal text DEFAULT 'aal2') RETURNS void
-LANGUAGE plpgsql AS $$
-BEGIN
-  RESET ROLE;
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', p_uid, 'role', 'authenticated', 'aal', p_aal)::text, true);
-  PERFORM set_config('request.jwt.claim.sub', p_uid::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  SET LOCAL ROLE authenticated;
-END $$;
-
-CREATE FUNCTION tst.como_visitante() RETURNS void
-LANGUAGE plpgsql AS $$
-BEGIN
-  RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '{"role":"anon"}', true);
-  PERFORM set_config('request.jwt.claim.sub', '', true);
-  PERFORM set_config('request.jwt.claim.role', 'anon', true);
-  SET LOCAL ROLE anon;
-END $$;
-
--- Quantas linhas a pessoa enxerga (erro de permissão conta como -1)
-CREATE FUNCTION tst.ve(consulta text) RETURNS bigint
-LANGUAGE plpgsql AS $$
-DECLARE n bigint;
-BEGIN
-  EXECUTE 'SELECT count(*) FROM (' || consulta || ') q' INTO n;
-  RETURN n;
-EXCEPTION WHEN insufficient_privilege THEN
-  RETURN -1;
-END $$;
-
--- Quantas linhas um comando alterou (-1 = negado por erro/RLS)
-CREATE FUNCTION tst.altera(comando text) RETURNS bigint
-LANGUAGE plpgsql AS $$
-DECLARE n bigint;
-BEGIN
-  EXECUTE comando;
-  GET DIAGNOSTICS n = ROW_COUNT;
-  RETURN n;
-EXCEPTION WHEN insufficient_privilege OR check_violation OR raise_exception OR foreign_key_violation THEN
-  RETURN -1;
-END $$;
-
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA tst TO anon, authenticated;
-
--- ------------------------------------------------------------------ dados
--- ids fixos para ficar legível
---   empresas: A = ...a1, B = ...b1
-INSERT INTO public.empresas (id, nome) VALUES
-  ('00000000-0000-0000-0000-0000000000a1', 'Empresa A (teste)'),
-  ('00000000-0000-0000-0000-0000000000b1', 'Empresa B (teste)');
-
-INSERT INTO auth.users (id, email, aud, role) VALUES
-  ('10000000-0000-0000-0000-000000000001', 'master@teste.local',   'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000a1', 'admin.a@teste.local',  'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000a2', 'instr.a@teste.local',  'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000a3', 'user1.a@teste.local',  'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000a4', 'user2.a@teste.local',  'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000b1', 'admin.b@teste.local',  'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000b2', 'instr.b@teste.local',  'authenticated', 'authenticated'),
-  ('10000000-0000-0000-0000-0000000000b3', 'user1.b@teste.local',  'authenticated', 'authenticated');
-
-UPDATE public.perfis SET empresa_id = '00000000-0000-0000-0000-0000000000a1'
- WHERE email IN ('admin.a@teste.local','instr.a@teste.local','user1.a@teste.local','user2.a@teste.local');
-UPDATE public.perfis SET empresa_id = '00000000-0000-0000-0000-0000000000b1'
- WHERE email IN ('admin.b@teste.local','instr.b@teste.local','user1.b@teste.local');
-
-UPDATE public.usuario_roles SET role = 'master'   WHERE usuario_id = '10000000-0000-0000-0000-000000000001';
-UPDATE public.usuario_roles SET role = 'admin'    WHERE usuario_id IN ('10000000-0000-0000-0000-0000000000a1','10000000-0000-0000-0000-0000000000b1');
-UPDATE public.usuario_roles SET role = 'instrutor' WHERE usuario_id IN ('10000000-0000-0000-0000-0000000000a2','10000000-0000-0000-0000-0000000000b2');
-
-INSERT INTO public.treinamentos (id, titulo, empresa_id, instrutor_id, publicado) VALUES
-  ('20000000-0000-0000-0000-0000000000a1', 'A publicado',  '00000000-0000-0000-0000-0000000000a1', '10000000-0000-0000-0000-0000000000a2', true),
-  ('20000000-0000-0000-0000-0000000000a2', 'A rascunho',   '00000000-0000-0000-0000-0000000000a1', '10000000-0000-0000-0000-0000000000a2', false),
-  ('20000000-0000-0000-0000-0000000000b1', 'B publicado',  '00000000-0000-0000-0000-0000000000b1', '10000000-0000-0000-0000-0000000000b2', true),
-  ('20000000-0000-0000-0000-0000000000b2', 'B rascunho',   '00000000-0000-0000-0000-0000000000b1', '10000000-0000-0000-0000-0000000000b2', false);
-
-INSERT INTO public.questoes_treinamento (treinamento_id, pergunta, opcao_a, opcao_b, resposta_correta) VALUES
-  ('20000000-0000-0000-0000-0000000000a1', 'Pergunta A?', 'x', 'y', 'a'),
-  ('20000000-0000-0000-0000-0000000000b1', 'Pergunta B?', 'x', 'y', 'b');
-
-INSERT INTO public.progresso_treinamentos (usuario_id, treinamento_id) VALUES
-  ('10000000-0000-0000-0000-0000000000a3', '20000000-0000-0000-0000-0000000000a1'),
-  ('10000000-0000-0000-0000-0000000000a4', '20000000-0000-0000-0000-0000000000a1'),
-  ('10000000-0000-0000-0000-0000000000b3', '20000000-0000-0000-0000-0000000000b1');
-
-INSERT INTO public.solicitacoes_lgpd (usuario_id, empresa_id, tipo, descricao) VALUES
-  ('10000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-0000000000a1', 'acesso', 'teste A'),
-  ('10000000-0000-0000-0000-0000000000b3', '00000000-0000-0000-0000-0000000000b1', 'acesso', 'teste B');
-
-INSERT INTO public.emails_enviados (empresa_id, usuario_id, destinatario, tipo, assunto, status) VALUES
-  ('00000000-0000-0000-0000-0000000000a1', '10000000-0000-0000-0000-0000000000a3', 'user1.a@teste.local', 'teste', 'A', 'enviado'),
-  ('00000000-0000-0000-0000-0000000000b1', '10000000-0000-0000-0000-0000000000b3', 'user1.b@teste.local', 'teste', 'B', 'enviado');
+-- Testes de acesso por papel (RLS): o que cada papel enxerga e altera.
+-- Ao criar uma tabela com dados de empresa ou de pessoas, acrescente os casos dela aqui.
 
 -- ------------------------------------------------------------------ casos
 DO $teste$
@@ -156,7 +32,7 @@ BEGIN
   PERFORM tst.como(user1_a);
   PERFORM tst.checar('colaborador vê só o próprio perfil', tst.ve('SELECT 1 FROM public.perfis') = 1);
   PERFORM tst.checar('colaborador vê só o próprio papel', tst.ve('SELECT 1 FROM public.usuario_roles') = 1);
-  PERFORM tst.checar('colaborador vê só treinamentos publicados da empresa', tst.ve('SELECT 1 FROM public.treinamentos') = 1);
+  PERFORM tst.checar('colaborador vê só treinamentos publicados da empresa (5)', tst.ve('SELECT 1 FROM public.treinamentos') = 5);
   PERFORM tst.checar('colaborador não vê as respostas das questões', tst.ve('SELECT 1 FROM public.questoes_treinamento') <= 0);
   PERFORM tst.checar('colaborador vê só o próprio progresso', tst.ve('SELECT 1 FROM public.progresso_treinamentos') = 1);
   PERFORM tst.checar('colaborador vê só as próprias solicitações LGPD', tst.ve('SELECT 1 FROM public.solicitacoes_lgpd') = 1);
@@ -265,23 +141,3 @@ BEGIN
 END
 $teste$;
 
--- ------------------------------------------------------------------ resultado
-DO $fim$
-DECLARE
-  f text;
-  total int;
-  n int := 0;
-BEGIN
-  SELECT t.n INTO total FROM tst.total t;
-  FOR f IN SELECT descricao FROM tst.falhas LOOP
-    n := n + 1;
-    RAISE WARNING 'FALHOU: %', f;
-  END LOOP;
-  IF n > 0 THEN
-    RAISE EXCEPTION '% de % verificações de acesso falharam', n, total;
-  END IF;
-  RAISE NOTICE 'Acesso por papel: % verificações, todas OK', total;
-END
-$fim$;
-
-ROLLBACK;
