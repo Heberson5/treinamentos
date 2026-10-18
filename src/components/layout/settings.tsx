@@ -122,7 +122,7 @@ export function SettingsTabs({ value, defaultValue, onValueChange, abas, childre
     >
       <TabsList
         className={cn(
-          "mb-5 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border bg-card p-1 [scrollbar-width:none]",
+          "mb-5 flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl border bg-card p-1",
           "lg:sticky lg:top-20 lg:mb-0 lg:flex-col lg:items-stretch lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0",
         )}
       >
@@ -133,7 +133,7 @@ export function SettingsTabs({ value, defaultValue, onValueChange, abas, childre
               key={aba.value}
               value={aba.value}
               className={cn(
-                "shrink-0 justify-start gap-2.5 rounded-lg px-3 py-2 text-[13.5px] font-medium text-muted-foreground",
+                "justify-start gap-2.5 rounded-lg px-3 py-2 text-[13.5px] font-medium text-muted-foreground",
                 "hover:bg-muted hover:text-foreground",
                 "data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none",
                 "lg:w-full lg:py-2.5",

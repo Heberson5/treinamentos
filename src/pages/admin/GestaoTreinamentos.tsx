@@ -494,7 +494,7 @@ export default function GestaoTreinamentos() {
 
       <Card className="overflow-hidden">
         {/* Abas */}
-        <div className="flex gap-1 overflow-x-auto border-b px-3 sm:px-4 scrollbar-none">
+        <div className="flex flex-wrap gap-1 border-b px-3 sm:px-4">
           {tabs.map(tab => (
             <button
               key={tab.value}

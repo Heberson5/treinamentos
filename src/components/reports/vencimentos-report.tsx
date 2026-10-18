@@ -70,7 +70,7 @@ export function VencimentosReport({ empresaId }: { empresaId: string | null }) {
         ))}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex flex-wrap gap-2">
         {ESTADOS.map((e) => (
           <button
             key={e.id}

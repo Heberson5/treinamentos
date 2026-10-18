@@ -163,7 +163,7 @@ export default function Ajuda() {
         <>
           {/* Abas por tipo de acesso */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-1 overflow-x-auto rounded-xl bg-muted p-1" role="tablist">
+            <div className="flex flex-wrap gap-1 rounded-xl bg-muted p-1" role="tablist">
               {papeisVisiveis.map((p) => {
                 const total = guias.filter((g) => g.papel === p.id).length
                 const ativo = aba === p.id

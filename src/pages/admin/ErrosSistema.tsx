@@ -109,7 +109,7 @@ export default function ErrosSistema() {
         ]}
       />
 
-      <div className="flex gap-2 overflow-x-auto" role="group" aria-label="Situação">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Situação">
         {FILTROS.map((f) => (
           <button
             key={f.id}

@@ -154,13 +154,13 @@ teste("Master vê o cartão de verificação em duas etapas em Segurança", { co
 })
 
 teste("Relatórios mostram a satisfação (NPS) com gráficos e comentários identificados", { como: "master", url: "/relatorios" }, async (p) => {
-  await p.getByRole("button", { name: "Satisfação (NPS)" }).click()
+  await p.getByRole("tab", { name: "Satisfação (NPS)" }).click()
   await p.getByTestId("nps-valor").waitFor()
   assert.match(await p.getByTestId("nps-valor").innerText(), /44,4/)
   await p.getByText("Promotores (9–10)").waitFor()
   await p.getByText("Conteúdo claro e direto ao ponto.").waitFor()
   await p.getByText(/Lucas Ferreira · LGPD na prática/).waitFor()
-  await p.getByRole("button", { name: "Vencimentos" }).click()
+  await p.getByRole("tab", { name: "Vencimentos" }).click()
   await p.getByTestId("vencimentos-report").waitFor()
 })
 
@@ -319,6 +319,28 @@ teste("Aviso de cookies também aparece na página inicial e dentro da plataform
   await p.getByTestId("aviso-cookies").waitFor()
   await p.getByRole("button", { name: "Entendi" }).click()
   assert.equal(await p.getByTestId("aviso-cookies").count(), 0)
+})
+
+const ROTAS_COM_GUIAS = ["/admin/treinamentos", "/relatorios", "/admin/configuracoes", "/admin/permissoes", "/ajuda", "/meus-treinamentos"]
+teste("Guias (abas) não têm barra de rolagem, nem no celular", { como: "master", url: "/admin/treinamentos" }, async (p) => {
+  const achar = () => p.evaluate(() => {
+    const dentroDeTabela = (el) => !!el.closest('[aria-label="Tabela com rolagem lateral"], table')
+    return [...document.querySelectorAll("main *, [role=tablist]")]
+      .filter((el) => {
+        const e = getComputedStyle(el)
+        const rola = /(auto|scroll)/.test(e.overflowX) || /(auto|scroll)/.test(e.overflowY)
+        return rola && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) && !dentroDeTabela(el)
+          && el.clientHeight < 90 && el.querySelector("button, a, [role=tab]")
+      })
+      .map((el) => el.className.toString().slice(0, 80))
+  })
+  for (const largura of [1366, 390]) {
+    await p.setViewportSize({ width: largura, height: 860 })
+    for (const rota of ROTAS_COM_GUIAS) {
+      await p.goto(new URL(rota, p.url()).href, { waitUntil: "networkidle" }).catch(() => {})
+      assert.deepEqual(await achar(), [], `barra de rolagem nas guias de ${rota} (${largura}px)`)
+    }
+  }
 })
 
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {

@@ -418,7 +418,7 @@ export default function LandingPageEditor() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="h-auto max-w-full justify-start overflow-x-auto [scrollbar-width:none]">
+        <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="visual" className="shrink-0">
             <Layers className="mr-1.5 h-4 w-4" />
             Editor Visual

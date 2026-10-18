@@ -375,7 +375,7 @@ export default function MeusTreinamentos() {
       )}
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:pb-0">
+        <div className="flex flex-wrap gap-2">
           {filtros.map(([id, label]) => {
             const active = filtro === id
             return (

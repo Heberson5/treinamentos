@@ -190,6 +190,9 @@ BEGIN
     AND (r -> 'geral' ->> 'promotores')::int = 1 AND (r -> 'geral' ->> 'detratores')::int = 1);
   PERFORM tst.checar('comentários vêm identificados', (r -> 'comentarios' -> 0 ->> 'usuario') IS NOT NULL);
   PERFORM tst.checar('há distribuição de 0 a 10', jsonb_array_length(r -> 'distribuicao') = 11);
+  PERFORM tst.checar('NPS por departamento soma as respostas (e nunca vaza outra empresa)',
+    (SELECT coalesce(sum((x ->> 'total')::int), 0) FROM jsonb_array_elements(r -> 'por_departamento') x) = 2
+    AND jsonb_typeof(r -> 'por_categoria') = 'array');
   PERFORM tst.como(admin_b);
   r := public.relatorio_nps();
   PERFORM tst.checar('admin B vê só o NPS da empresa B (100)', (r -> 'geral' ->> 'total')::int = 1 AND (r -> 'geral' ->> 'nps')::numeric = 100);

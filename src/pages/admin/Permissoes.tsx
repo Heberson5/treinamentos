@@ -396,7 +396,7 @@ export default function Permissoes() {
               </span>
             </div>
             <Tabs defaultValue={categorias[0]} className="w-full min-w-0">
-              <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/60 p-1 [scrollbar-width:none]">
+              <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted/60 p-1">
                 {categorias.map((categoria) => {
                   const daCategoria = permissoesDoDialogo.filter((p) => p.categoria === categoria)
                   const ativas = daCategoria.filter((p) => newRole.permissoes.includes(p.id)).length

@@ -53,7 +53,7 @@ export function PreviaEmails({ modeloHtml, nomeSistema, nomeEmpresa, urlPlatafor
   return (
     <div className="grid gap-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
       {/* Lista de modelos */}
-      <nav aria-label="Modelos de e-mail" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+      <nav aria-label="Modelos de e-mail" className="flex flex-wrap gap-1.5 lg:flex-col">
         {MODELOS_EMAIL.map((m) => {
           const ativo = m.id === modeloId
           return (

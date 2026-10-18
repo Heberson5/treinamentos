@@ -499,7 +499,7 @@ export const guiasAdministrador: Guia[] = [
       {
         titulo: "Baixe a apresentação em PowerPoint",
         texto:
-          "Clique em **Apresentação** no alto da tela de Relatórios. O sistema monta, no seu navegador, um arquivo **.pptx** com as cores da empresa: capa, resumo executivo, indicadores, evolução, departamentos, treinamentos em destaque, satisfação, validade dos certificados, recomendações e encerramento. Os gráficos são editáveis no PowerPoint e cada slide tem notas do apresentador.",
+          "Clique em **Apresentação** no alto da tela de Relatórios. O sistema monta, no seu navegador, um arquivo **.pptx** com as cores da empresa e a transição **Transformar** entre os slides (PowerPoint 2019 ou mais novo; em outros programas ela vira um desvanecer suave). São cerca de 25 slides em quatro partes: **resumo e indicadores**; **treinamentos** (catálogo, categorias, mais procurados, destaques e desempenho nas provas); **pessoas e áreas** (departamentos e instrutores); **pesquisa de satisfação** (NPS geral, notas, evolução mensal, por departamento, por instrutor, por treinamento, por categoria e comentários identificados); e **próximos passos** (validade dos certificados e recomendações). Os gráficos são editáveis no PowerPoint e cada slide tem notas do apresentador.",
         dica: "Ajuste o período no filtro antes de baixar: a apresentação usa o mesmo período e a mesma empresa da tela.",
       },
       {

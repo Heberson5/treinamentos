@@ -22,6 +22,7 @@ import ExamAttemptsReport from "@/components/training/exam-attempts-report"
 import { NpsReport } from "@/components/reports/nps-report"
 import { VencimentosReport } from "@/components/reports/vencimentos-report"
 import { AnaliseQuestoes } from "@/components/reports/analise-questoes"
+import { buscarDadosApresentacao } from "@/lib/dados-apresentacao"
 import { useSystemBranding } from "@/hooks/use-system-branding"
 import { cn } from "@/lib/utils"
 
@@ -322,18 +323,10 @@ export default function Relatorios() {
       const hsl = lerHsl(getComputedStyle(document.documentElement).getPropertyValue("--primary"))
       const corPrincipal = hsl ? hslParaHex(...hsl) : "2563EB"
 
-      const [npsRes, vencRes] = await Promise.all([
-        supabase.rpc("relatorio_nps", {
-          p_empresa_id: empresaFilter ?? undefined,
-          p_inicio: startDate.toISOString(),
-          p_fim: new Date(endDate.getTime() + 86400000).toISOString(),
-        }),
+      const [dados, vencRes] = await Promise.all([
+        buscarDadosApresentacao({ empresaId: empresaFilter, inicio: startDate, fim: endDate }),
         supabase.rpc("vencimentos_treinamentos", { p_empresa_id: empresaFilter ?? undefined }),
       ])
-      const nps = npsRes.error ? null : (npsRes.data as unknown as {
-        geral: { total: number; promotores: number; neutros: number; detratores: number; nps: number | null; media: number | null }
-        por_treinamento: Array<{ titulo: string; nps: number; total: number }>
-      } | null)
       const venc = vencRes.error ? [] : ((vencRes.data || []) as unknown as Array<{ nome: string; titulo: string; vence_em: string; dias_restantes: number; estado: string }>)
       const atencao = venc.filter((v) => v.estado === "vencido" || v.estado === "vence_em_breve").sort((a, b) => a.dias_restantes - b.dias_restantes)
 
@@ -342,14 +335,9 @@ export default function Relatorios() {
         sistema: systemNameFull,
         periodo: getPeriodLabel(),
         corPrincipal,
-        resumo: {
-          treinamentos: reportData.totalTreinamentos, participantes: reportData.totalParticipantes, taxaConclusao: reportData.taxaConclusao,
-          horas: reportData.horasTreinamento, certificados: reportData.certificadosEmitidos,
-        },
+        ...dados,
+        // a evolução mensal usa sempre os últimos 6 meses, igual à tela
         mensal: monthlyData.map((m) => ({ mes: m.mes, iniciados: m.iniciados, concluidos: m.concluidos })),
-        departamentos: departmentReports.map((d) => ({ nome: d.nome, participantes: d.participantes, taxa: d.taxa })),
-        treinamentos: trainingReports.map((t) => ({ titulo: t.titulo, participantes: t.participantes, taxa: t.taxa })),
-        nps: nps?.geral ? { ...nps.geral, porTreinamento: nps.por_treinamento || [] } : null,
         vencimentos: {
           vencidos: venc.filter((v) => v.estado === "vencido").length,
           aVencer: venc.filter((v) => v.estado === "vence_em_breve").length,
@@ -471,14 +459,16 @@ export default function Relatorios() {
       />
 
       {/* Abas */}
-      <div className="flex gap-1 overflow-x-auto border-b">
+      <div className="flex flex-wrap gap-x-1 border-b" role="tablist" aria-label="Relatórios">
         {TABS.map(tab => (
           <button
             key={tab.value}
             type="button"
+            role="tab"
+            aria-selected={activeTab === tab.value}
             onClick={() => setActiveTab(tab.value)}
             className={cn(
-              "relative shrink-0 px-3 py-2.5 text-sm font-medium transition-colors",
+              "relative px-3 py-2.5 text-sm font-medium transition-colors",
               activeTab === tab.value ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
