@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
+import { AvisoCookies } from "@/components/lgpd/aviso-cookies";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -237,6 +238,7 @@ const App = () => {
               </EmpresaFilterProvider>
               </PortaoSegundoFator>
             </AuthProvider>
+            <AvisoCookies />
           </BrowserRouter>
           <Toaster />
           <Sonner />

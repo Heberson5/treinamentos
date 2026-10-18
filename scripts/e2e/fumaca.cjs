@@ -305,6 +305,22 @@ teste("Relatórios geram a apresentação em PowerPoint e o CSV", { como: "admin
   assert.match(csv.suggestedFilename(), /\.csv$/)
 })
 
+teste("Aviso de cookies aparece no login, some ao confirmar e não volta", { como: "deslogado", url: "/login", cookies: true }, async (p) => {
+  const aviso = p.getByTestId("aviso-cookies")
+  await aviso.getByText("Usamos cookies essenciais").waitFor()
+  await aviso.getByRole("link", { name: "Política de Privacidade" }).waitFor()
+  await aviso.getByRole("button", { name: "Entendi" }).click()
+  await aviso.waitFor({ state: "detached" })
+  await p.reload({ waitUntil: "networkidle" })
+  assert.equal(await p.getByTestId("aviso-cookies").count(), 0)
+})
+
+teste("Aviso de cookies também aparece na página inicial e dentro da plataforma", { como: "usuario", url: "/meus-treinamentos", cookies: true }, async (p) => {
+  await p.getByTestId("aviso-cookies").waitFor()
+  await p.getByRole("button", { name: "Entendi" }).click()
+  assert.equal(await p.getByTestId("aviso-cookies").count(), 0)
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)
@@ -329,6 +345,8 @@ async function main() {
     }
     for (const t of lista) {
       const context = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: "pt-BR", timezoneId: "America/Sao_Paulo", acceptDownloads: true })
+      // Os testes partem do aviso de cookies já confirmado (ele tem testes próprios)
+      if (!t.opcoes.cookies) await context.addInitScript(() => { try { localStorage.setItem("aviso-cookies-v1", "1") } catch {} })
       const page = await context.newPage()
       page.setDefaultTimeout(8000)
       const erros = []
