@@ -81,7 +81,7 @@ export function NpsReport({ empresaId, inicio, fim }: Props) {
     <div className="space-y-6" data-testid="nps-report">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card className="col-span-2 p-4 lg:col-span-1">
-          <div className="text-xs font-medium text-muted-foreground">NPS</div>
+          <div className="text-xs font-medium text-muted-foreground">NPS (0 a 100)</div>
           <div className="mt-1 text-4xl font-semibold tabular-nums tracking-tight" data-testid="nps-valor">{FORMATO_NPS(g.nps)}</div>
           <div className={cn("mt-1 text-xs font-medium", TOM_ZONA[zona])}>{ROTULO_ZONA[zona]}</div>
           <div className="mt-1 text-xs text-muted-foreground">{g.total} resposta{g.total === 1 ? "" : "s"} · média {g.media?.toLocaleString("pt-BR")}</div>
@@ -100,6 +100,9 @@ export function NpsReport({ empresaId, inicio, fim }: Props) {
           </Card>
         ))}
       </div>
+      <p className="-mt-3 text-xs text-muted-foreground">
+        O NPS vai de 0 a 100: % de promotores + metade da % de neutros. 0 só tem detratores, 50 é empate entre promotores e detratores e 100 só tem promotores.
+      </p>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
@@ -131,14 +134,14 @@ export function NpsReport({ empresaId, inicio, fim }: Props) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Evolução do NPS</CardTitle>
-            <CardDescription>NPS de cada mês (de −100 a +100)</CardDescription>
+            <CardDescription>NPS de cada mês (de 0 a 100)</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={configMensal} className="aspect-auto h-[240px] w-full">
               <BarChart data={data.por_mes.map((m) => ({ ...m, rotulo: mesBR(m.mes) }))} margin={{ top: 18, right: 8, left: -8, bottom: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="rotulo" tickLine={false} axisLine={false} />
-                <YAxis domain={[-100, 100]} tickLine={false} axisLine={false} width={40} />
+                <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={40} />
                 <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} content={<ChartTooltipContent hideIndicator formatter={(v, _n, item) => `NPS ${FORMATO_NPS(Number(v))} · ${item?.payload?.total} resposta(s)`} />} />
                 <Bar dataKey="nps" fill="var(--color-nps)" radius={[4, 4, 0, 0]} maxBarSize={36}>
                   <LabelList dataKey="nps" position="top" className="fill-foreground text-xs tabular-nums" formatter={(v: number) => FORMATO_NPS(v)} />

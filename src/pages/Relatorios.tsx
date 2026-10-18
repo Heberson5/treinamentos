@@ -24,6 +24,7 @@ import { VencimentosReport } from "@/components/reports/vencimentos-report"
 import { AnaliseQuestoes } from "@/components/reports/analise-questoes"
 import { buscarDadosApresentacao } from "@/lib/dados-apresentacao"
 import { useSystemBranding } from "@/hooks/use-system-branding"
+import { dataLocal } from "@/lib/data-local"
 import { cn } from "@/lib/utils"
 
 const monthlyConfig = {
@@ -254,7 +255,7 @@ export default function Relatorios() {
     try {
       if (type === "geral") {
         exportData(format, {
-          filename: `relatorio-geral-${new Date().toISOString().split('T')[0]}`,
+          filename: `relatorio-geral-${dataLocal()}`,
           title: "Relatório Geral de Treinamentos", subtitle,
           columns: [{ header: "Métrica", key: "metrica" }, { header: "Valor", key: "valor" }],
           data: [
@@ -267,7 +268,7 @@ export default function Relatorios() {
         })
       } else if (type === "departamentos") {
         exportData(format, {
-          filename: `relatorio-departamentos-${new Date().toISOString().split('T')[0]}`,
+          filename: `relatorio-departamentos-${dataLocal()}`,
           title: "Relatório por Departamentos", subtitle,
           columns: [
             { header: "Departamento", key: "nome" }, { header: "Participantes", key: "participantes" },
@@ -277,7 +278,7 @@ export default function Relatorios() {
         })
       } else if (type === "treinamentos") {
         exportData(format, {
-          filename: `relatorio-treinamentos-${new Date().toISOString().split('T')[0]}`,
+          filename: `relatorio-treinamentos-${dataLocal()}`,
           title: "Relatório por Treinamentos", subtitle,
           columns: [
             { header: "Treinamento", key: "titulo" }, { header: "Participantes", key: "participantes" },
@@ -288,7 +289,7 @@ export default function Relatorios() {
         })
       } else if (type === "participantes") {
         exportData(format, {
-          filename: `relatorio-participantes-${new Date().toISOString().split('T')[0]}`,
+          filename: `relatorio-participantes-${dataLocal()}`,
           title: "Análise de Participantes", subtitle,
           columns: [{ header: "Métrica", key: "metrica" }, { header: "Valor", key: "valor" }],
           data: [
@@ -300,7 +301,7 @@ export default function Relatorios() {
         })
       } else if (type === "mensal") {
         exportData(format, {
-          filename: `relatorio-mensal-${new Date().toISOString().split('T')[0]}`,
+          filename: `relatorio-mensal-${dataLocal()}`,
           title: "Evolução Mensal", subtitle,
           columns: [
             { header: "Mês", key: "mes" }, { header: "Iniciados", key: "iniciados" },
@@ -350,7 +351,7 @@ export default function Relatorios() {
       const url = URL.createObjectURL(new Blob([arquivo], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" }))
       const a = document.createElement("a")
       a.href = url
-      a.download = `apresentacao-treinamentos-${new Date().toISOString().split("T")[0]}.pptx`
+      a.download = `apresentacao-treinamentos-${dataLocal()}.pptx`
       document.body.appendChild(a)
       a.click()
       a.remove()

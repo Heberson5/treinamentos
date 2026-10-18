@@ -185,14 +185,17 @@ BEGIN
 
   PERFORM tst.como(admin_a);
   r := public.relatorio_nps();
-  PERFORM tst.checar('admin vê só o NPS da própria empresa (2 respostas, NPS 0)',
-    (r -> 'geral' ->> 'total')::int = 2 AND (r -> 'geral' ->> 'nps')::numeric = 0
+  PERFORM tst.checar('admin vê só o NPS da própria empresa (2 respostas, índice 50)',
+    (r -> 'geral' ->> 'total')::int = 2 AND (r -> 'geral' ->> 'nps')::numeric = 50
     AND (r -> 'geral' ->> 'promotores')::int = 1 AND (r -> 'geral' ->> 'detratores')::int = 1);
   PERFORM tst.checar('comentários vêm identificados', (r -> 'comentarios' -> 0 ->> 'usuario') IS NOT NULL);
   PERFORM tst.checar('há distribuição de 0 a 10', jsonb_array_length(r -> 'distribuicao') = 11);
   PERFORM tst.checar('NPS por departamento soma as respostas (e nunca vaza outra empresa)',
     (SELECT coalesce(sum((x ->> 'total')::int), 0) FROM jsonb_array_elements(r -> 'por_departamento') x) = 2
     AND jsonb_typeof(r -> 'por_categoria') = 'array');
+  PERFORM tst.checar('o NPS fica sempre entre 0 e 100 (sem valores negativos)',
+    NOT EXISTS (SELECT 1 FROM jsonb_array_elements(r -> 'por_treinamento' || r -> 'por_instrutor' || r -> 'por_departamento' || r -> 'por_mes') x
+                 WHERE (x ->> 'nps')::numeric < 0 OR (x ->> 'nps')::numeric > 100));
   PERFORM tst.como(admin_b);
   r := public.relatorio_nps();
   PERFORM tst.checar('admin B vê só o NPS da empresa B (100)', (r -> 'geral' ->> 'total')::int = 1 AND (r -> 'geral' ->> 'nps')::numeric = 100);

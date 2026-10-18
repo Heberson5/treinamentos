@@ -1,5 +1,7 @@
 // Cálculos e textos do NPS (Net Promoter Score). Quem dá 9 ou 10 é promotor,
-// 7 ou 8 é neutro e de 0 a 6 é detrator. NPS = % promotores − % detratores.
+// 7 ou 8 é neutro e de 0 a 6 é detrator. O NPS aqui é um índice de 0 a 100, sem valores
+// negativos: % de promotores + metade da % de neutros (o mesmo que (NPS clássico + 100) ÷ 2).
+// 0 = só detratores · 50 = promotores e detratores empatados · 100 = só promotores.
 
 export interface ResumoNps {
   total: number
@@ -25,17 +27,17 @@ export function calcularNps(notas: number[]): ResumoNps {
     promotores,
     neutros: total - promotores - detratores,
     detratores,
-    nps: total ? Math.round(((promotores - detratores) / total) * 1000) / 10 : null,
+    nps: total ? Math.round((50 + (50 * (promotores - detratores)) / total) * 10) / 10 : null,
     media: total ? Math.round((notas.reduce((a, b) => a + b, 0) / total) * 100) / 100 : null,
   }
 }
 
-/** Faixas usadas pelo mercado para ler o NPS. */
+/** Faixas usadas pelo mercado para ler o NPS, ajustadas para a escala de 0 a 100. */
 export function zonaNps(nps: number | null): ZonaNps {
   if (nps === null) return "sem-dados"
-  if (nps >= 75) return "excelencia"
-  if (nps >= 50) return "qualidade"
-  if (nps >= 0) return "aperfeicoamento"
+  if (nps >= 87.5) return "excelencia"
+  if (nps >= 75) return "qualidade"
+  if (nps >= 50) return "aperfeicoamento"
   return "critica"
 }
 
@@ -48,4 +50,4 @@ export const ROTULO_ZONA: Record<ZonaNps, string> = {
 }
 
 export const FORMATO_NPS = (v: number | null | undefined) =>
-  v === null || v === undefined ? "—" : v.toLocaleString("pt-BR", { maximumFractionDigits: 1, signDisplay: "exceptZero" })
+  v === null || v === undefined ? "—" : v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })

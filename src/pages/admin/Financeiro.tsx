@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { dataLocal } from "@/lib/data-local"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -267,7 +268,7 @@ export default function Financeiro() {
       .from("pagamentos")
       .update({ 
         status: "pago", 
-        data_pagamento: new Date().toISOString().split('T')[0] 
+        data_pagamento: dataLocal() 
       })
       .eq("id", pagamento.id)
 
@@ -277,7 +278,7 @@ export default function Financeiro() {
     }
 
     setPagamentos(prev => prev.map(p => 
-      p.id === pagamento.id ? { ...p, status: "pago", data_pagamento: new Date().toISOString().split('T')[0] } : p
+      p.id === pagamento.id ? { ...p, status: "pago", data_pagamento: dataLocal() } : p
     ))
 
     toast({ title: "Pagamento confirmado", description: "O pagamento foi marcado como pago." })

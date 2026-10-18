@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { dataLocal } from "@/lib/data-local"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Card,
@@ -119,7 +120,7 @@ const RECORRENCIA_LABEL: Record<Recorrencia, string> = {
   anual: "Anual",
 }
 
-const todayISO = () => new Date().toISOString().slice(0, 10)
+const todayISO = () => dataLocal()
 
 async function fetchAvisos(): Promise<AvisoPopup[]> {
   const { data, error } = await supabase

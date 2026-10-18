@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import { registrarAuditoria } from "@/lib/audit-utils"
+import { dataLocal, fimDoDia, inicioDoDia } from "@/lib/data-local"
 import { TIMEZONE_GROUPS } from "@/lib/timezones"
 
 interface ConfiguracaoSistema {
@@ -178,7 +179,7 @@ const COLUNAS_CONFIG = [
   "trilhas_habilitadas",
 ].join(", ")
 
-const todayIso = () => new Date().toISOString().split("T")[0]
+const todayIso = () => dataLocal()
 
 export default function Configuracoes() {
   const { user } = useAuth()
@@ -298,10 +299,10 @@ export default function Configuracoes() {
         .limit(500)
 
       if (auditDataInicio) {
-        query = query.gte("criado_em", `${auditDataInicio}T00:00:00`)
+        query = query.gte("criado_em", inicioDoDia(auditDataInicio))
       }
       if (auditDataFim) {
-        query = query.lte("criado_em", `${auditDataFim}T23:59:59`)
+        query = query.lte("criado_em", fimDoDia(auditDataFim))
       }
       const { data } = await query as any
       return (data || []) as AuditEntry[]

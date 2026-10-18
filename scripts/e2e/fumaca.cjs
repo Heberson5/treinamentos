@@ -156,7 +156,7 @@ teste("Master vê o cartão de verificação em duas etapas em Segurança", { co
 teste("Relatórios mostram a satisfação (NPS) com gráficos e comentários identificados", { como: "master", url: "/relatorios" }, async (p) => {
   await p.getByRole("tab", { name: "Satisfação (NPS)" }).click()
   await p.getByTestId("nps-valor").waitFor()
-  assert.match(await p.getByTestId("nps-valor").innerText(), /44,4/)
+  assert.match(await p.getByTestId("nps-valor").innerText(), /72,2/)
   await p.getByText("Promotores (9–10)").waitFor()
   await p.getByText("Conteúdo claro e direto ao ponto.").waitFor()
   await p.getByText(/Lucas Ferreira · LGPD na prática/).waitFor()
@@ -343,6 +343,15 @@ teste("Guias (abas) não têm barra de rolagem, nem no celular", { como: "master
   }
 })
 
+teste("Auditoria: à noite (23h32 do dia 17) o filtro \"Hoje\" continua sendo dia 17", { como: "master", url: "/admin/configuracoes", horaFixa: "2026-10-18T02:32:00Z" }, async (p) => {
+  await p.getByRole("tab", { name: /Auditoria/ }).click()
+  assert.equal(await p.locator("#audit-de").inputValue(), "2026-10-17")
+  assert.equal(await p.locator("#audit-ate").inputValue(), "2026-10-17")
+  await p.locator("#audit-de").fill("2026-10-01")
+  await p.getByRole("button", { name: "Hoje" }).click()
+  assert.equal(await p.locator("#audit-de").inputValue(), "2026-10-17")
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)
@@ -383,6 +392,7 @@ async function main() {
           emailsComProblema: !!t.opcoes.emailsComProblema,
         })
         if (t.opcoes.relogio) await page.clock.install()
+        if (t.opcoes.horaFixa) await page.clock.install({ time: new Date(t.opcoes.horaFixa) })
         await page.goto(BASE + t.opcoes.url, { waitUntil: "networkidle" }).catch(() => {})
         await t.fn(page)
         assert.deepEqual(erros, [], "erros de JavaScript na página")

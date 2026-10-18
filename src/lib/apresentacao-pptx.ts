@@ -81,9 +81,9 @@ export function paletaDe(corPrincipalHex: string): Paleta {
 const nf = (n: number) => n.toLocaleString("pt-BR")
 const pct = (n: number) => `${n.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
 const dec = (n: number | null | undefined, c = 1) => (n === null || n === undefined ? "—" : n.toLocaleString("pt-BR", { maximumFractionDigits: c, minimumFractionDigits: 0 }))
-const npsTxt = (n: number | null | undefined) => (n === null || n === undefined ? "—" : n.toLocaleString("pt-BR", { maximumFractionDigits: 1, signDisplay: "exceptZero" }))
+const npsTxt = (n: number | null | undefined) => (n === null || n === undefined ? "—" : n.toLocaleString("pt-BR", { maximumFractionDigits: 1 }))
 const corta = (t: string, n: number) => (t.length > n ? t.slice(0, n - 1) + "…" : t)
-const zonaNps = (v: number) => (v >= 75 ? "Zona de excelência" : v >= 50 ? "Zona de qualidade" : v >= 0 ? "Zona de aperfeiçoamento" : "Zona crítica")
+const zonaNps = (v: number) => (v >= 87.5 ? "Zona de excelência" : v >= 75 ? "Zona de qualidade" : v >= 50 ? "Zona de aperfeiçoamento" : "Zona crítica")
 
 export function recomendacoes(d: DadosApresentacao): string[] {
   const r: string[] = []
@@ -103,13 +103,13 @@ export function recomendacoes(d: DadosApresentacao): string[] {
   if (d.avaliacoes.aprovacao !== null && d.avaliacoes.aprovacao < 70 && d.avaliacoes.tentativas >= 5) r.push(`A aprovação nas provas está em ${pct(d.avaliacoes.aprovacao)}. Reveja as questões com mais erros e reforce o conteúdo correspondente.`)
 
   if (d.nps && d.nps.total > 0 && d.nps.nps !== null) {
-    if (d.nps.nps < 0) r.push(`A satisfação (NPS ${npsTxt(d.nps.nps)}) está na zona crítica. Leia os comentários dos detratores e priorize ajustes no conteúdo.`)
-    else if (d.nps.nps < 50) r.push(`A satisfação (NPS ${npsTxt(d.nps.nps)}) pode melhorar. Foque nos treinamentos com menor nota e peça sugestões aos participantes.`)
+    if (d.nps.nps < 50) r.push(`A satisfação (NPS ${npsTxt(d.nps.nps)}) está na zona crítica. Leia os comentários dos detratores e priorize ajustes no conteúdo.`)
+    else if (d.nps.nps < 75) r.push(`A satisfação (NPS ${npsTxt(d.nps.nps)}) pode melhorar. Foque nos treinamentos com menor nota e peça sugestões aos participantes.`)
     else r.push(`Satisfação em destaque (NPS ${npsTxt(d.nps.nps)}). Use os treinamentos mais bem avaliados como modelo.`)
     const depsNps = d.nps.porDepartamento.filter((x) => x.total >= 3)
     if (depsNps.length > 1) {
       const pior = [...depsNps].sort((a, b) => a.nps - b.nps)[0]
-      if (pior.nps < 30) r.push(`Conversar com ${pior.nome}: a satisfação ali (NPS ${npsTxt(pior.nps)}) é a menor entre os departamentos.`)
+      if (pior.nps < 65) r.push(`Conversar com ${pior.nome}: a satisfação ali (NPS ${npsTxt(pior.nps)}) é a menor entre os departamentos.`)
     }
   }
   if (d.vencimentos && (d.vencimentos.vencidos > 0 || d.vencimentos.aVencer > 0)) {
@@ -138,7 +138,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
   pres.company = d.empresa
 
   const W = 13.33
-  const corNps = (v: number | null) => (v === null ? c.cinza : v >= 50 ? c.verde : v >= 0 ? c.ambar : c.vermelho)
+  const corNps = (v: number | null) => (v === null ? c.cinza : v >= 75 ? c.verde : v >= 50 ? c.ambar : c.vermelho)
   let n = 0
 
   // Nomes iguais entre slides ("!!") fazem a transição Transformar mover os elementos
@@ -199,7 +199,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
     s.addChart(pres.ChartType.bar, [{ name: rotuloSerie, labels: itens.map((i) => corta(i.nome, 28)), values: itens.map((i) => i.valor) }], {
       x: o.x, y: o.y, w: o.w, h: o.h, barDir: "bar", barGapWidthPct: 45, chartColors: o.cores, showLegend: false,
       catAxisOrientation: "maxMin" as unknown as "minMax", ...(o.max !== undefined ? { valAxisMaxVal: o.max } : {}), ...(o.min !== undefined ? { valAxisMinVal: o.min } : {}),
-      ...eixos, ...(o.min !== undefined && o.min < 0 ? { catAxisLabelPos: "low" as const } : {}), ...rotulos(o.fmt),
+      ...eixos, ...rotulos(o.fmt),
     })
 
   const nps = d.nps && d.nps.total > 0 && d.nps.nps !== null ? d.nps : null
@@ -379,7 +379,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
       s.addShape(pres.ShapeType.roundRect, { x: 0.7, y: 1.9, w: 4.2, h: 4.6, rectRadius: 0.15, fill: { color: c.suave }, line: { color: c.clara, width: 1 } })
       s.addText(npsTxt(nps.nps), { x: 0.7, y: 2.3, w: 4.2, h: 1.9, fontFace: FONTE, fontSize: 66, bold: true, color: corNps(nps.nps), align: "center", valign: "middle", fit: "shrink" })
       s.addText(zonaNps(nps.nps!), { x: 0.7, y: 4.3, w: 4.2, h: 0.5, fontFace: FONTE, fontSize: 18, bold: true, color: c.tinta, align: "center" })
-      s.addText("NPS = % promotores − % detratores", { x: 0.7, y: 4.85, w: 4.2, h: 0.4, fontFace: FONTE, fontSize: 12, color: c.cinza, align: "center" })
+      s.addText("NPS de 0 a 100 = % promotores + ½ neutros", { x: 0.7, y: 4.85, w: 4.2, h: 0.4, fontFace: FONTE, fontSize: 12, color: c.cinza, align: "center" })
       s.addChart(pres.ChartType.doughnut, [{ name: "Respostas", labels: ["Promotores (9-10)", "Neutros (7-8)", "Detratores (0-6)"], values: [nps.promotores, nps.neutros, nps.detratores] }], {
         x: 5.2, y: 1.8, w: 7.4, h: 4.9, holeSize: 58, chartColors: [c.verde, "94A3B8", c.vermelho], showLegend: true, legendPos: "r",
         legendFontFace: FONTE, legendFontSize: 14, legendColor: c.tinta, showPercent: true, showValue: false, dataLabelColor: "FFFFFF", dataLabelFontFace: FONTE, dataLabelFontSize: 13, dataBorder: { pt: 2, color: "FFFFFF" },
@@ -399,7 +399,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
       if (nps.porMes.length > 1) {
         s.addText("NPS por mês", { x: 7.1, y: 1.75, w: 5.5, h: 0.4, fontFace: FONTE, fontSize: 15, bold: true, color: c.tinta })
         s.addChart(pres.ChartType.line, [{ name: "NPS", labels: nps.porMes.map((m) => m.mes), values: nps.porMes.map((m) => m.nps) }], {
-          x: 7.0, y: 2.1, w: 5.8, h: 4.8, chartColors: [c.principal], lineSize: 3, lineDataSymbolSize: 9, showLegend: false, valAxisMinVal: -100, valAxisMaxVal: 100, ...eixos, ...rotulos(),
+          x: 7.0, y: 2.1, w: 5.8, h: 4.8, chartColors: [c.principal], lineSize: 3, lineDataSymbolSize: 9, showLegend: false, valAxisMinVal: 0, valAxisMaxVal: 100, ...eixos, ...rotulos(),
         })
       } else {
         s.addText(nps.porMes.length === 1 ? `Mês de ${nps.porMes[0].mes}: NPS ${npsTxt(nps.porMes[0].nps)} com ${nps.porMes[0].total} resposta(s). A evolução aparece a partir de dois meses com respostas.` : "Sem respostas por mês.", { x: 7.1, y: 2.4, w: 5.5, h: 1.5, fontFace: FONTE, fontSize: 16, color: c.cinza })
@@ -412,7 +412,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
       const lista = nps.porDepartamento.slice(0, 8)
       const s = nova(`NPS por departamento: ${lista.map((x) => `${x.nome} ${npsTxt(x.nps)}`).join("; ")}.`)
       titulo(s, "NPS por departamento", "Satisfação de cada departamento com os treinamentos")
-      barrasH(s, "NPS", lista.map((x) => ({ nome: x.nome, valor: x.nps })), { x: 0.6, y: 1.8, w: 6.6, h: 5.1, cores: lista.map((x) => corNps(x.nps)), max: 100, min: -100 })
+      barrasH(s, "NPS", lista.map((x) => ({ nome: x.nome, valor: x.nps })), { x: 0.6, y: 1.8, w: 6.6, h: 5.1, cores: lista.map((x) => corNps(x.nps)), max: 100, min: 0 })
       tabela(s, 7.4, 1.95, 5.4, [2.3, 1.0, 1.0, 1.1], ["Departamento", "Resp.", "Nota", "NPS"],
         nps.porDepartamento.slice(0, 10).map((x) => [corta(x.nome, 20), nf(x.total), dec(x.media), { t: npsTxt(x.nps), cor: corNps(x.nps), b: true }]), { tam: 11 })
       rodape(s)
@@ -423,7 +423,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
       const lista = nps.porInstrutor.slice(0, 8)
       const s = nova(`NPS por instrutor: ${lista.map((x) => `${x.nome} ${npsTxt(x.nps)}`).join("; ")}.`)
       titulo(s, "NPS por instrutor", "Como cada instrutor é avaliado pelos participantes")
-      barrasH(s, "NPS", lista.map((x) => ({ nome: x.nome, valor: x.nps })), { x: 0.6, y: 1.8, w: 6.6, h: 5.1, cores: lista.map((x) => corNps(x.nps)), max: 100, min: -100 })
+      barrasH(s, "NPS", lista.map((x) => ({ nome: x.nome, valor: x.nps })), { x: 0.6, y: 1.8, w: 6.6, h: 5.1, cores: lista.map((x) => corNps(x.nps)), max: 100, min: 0 })
       tabela(s, 7.4, 1.95, 5.4, [2.3, 1.0, 1.0, 1.1], ["Instrutor", "Resp.", "Nota", "NPS"],
         nps.porInstrutor.slice(0, 10).map((x) => [corta(x.nome, 20), nf(x.total), dec(x.media), { t: npsTxt(x.nps), cor: corNps(x.nps), b: true }]), { tam: 11 })
       rodape(s)
@@ -450,7 +450,7 @@ export async function montarApresentacao(d: DadosApresentacao): Promise<ArrayBuf
       const lista = nps.porCategoria.slice(0, 8)
       const s = nova("NPS por categoria de treinamento.")
       titulo(s, "NPS por categoria", "Satisfação em cada categoria de treinamento")
-      barrasH(s, "NPS", lista.map((x) => ({ nome: x.nome, valor: x.nps })), { x: 0.7, y: 1.8, w: 12, h: 5.1, cores: lista.map((x) => corNps(x.nps)), max: 100, min: -100 })
+      barrasH(s, "NPS", lista.map((x) => ({ nome: x.nome, valor: x.nps })), { x: 0.7, y: 1.8, w: 12, h: 5.1, cores: lista.map((x) => corNps(x.nps)), max: 100, min: 0 })
       rodape(s)
     }
 

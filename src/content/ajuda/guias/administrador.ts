@@ -489,7 +489,7 @@ export const guiasAdministrador: Guia[] = [
         titulo: "Satisfação (NPS)",
         texto:
           "Depois de concluir um treinamento, a pessoa dá uma nota de **0 a 10** e pode comentar. Em **Relatórios → Satisfação (NPS)** você vê o NPS geral, a distribuição das notas, o resultado por treinamento e por instrutor, a evolução mês a mês e os comentários **com o nome de quem respondeu**.",
-        pontos: ["**Promotores:** notas 9 e 10.", "**Neutros:** 7 e 8.", "**Detratores:** 0 a 6.", "**NPS** = % de promotores menos % de detratores."],
+        pontos: ["**Promotores:** notas 9 e 10.", "**Neutros:** 7 e 8.", "**Detratores:** 0 a 6.", "**NPS (0 a 100)** = % de promotores + metade da % de neutros. 0 só tem detratores, 50 é empate entre promotores e detratores e 100 só tem promotores."],
       },
       {
         titulo: "Vencimentos e qualidade das questões",

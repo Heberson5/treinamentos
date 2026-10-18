@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { dataLocal } from "@/lib/data-local"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -68,7 +69,7 @@ async function fetchEventos(): Promise<CalendarEvent[]> {
       id: l.id,
       title: l.titulo,
       description: l.descricao || "",
-      date: dt.toISOString().split("T")[0],
+      date: dataLocal(dt),
       time: dt.toTimeString().slice(0, 5),
       duration: "1h",
       type: (l.tipo || "evento") as CalendarEvent["type"],
@@ -228,7 +229,7 @@ export default function Calendario() {
     for (let i = 0; i < 42; i++) {
       const date = new Date(startDate)
       date.setDate(startDate.getDate() + i)
-      const dateStr = date.toISOString().split("T")[0]
+      const dateStr = dataLocal(date)
       const dayEvents = filteredEvents.filter(e => e.date === dateStr)
       calendar.push({ date, isCurrentMonth: date.getMonth() === month, events: dayEvents })
     }
@@ -242,7 +243,7 @@ export default function Calendario() {
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek)
       date.setDate(startOfWeek.getDate() + i)
-      const dateStr = date.toISOString().split("T")[0]
+      const dateStr = dataLocal(date)
       const dayEvents = filteredEvents.filter(e => e.date === dateStr)
       days.push({ date, events: dayEvents })
     }
@@ -250,7 +251,7 @@ export default function Calendario() {
   }
 
   const generateDayEvents = () => {
-    const dateStr = selectedDate.toISOString().split("T")[0]
+    const dateStr = dataLocal(selectedDate)
     return filteredEvents.filter(e => e.date === dateStr)
   }
 
