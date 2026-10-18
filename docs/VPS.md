@@ -7,7 +7,9 @@ chaves do `.env` do Supabase na hora de usar.
 
 | Script | Para que serve |
 |---|---|
-| `atualizar.sh` | Baixa o código, faz backup, aplica as migrações pendentes, atualiza as funções e reconstrói o app |
+| `atualizar.sh` | Baixa o código, faz backup, **testa** as migrações num banco temporário, aplica-as, atualiza as funções e reconstrói o app. `--voltar` devolve a versão anterior |
+| `testar-atualizacao.sh` | Ensaio: restaura o último backup num banco temporário, aplica as migrações pendentes e roda os testes de acesso por papel (chamado pelo `atualizar.sh`) |
+| `resetar-2fa.sh` | Desativa a verificação em duas etapas de uma conta (perdeu o celular e os códigos de recuperação) |
 | `backup.sh` | Backup do banco (inclui logins) e dos arquivos enviados; mantém 14 dias |
 | `verificar-backup.sh` | Restaura o último backup num banco temporário e confere as tabelas principais |
 | `monitorar.sh` | Containers, API, site, disco, memória, último backup e certificado HTTPS; avisa os Masters por e-mail |
@@ -61,6 +63,27 @@ O script se recusa a continuar se houver arquivos do repositório alterados
 na VPS e só avança o código (nunca sobrescreve). Cada migração roda numa
 transação: se falhar, é desfeita e nada mais é aplicado.
 
+**Ensaio antes de aplicar.** Havendo migrações pendentes, o script faz o backup
+e, antes de tocar no banco real, restaura esse backup num banco temporário
+(`teste_atualizacao`), aplica as migrações nele e roda `supabase/tests/*.sql`
+(cada papel só enxerga e altera o que lhe cabe, Master com 2FA, etc.). Se algo
+falhar, ele mostra "NÃO atualize", apaga o banco temporário e para. Para rodar o
+ensaio sozinho: `scripts/vps/testar-atualizacao.sh`. Em emergência, pule-o com
+`scripts/vps/atualizar.sh --sem-teste`.
+
+**Voltar atrás.** Se uma atualização causar problema:
+
+```bash
+cd ~/treinamentos && scripts/vps/atualizar.sh --voltar
+```
+
+Isso devolve o código, as funções e o app à versão de antes da última
+atualização (o script mostra qual). O **banco não é desfeito**: as migrações
+só acrescentam, e a versão anterior continua funcionando com elas. Se precisar
+também dos dados de antes, restaure o backup "Antes da atualização" (seção 5,
+"Restaurar"). A próxima atualização pede confirmação, porque a versão mais nova
+continua no GitHub.
+
 ## 3. Ajustes de configuração (uma vez)
 
 ### Na plataforma (Master → Configurações)
@@ -72,12 +95,23 @@ transação: se falhar, é desfeita e nada mais é aplicado.
 - **Sessão única**: no serviço `auth` do `docker-compose.yml`, em `environment`, adicione `GOTRUE_SESSIONS_SINGLE_PER_USER: "true"`.
 - **E-mail de recuperação de senha**: preencha `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_ADMIN_EMAIL`, `SMTP_SENDER_NAME` no `.env` e confira `SITE_URL=https://seu-dominio`.
 - **Funções**: mantenha `FUNCTIONS_VERIFY_JWT=false`. Todas as funções conferem o acesso por conta própria, e o calendário e o webhook do Mercado Pago precisam ser chamados sem login.
+- **Verificação em duas etapas (Master)**: no serviço `auth`, em `environment`, confirme `GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"` e `GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"`. Sem isso, a tela Configurações → Segurança avisa que o recurso está desligado no servidor.
 - Depois de mudar: `cd ~/supabase-selfhosted && sudo docker compose up -d`.
 
 ### Mercado Pago
 Em *Suas integrações → Webhooks*, a URL de notificação deve ser
 `https://api.sauberlich.com.br/functions/v1/mercadopago-webhook` (evento
 **Pagamentos**). Copie a *assinatura secreta* para Integrações → Pagamentos.
+
+### Verificação em duas etapas do Master
+O Master ativa em **Configurações → Segurança** (QR Code + aplicativo autenticador)
+e guarda os 8 códigos de recuperação. Com ela ativa, uma sessão só de senha não
+vale como Master, nem no banco nem nas funções do servidor. Se o Master perder o
+celular **e** os códigos, quem tem acesso à VPS desativa a verificação:
+
+```bash
+cd ~/treinamentos && scripts/vps/resetar-2fa.sh master@empresa.com.br
+```
 
 ## 4. Segurança da VPS
 

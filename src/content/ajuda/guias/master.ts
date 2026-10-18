@@ -198,9 +198,9 @@ export const guiasMaster: Guia[] = [
         print: "mast-config-notificacoes",
       },
       {
-        titulo: "Defina as regras de segurança",
+        titulo: "Proteja sua conta e defina as regras de segurança",
         texto:
-          "Na aba **Segurança**, defina o tamanho mínimo da senha e se ela exige maiúscula, número e caractere especial. Configure também o tempo de inatividade para desconectar a pessoa automaticamente, se a sessão termina ao fechar o navegador e quantas tentativas erradas de login levam ao bloqueio. Cada quadro tem o seu botão de salvar no rodapé.",
+          "Na aba **Segurança**, o primeiro quadro é a **Verificação em duas etapas**, exclusiva do Master: clique em **Ativar**, leia o QR Code no aplicativo autenticador do celular (Google Authenticator, Microsoft Authenticator ou Authy), digite o código de 6 dígitos e **guarde os 8 códigos de recuperação** (eles aparecem uma única vez). Depois disso, toda entrada pede a senha e o código do aplicativo. Se perder o celular, use um código de recuperação na tela de confirmação. Em seguida, defina o tamanho mínimo da senha e se ela exige maiúscula, número e caractere especial. Configure também o tempo de inatividade para desconectar a pessoa automaticamente, se a sessão termina ao fechar o navegador e quantas tentativas erradas de login levam ao bloqueio. Cada quadro tem o seu botão de salvar no rodapé.",
         print: "mast-config-seguranca",
       },
       {

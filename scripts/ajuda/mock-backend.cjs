@@ -195,6 +195,7 @@ const rpcs = {
     return { encontrado: true, valido: true, codigo: "7KQM-X4TB-9HRC", titular: "Lucas Ferreira", treinamento: "LGPD na prática",
       carga_horaria_minutos: 90, concluido_em: iso(6), emitido_em: iso(6), empresa: "Horizonte Alimentos" };
   },
+  codigos_recuperacao_mfa_restantes: () => 8,
   gerar_token_calendario: () => "3f9c2a7e5b1d48c6a0e9f7b2d4c6a8e13f9c2a7e5b1d48c6a0e9f7b2d4c6a8e1",
   revogar_token_calendario: () => null,
   pode_tentar_login: () => ({ permitido: true, restantes: 5 }),
@@ -206,13 +207,14 @@ const rpcs = {
 
 function b64url(o) { return Buffer.from(JSON.stringify(o)).toString("base64url"); }
 const exp = Math.floor(Date.now() / 1000) + 3600 * 24 * 30;
-function makeSession(uid) {
+function makeSession(uid, { aal = "aal1", comFator = false } = {}) {
   const p = perfis.find((x) => x.id === uid);
-  const jwt = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: uid, role: "authenticated", email: p.email, exp, aud: "authenticated" })}.assinatura-ficticia`;
+  const jwt = `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ sub: uid, role: "authenticated", email: p.email, exp, aud: "authenticated", aal, amr: [{ method: "password", timestamp: 1 }], session_id: "sessao-ficticia" })}.assinatura-ficticia`;
   const user = {
     id: uid, aud: "authenticated", role: "authenticated", email: p.email,
     email_confirmed_at: iso(200), app_metadata: { provider: "email" }, user_metadata: { nome: p.nome },
     created_at: iso(200), updated_at: iso(1),
+    factors: comFator ? [{ id: "fator-1", friendly_name: "Aplicativo", factor_type: "totp", status: "verified", created_at: iso(5), updated_at: iso(5) }] : [],
   };
   return { access_token: jwt, refresh_token: "ficticio", expires_in: 3600 * 24 * 30, expires_at: exp, token_type: "bearer", user };
 }
@@ -238,8 +240,10 @@ function applyFilters(rows, params) {
 
 const SUPABASE_HOST = "fakesupa.local";
 
-async function instalarBackendFicticio(page, { logado = true, como = "master", avisos = false, prova = "aprovado", semCiencia = false } = {}) {
-  const session = makeSession(IDS[como]);
+async function instalarBackendFicticio(page, { logado = true, como = "master", avisos = false, prova = "aprovado", semCiencia = false, segundoFator = false } = {}) {
+  // segundoFator: a conta tem verificação em duas etapas e a sessão é só de senha;
+  // o código correto no backend fictício é 123456
+  let session = makeSession(IDS[como], { aal: "aal1", comFator: segundoFator });
   if (logado) {
     await page.addInitScript((s) => {
       localStorage.setItem("sb-fakesupa-auth-token", JSON.stringify(s));
@@ -276,6 +280,14 @@ async function instalarBackendFicticio(page, { logado = true, como = "master", a
       });
     if (req.method() === "OPTIONS") return json({});
     const p = url.pathname;
+    if (p.startsWith("/auth/v1/factors/") && p.endsWith("/challenge")) return json({ id: "desafio-1", type: "totp", expires_at: Math.floor(Date.now() / 1000) + 300 });
+    if (p.startsWith("/auth/v1/factors/") && p.endsWith("/verify")) {
+      let enviado = null;
+      try { enviado = req.postDataJSON(); } catch { /* sem corpo */ }
+      if (!enviado || enviado.code !== "123456") return json({ code: "mfa_verification_failed", error_code: "mfa_verification_failed", msg: "Invalid TOTP code entered", message: "Invalid TOTP code entered" }, 400);
+      session = makeSession(IDS[como], { aal: "aal2", comFator: true });
+      return json(session);
+    }
     if (p.startsWith("/auth/v1/user")) return json(session.user);
     if (p.startsWith("/auth/v1/token")) return json(session);
     if (p.startsWith("/auth/v1")) return json({});

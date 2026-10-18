@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel,
 } from "@/components/ui/select"
 import { TabsContent } from "@/components/ui/tabs"
+import { VerificacaoDuasEtapas } from "@/components/auth/verificacao-duas-etapas"
 import { PreviaEmails } from "@/components/email/previa-emails"
 import { politicaPadrao, proximaVersao } from "@/content/lgpd/politica-padrao"
 import { renderSafeMarkdown } from "@/lib/markdown"
@@ -724,6 +725,8 @@ export default function Configuracoes() {
 
         {/* Segurança */}
         <TabsContent value="seguranca" className="mt-0 space-y-6">
+          <VerificacaoDuasEtapas />
+
           <SettingsSection
             title="Políticas de senha"
             description="Regras exigidas ao criar ou trocar uma senha."

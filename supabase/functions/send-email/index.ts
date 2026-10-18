@@ -3,6 +3,7 @@
 // Com { modelo, variante } envia um exemplo daquele modelo de e-mail, sempre
 // para o próprio Master (nunca para outro endereço).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { MSG_SEGUNDO_FATOR, segundoFatorPendente } from "../_shared/seguranca.ts";
 import { Carteiro, carregarConfigEmail, corsHeaders, emailValido, json, smtpConfigurado } from "../_shared/email.ts";
 import { MODELOS_EMAIL, teste } from "../_shared/modelos-email.ts";
 
@@ -29,6 +30,7 @@ Deno.serve(async (req) => {
       .eq("usuario_id", user.id)
       .maybeSingle();
     if (papel?.role !== "master") return json({ error: "Apenas o Master pode testar o e-mail" }, 403);
+    if (await segundoFatorPendente(admin, user.id, authHeader)) return json({ error: MSG_SEGUNDO_FATOR }, 403);
 
     const body = await req.json().catch(() => ({}));
     const modeloId = body?.modelo ? String(body.modelo) : "";

@@ -308,6 +308,7 @@ async function limpeza(admin: SupabaseClient) {
   // Pedidos LGPD atendidos há mais de 5 anos (comprovação do atendimento)
   await apagar("solicitacoes_lgpd", "criado_em", dias(1825));
   await apagar("registro_backups", "iniciado_em", dias(365));    // registro dos backups: 1 ano
+  await apagar("mfa_recuperacao_falhas", "criado_em", dias(1));  // tentativas de código de recuperação
   return r;
 }
 

@@ -5,6 +5,7 @@
 // Quem pode: Master (qualquer usuário, exceto Master) e Administrador
 // (colaboradores e instrutores da própria empresa).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { MSG_SEGUNDO_FATOR, segundoFatorPendente } from "../_shared/seguranca.ts";
 import { corsHeaders, json } from "../_shared/email.ts";
 
 function senhaAleatoria(): string {
@@ -42,6 +43,7 @@ Deno.serve(async (req) => {
     if (!perfilAlvo) return json({ error: "Usuário não encontrado" }, 404);
 
     const quem = papelChamador?.role;
+    if (papelChamador?.role === "master" && await segundoFatorPendente(admin, user.id, authHeader)) return json({ error: MSG_SEGUNDO_FATOR }, 403);
     const alvo = papelAlvo?.role || "usuario";
     if (alvo === "master") return json({ error: "Contas Master não podem ser anonimizadas" }, 403);
     if (quem === "admin") {

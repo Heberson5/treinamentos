@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { MSG_SEGUNDO_FATOR, segundoFatorPendente } from "../_shared/seguranca.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +47,12 @@ Deno.serve(async (req) => {
 
     if (!roleData || !["master", "admin"].includes(roleData.role)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (roleData.role === "master" && await segundoFatorPendente(adminClient, caller.id, authHeader)) {
+      return new Response(JSON.stringify({ error: MSG_SEGUNDO_FATOR }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

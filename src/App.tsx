@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Fragment, lazy, Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,8 @@ import { IntegrationProvider } from "@/contexts/integration-context";
 import { DepartmentProvider } from "@/contexts/department-context";
 import { EmpresaFilterProvider } from "@/contexts/empresa-filter-context";
 import { useSystemBranding } from "@/hooks/use-system-branding";
+import { useSegundoFator } from "@/hooks/use-segundo-fator";
+import { TelaSegundoFator } from "@/components/auth/tela-segundo-fator";
 
 // Rotas carregadas sob demanda (code-splitting) para reduzir o bundle inicial em dispositivos móveis
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -88,6 +90,18 @@ function LoadingScreen() {
       </div>
     </div>
   );
+}
+
+// Quem ativou a verificação em duas etapas só segue depois do código. Os dados
+// do app são carregados de novo (sem recarregar a página) quando ele é aceito.
+function PortaoSegundoFator({ children }: { children: ReactNode }) {
+  const { user, logout } = useAuth();
+  const { carregando, pendente, versao, reverificar } = useSegundoFator(user?.id);
+  if (user && carregando) return <LoadingScreen />;
+  if (user && pendente) {
+    return <TelaSegundoFator email={user.email} onSair={logout} onConcluido={async () => { await reverificar(); queryClient.invalidateQueries(); }} />;
+  }
+  return <Fragment key={versao}>{children}</Fragment>;
 }
 
 function AppContent() {
@@ -204,6 +218,7 @@ const App = () => {
         <TooltipProvider>
           <BrowserRouter>
             <AuthProvider>
+              <PortaoSegundoFator>
               <EmpresaFilterProvider>
                 <PlansProvider>
                   <DepartmentProvider>
@@ -215,6 +230,7 @@ const App = () => {
                   </DepartmentProvider>
                 </PlansProvider>
               </EmpresaFilterProvider>
+              </PortaoSegundoFator>
             </AuthProvider>
           </BrowserRouter>
           <Toaster />

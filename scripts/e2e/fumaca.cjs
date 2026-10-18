@@ -137,6 +137,22 @@ teste("Cada modelo de e-mail tem a sua pré-visualização", { como: "master", u
   assert.match(await p.getByTestId("assunto-previa").innerText(), /^Prazo vencido:/)
 })
 
+teste("Master com verificação em duas etapas: pede o código antes de liberar o sistema", { como: "master", url: "/", segundoFator: true }, async (p) => {
+  await p.getByRole("heading", { name: "Confirme que é você" }).waitFor()
+  assert.equal(await p.getByRole("link", { name: /Dashboard|Início/ }).count(), 0, "o menu não pode aparecer antes do código")
+  await p.getByLabel("Código de 6 dígitos").pressSequentially("000000")
+  await p.getByText(/Código incorreto/).waitFor()
+  await p.getByLabel("Código de 6 dígitos").pressSequentially("123456")
+  await p.getByRole("heading", { name: "Confirme que é você" }).waitFor({ state: "detached" })
+  await p.getByRole("heading", { name: /^(Bom dia|Boa tarde|Boa noite|Início)/ }).first().waitFor()
+})
+
+teste("Master vê o cartão de verificação em duas etapas em Segurança", { como: "master", url: "/admin/configuracoes" }, async (p) => {
+  await p.getByRole("tab", { name: "Segurança" }).click()
+  await p.getByText("Verificação em duas etapas").first().waitFor()
+  await p.getByRole("button", { name: /Ativar verificação em duas etapas/ }).waitFor()
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)
@@ -171,6 +187,7 @@ async function main() {
           logado: t.opcoes.como !== "deslogado",
           como: t.opcoes.como === "deslogado" ? "usuario" : t.opcoes.como,
           semCiencia: !!t.opcoes.semCiencia,
+          segundoFator: !!t.opcoes.segundoFator,
         })
         if (t.opcoes.relogio) await page.clock.install()
         await page.goto(BASE + t.opcoes.url, { waitUntil: "networkidle" }).catch(() => {})
