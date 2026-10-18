@@ -55,7 +55,7 @@ function FolhaCertificado({ dados, modelo, qrDataUrl }: { dados: DadosCertificad
 
       {modelo.mostrar_qr && qrDataUrl && (
         <div className="absolute right-[5%] top-[7%] z-20 flex flex-col items-center gap-1">
-          <span className="text-[9px] text-slate-400">{MARCA_CERTIFICADO}</span>
+          <span className="text-[9px] text-slate-500">{MARCA_CERTIFICADO}</span>
           <img src={qrDataUrl} alt="QR Code para validar o certificado" className="h-20 w-20 rounded bg-white p-1" />
           <span className="text-[9px] text-slate-500">Valide este certificado</span>
         </div>
