@@ -25,13 +25,14 @@ export interface ConfigEmail {
   avisosLigados: boolean;
   conclusaoLigada: boolean;
   lembretesLigados: boolean;
+  pushLigado: boolean;
 }
 
 export async function carregarConfigEmail(admin: SupabaseClient): Promise<ConfigEmail | null> {
   const { data } = await admin
     .from("configuracoes_sistema")
     .select(
-      "smtp_host, smtp_port, smtp_usuario, smtp_senha, smtp_tls, email_remetente, email_template_html, nome_sistema, nome_empresa, url_plataforma, email_contato, notificacoes_email, notificacoes_conclusao, notificacoes_lembrete",
+      "smtp_host, smtp_port, smtp_usuario, smtp_senha, smtp_tls, email_remetente, email_template_html, nome_sistema, nome_empresa, url_plataforma, email_contato, notificacoes_email, notificacoes_conclusao, notificacoes_lembrete, notificacoes_push",
     )
     .limit(1)
     .maybeSingle();
@@ -53,6 +54,7 @@ export async function carregarConfigEmail(admin: SupabaseClient): Promise<Config
     avisosLigados: d.notificacoes_email !== false,
     conclusaoLigada: d.notificacoes_conclusao !== false,
     lembretesLigados: d.notificacoes_lembrete !== false,
+    pushLigado: d.notificacoes_push !== false,
   };
 }
 

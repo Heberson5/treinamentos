@@ -533,7 +533,8 @@ export type Database = {
           logo_url: string | null
           mostrar_qr: boolean
           rodape: string | null
-          texto: string
+          texto_antes: string
+          texto_depois: string
           titulo: string
         }
         Insert: {
@@ -548,7 +549,8 @@ export type Database = {
           logo_url?: string | null
           mostrar_qr?: boolean
           rodape?: string | null
-          texto?: string
+          texto_antes?: string
+          texto_depois?: string
           titulo?: string
         }
         Update: {
@@ -563,7 +565,8 @@ export type Database = {
           logo_url?: string | null
           mostrar_qr?: boolean
           rodape?: string | null
-          texto?: string
+          texto_antes?: string
+          texto_depois?: string
           titulo?: string
         }
         Relationships: [
@@ -702,6 +705,27 @@ export type Database = {
           sandbox_mode?: boolean
           webhook_secret?: string | null
           webhook_secret_configurado?: boolean | null
+        }
+        Relationships: []
+      }
+      configuracoes_push: {
+        Row: {
+          chave_privada: string
+          chave_publica: string
+          criado_em: string
+          id: boolean
+        }
+        Insert: {
+          chave_privada: string
+          chave_publica: string
+          criado_em?: string
+          id?: boolean
+        }
+        Update: {
+          chave_privada?: string
+          chave_publica?: string
+          criado_em?: string
+          id?: boolean
         }
         Relationships: []
       }
@@ -2649,6 +2673,7 @@ export type Database = {
           titulo: string
         }[]
       }
+      obter_chave_push_publica: { Args: never; Returns: string }
       obter_config_sistema_publica: {
         Args: never
         Returns: {
@@ -2742,9 +2767,15 @@ export type Database = {
           versao: string
         }[]
       }
+      resumo_push: { Args: never; Returns: Json }
       revogar_token_calendario: { Args: never; Returns: undefined }
       segundo_fator_pendente: { Args: { p_uid: string }; Returns: boolean }
       status_avaliacao: { Args: { p_treinamento_id: string }; Returns: Json }
+      tem_permissao: { Args: { p_permissao: string }; Returns: boolean }
+      tem_permissao_de: {
+        Args: { p_permissao: string; p_usuario: string }
+        Returns: boolean
+      }
       treinamento_liberado: {
         Args: { p_treinamento_id: string }
         Returns: boolean

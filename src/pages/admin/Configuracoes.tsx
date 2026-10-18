@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select"
 import { TabsContent } from "@/components/ui/tabs"
 import { VerificacaoDuasEtapas } from "@/components/auth/verificacao-duas-etapas"
+import { PushMaster } from "@/components/notifications/push-master"
 import { PreviaEmails } from "@/components/email/previa-emails"
 import { politicaPadrao, proximaVersao } from "@/content/lgpd/politica-padrao"
 import { renderSafeMarkdown } from "@/lib/markdown"
@@ -717,6 +718,7 @@ export default function Configuracoes() {
 
         {/* Notificações */}
         <TabsContent value="notificacoes" className="mt-0 space-y-6">
+          <PushMaster />
           <SettingsSection
             title="Preferências de notificações"
             description="Escolha quais avisos a plataforma envia."
@@ -846,7 +848,7 @@ export default function Configuracoes() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/40 text-xs text-muted-foreground">

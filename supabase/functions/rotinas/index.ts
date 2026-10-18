@@ -7,6 +7,7 @@ import {
   Carteiro, carregarConfigEmail, corsHeaders, iguaisSeguro, json, smtpConfigurado,
   type ConfigEmail,
 } from "../_shared/email.ts";
+import { assuntoVapid, carregarChavesPush, Mensageiro } from "../_shared/push.ts";
 import {
   alertaServidor, conclusao, lembretePrazo, novoTreinamento, recertificacao as modeloRecertificacao,
   recertificacaoGestao, relatorioMensal as modeloRelatorioMensal,
@@ -68,6 +69,8 @@ class Contexto {
   pessoas = new Map<string, Pessoa>();
   empresasAtivas = new Map<string, string>(); // id → nome
   prefs = new Map<string, Preferencias>();
+  /** Envio de notificações push (undefined = desligado ou sem chaves) */
+  mensageiro?: Mensageiro;
 
   constructor(public admin: SupabaseClient, public config: ConfigEmail, public carteiro: Carteiro) {}
 
@@ -101,6 +104,16 @@ class Contexto {
     return !!p && p.papel !== "master" && p.receber_emails && !!p.empresa_id && this.empresasAtivas.has(p.empresa_id) && !!p.email;
   }
 
+  /** Pessoa pode receber notificação push? (ativa, empresa ativa; vale para quem tem aparelho inscrito) */
+  podeAvisarPush(p: Pessoa | undefined): p is Pessoa {
+    return !!this.mensageiro && !!p && p.papel !== "master" && !!p.empresa_id && this.empresasAtivas.has(p.empresa_id);
+  }
+
+  async push(p: Pessoa, titulo: string, corpo: string, caminho: string, tag?: string): Promise<boolean> {
+    if (!this.mensageiro) return false;
+    return (await this.mensageiro.enviar([p.id], { titulo, corpo, url: caminho, tag })) > 0;
+  }
+
   link(caminho: string): string {
     return this.config.urlPlataforma ? this.config.urlPlataforma + caminho : "";
   }
@@ -120,11 +133,11 @@ async function notificacoes(ctx: Contexto) {
       .eq("publicado", true).is("notificado_em", null).range(de, ate));
   resumo.novos_treinamentos = novos.length;
 
-  if (novos.length && config.avisosLigados) {
+  if (novos.length && (config.avisosLigados || ctx.mensageiro)) {
     const porPessoa = new Map<string, any[]>();
     for (const t of novos) {
       for (const p of ctx.pessoas.values()) {
-        if (!ctx.podeAvisar(p)) continue;
+        if (!(config.avisosLigados && ctx.podeAvisar(p)) && !ctx.podeAvisarPush(p)) continue;
         if (t.empresa_id && t.empresa_id !== p.empresa_id) continue;
         if (t.departamento_id && t.departamento_id !== p.departamento_id) continue;
         if (!ctx.pref(p.empresa_id).novo_treinamento) continue;
@@ -134,17 +147,22 @@ async function notificacoes(ctx: Contexto) {
       }
     }
     for (const [pessoaId, lista] of porPessoa) {
-      if (carteiro.esgotado) break;
       const p = ctx.pessoas.get(pessoaId)!;
-      const modelo = novoTreinamento(modeloCfg(config), {
-        nome: p.nome,
-        treinamentos: lista.map((t) => ({ titulo: t.titulo, obrigatorio: !!t.obrigatorio, prazo: t.data_limite ? dataBR(t.data_limite) : null })),
-      });
-      const ok = await carteiro.enviar({
-        para: p.email, tipo: "novo_treinamento", empresaId: p.empresa_id, usuarioId: p.id,
-        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
-      });
-      if (ok) resumo.avisos_novos++;
+      if (config.avisosLigados && ctx.podeAvisar(p) && !carteiro.esgotado) {
+        const modelo = novoTreinamento(modeloCfg(config), {
+          nome: p.nome,
+          treinamentos: lista.map((t) => ({ titulo: t.titulo, obrigatorio: !!t.obrigatorio, prazo: t.data_limite ? dataBR(t.data_limite) : null })),
+        });
+        const ok = await carteiro.enviar({
+          para: p.email, tipo: "novo_treinamento", empresaId: p.empresa_id, usuarioId: p.id,
+          assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+        });
+        if (ok) resumo.avisos_novos++;
+      }
+      if (ctx.podeAvisarPush(p)) {
+        await ctx.push(p, lista.length === 1 ? "Novo treinamento disponível" : `${lista.length} novos treinamentos disponíveis`,
+          lista.length === 1 ? lista[0].titulo : lista.slice(0, 3).map((t) => t.titulo).join(", "), "/meus-treinamentos", "novo-treinamento");
+      }
     }
   }
   // Marca como avisado sempre (inclusive quando a empresa não quer o aviso ou o
@@ -188,7 +206,7 @@ async function notificacoes(ctx: Contexto) {
 async function lembretes(ctx: Contexto) {
   const resumo = { lembretes: 0 };
   const { admin, config, carteiro } = ctx;
-  if (!config.avisosLigados || !config.lembretesLigados) return resumo;
+  if (!config.lembretesLigados || (!config.avisosLigados && !ctx.mensageiro)) return resumo;
 
   const hoje = hojeBR();
   const treinos = await todos<any>((de, ate) =>
@@ -196,7 +214,7 @@ async function lembretes(ctx: Contexto) {
       .eq("publicado", true).not("data_limite", "is", null).range(de, ate));
 
   for (const t of treinos) {
-    if (carteiro.esgotado) break;
+    if (carteiro.esgotado && !ctx.mensageiro) break;
     const dias = diasEntre(hoje, hojeBR(new Date(t.data_limite)));
     if (dias < -1 || dias > 30) continue;
 
@@ -204,8 +222,9 @@ async function lembretes(ctx: Contexto) {
     const concluiu = new Set((prog || []).filter((p: any) => p.concluido).map((p: any) => p.usuario_id));
 
     for (const p of ctx.pessoas.values()) {
-      if (carteiro.esgotado) break;
-      if (!ctx.podeAvisar(p) || concluiu.has(p.id)) continue;
+      const emailOk = config.avisosLigados && ctx.podeAvisar(p) && !carteiro.esgotado;
+      const pushOk = ctx.podeAvisarPush(p);
+      if ((!emailOk && !pushOk) || concluiu.has(p.id)) continue;
       if (t.empresa_id && t.empresa_id !== p.empresa_id) continue;
       if (t.departamento_id && t.departamento_id !== p.departamento_id) continue;
       const pref = ctx.pref(p.empresa_id);
@@ -218,11 +237,14 @@ async function lembretes(ctx: Contexto) {
       if (error) continue;
 
       const modelo = lembretePrazo(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, prazo: dataBR(t.data_limite), dias });
-      const ok = await carteiro.enviar({
-        para: p.email, tipo: "lembrete_prazo", empresaId: p.empresa_id, usuarioId: p.id,
-        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
-      });
-      if (ok) resumo.lembretes++;
+      if (emailOk) {
+        const ok = await carteiro.enviar({
+          para: p.email, tipo: "lembrete_prazo", empresaId: p.empresa_id, usuarioId: p.id,
+          assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+        });
+        if (ok) resumo.lembretes++;
+      }
+      if (pushOk) await ctx.push(p, dias < 0 ? "Prazo vencido" : "Lembrete de prazo", modelo.assunto, `/executar-treinamento/${t.id}`, `prazo-${t.id}`);
     }
   }
   return resumo;
@@ -241,7 +263,7 @@ function somarMeses(iso: string, meses: number): string {
 async function recertificacao(ctx: Contexto, forcar = false) {
   const resumo = { avisos: 0, resumos_gestao: 0 };
   const { admin, config, carteiro } = ctx;
-  if (!config.avisosLigados || !config.lembretesLigados) return resumo;
+  if (!config.lembretesLigados || (!config.avisosLigados && !ctx.mensageiro)) return resumo;
 
   const hoje = hojeBR();
   const treinos = await todos<any>((de, ate) =>
@@ -270,18 +292,23 @@ async function recertificacao(ctx: Contexto, forcar = false) {
       porEmpresa.set(p.empresa_id, lista);
 
       const tipo = dias === 30 ? "aviso_30" : dias === 7 ? "aviso_7" : dias === 0 ? "vence_hoje" : dias < 0 && dias >= -7 ? "vencido" : null;
-      if (!tipo || carteiro.esgotado) continue;
-      if (!ctx.podeAvisar(p) || !ctx.pref(p.empresa_id).lembrete_prazo) continue;
+      if (!tipo || !ctx.pref(p.empresa_id).lembrete_prazo) continue;
+      const emailOk = config.avisosLigados && ctx.podeAvisar(p) && !carteiro.esgotado;
+      const pushOk = ctx.podeAvisarPush(p);
+      if (!emailOk && !pushOk) continue;
       // Registra antes de enviar: o mesmo aviso não sai duas vezes no mesmo ciclo
       const { error } = await admin.from("recertificacao_avisos_enviados")
         .insert({ usuario_id: p.id, treinamento_id: t.id, concluido_em: c.data_conclusao, tipo });
       if (error) continue;
       const modelo = modeloRecertificacao(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, venceEm: dataBR(venceIso), dias });
-      const ok = await carteiro.enviar({
-        para: p.email, tipo: "recertificacao", empresaId: p.empresa_id, usuarioId: p.id,
-        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
-      });
-      if (ok) resumo.avisos++;
+      if (emailOk) {
+        const ok = await carteiro.enviar({
+          para: p.email, tipo: "recertificacao", empresaId: p.empresa_id, usuarioId: p.id,
+          assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+        });
+        if (ok) resumo.avisos++;
+      }
+      if (pushOk) await ctx.push(p, dias < 0 ? "Treinamento vencido" : "Renove seu treinamento", modelo.assunto, "/meus-treinamentos", `renovar-${t.id}`);
     }
   }
 
@@ -459,6 +486,10 @@ Deno.serve(async (req) => {
       const carteiro = new Carteiro(config, admin, Number(body?.limite) || 300);
       const ctx = new Contexto(admin, config, carteiro);
       await ctx.carregar();
+      if (config.pushLigado) {
+        const chaves = await carregarChavesPush(admin);
+        if (chaves) ctx.mensageiro = new Mensageiro(admin, chaves, assuntoVapid(config.urlPlataforma, config.emailContato));
+      }
       try {
         if (tarefa === "notificacoes" || tarefa === "todas") resultado.notificacoes = await notificacoes(ctx);
         if (tarefa === "lembretes" || tarefa === "todas") resultado.lembretes = await lembretes(ctx);
@@ -469,6 +500,7 @@ Deno.serve(async (req) => {
       }
       resultado.enviados = carteiro.enviados;
       resultado.falhas = carteiro.falhas;
+      if (ctx.mensageiro) resultado.push = { enviados: ctx.mensageiro.enviados, removidos: ctx.mensageiro.removidos, falhas: ctx.mensageiro.falhas };
     }
     return json(resultado);
   } catch (e) {

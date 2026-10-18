@@ -222,7 +222,7 @@ export function Header({ onLogout }: HeaderProps) {
               onValueChange={(value) => setEmpresaSelecionada(value === "todas" ? null : value)}
               disabled={isLoading}
             >
-              <SelectTrigger className="h-9 w-[180px] lg:w-[220px] gap-2">
+              <SelectTrigger aria-label="Empresa em exibição" className="h-9 w-[180px] lg:w-[220px] gap-2">
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted">
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </span>

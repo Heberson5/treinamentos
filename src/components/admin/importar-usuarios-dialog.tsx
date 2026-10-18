@@ -98,7 +98,7 @@ export function ImportarUsuariosDialog({ open, onOpenChange, isMaster, empresas,
           body: {
             email: l.email, password: senha, nome: l.nome, empresa_id: empresaId,
             departamento_id: l.departamentoId, cargo: l.cargo || null, papel: l.papel,
-            trocar_senha_primeiro_login: true, dias_para_trocar_senha: null, data_nascimento: l.dataNascimento,
+            trocar_senha_primeiro_login: true, dias_para_trocar_senha: null, data_nascimento: l.dataNascimento, importacao: true,
           },
         })
         const msg = (data as { error?: string } | null)?.error || error?.message

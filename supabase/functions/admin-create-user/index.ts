@@ -57,6 +57,22 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+
+    // A tela Permissões vale no servidor: administrador sem "Criar Usuários"
+    // (ou sem "Importar Usuários", na importação em massa) não cria contas.
+    if (roleData.role !== "master") {
+      const exigidas = body?.importacao ? ["users.create", "users.import"] : ["users.create"];
+      for (const permissao of exigidas) {
+        const { data: tem } = await adminClient.rpc("tem_permissao_de", { p_usuario: caller.id, p_permissao: permissao });
+        if (tem !== true) {
+          return new Response(JSON.stringify({ error: "Seu papel não tem permissão para esta ação (veja Permissões)." }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
     const nome = String(body.nome || "").trim();

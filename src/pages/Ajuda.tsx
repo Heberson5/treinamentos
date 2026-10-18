@@ -45,7 +45,7 @@ function CardGuia({ guia, visto, tom, mostrarPapel }: { guia: Guia; visto: boole
           )}
         </span>
         <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">{guia.resumo}</span>
-        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground/80">
+        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {mostrarPapel && papel && <span className="font-medium text-primary">{papel.nome}</span>}
           <span className="inline-flex items-center gap-1"><ListOrdered className="h-3.5 w-3.5" />{guia.passos.length} passos</span>
           <span className="inline-flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" />com prints</span>
@@ -118,7 +118,7 @@ export default function Ajuda() {
         <div className="pointer-events-none absolute -right-10 -top-12 h-48 w-48 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -bottom-20 right-40 h-44 w-44 rounded-full bg-white/10" />
         <div className="relative max-w-2xl">
-          <div className="text-[13px] font-medium opacity-80">Central de ajuda</div>
+          <div className="text-[13px] font-medium opacity-95">Central de ajuda</div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-[28px]">
             Como podemos ajudar{primeiroNome ? `, ${primeiroNome}` : ""}?
           </h1>
@@ -181,7 +181,7 @@ export default function Ajuda() {
                   >
                     <p.icone className="h-4 w-4" />
                     {p.nome}
-                    <span className={cn("text-xs tabular-nums", ativo ? "text-primary" : "text-muted-foreground/70")}>{total}</span>
+                    <span className={cn("text-xs tabular-nums", ativo ? "text-primary" : "text-muted-foreground")}>{total}</span>
                   </button>
                 )
               })}

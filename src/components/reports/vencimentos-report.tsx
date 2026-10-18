@@ -90,7 +90,20 @@ export function VencimentosReport({ empresaId }: { empresaId: string | null }) {
             <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-emerald-500/60" /> Nada nesta situação.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y md:hidden">
+            {linhas.map((l) => (
+              <li key={`${l.usuario_id}-${l.treinamento_id}`} className="space-y-0.5 px-4 py-3 text-sm">
+                <div className="font-medium">{l.nome}</div>
+                <div className="text-muted-foreground">{l.titulo}</div>
+                <div className={cn("font-medium", l.estado === "vencido" ? "text-red-700 dark:text-red-400" : l.estado === "vence_em_breve" ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
+                  {l.estado === "vencido" ? `Vencido há ${-l.dias_restantes} dia${l.dias_restantes === -1 ? "" : "s"}` : l.dias_restantes === 0 ? "Vence hoje" : `Vence em ${l.dias_restantes} dia${l.dias_restantes === 1 ? "" : "s"}`}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">{new Date(l.vence_em).toLocaleDateString("pt-BR")}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
@@ -115,6 +128,7 @@ export function VencimentosReport({ empresaId }: { empresaId: string | null }) {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
     </div>

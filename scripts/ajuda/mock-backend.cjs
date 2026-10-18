@@ -196,6 +196,8 @@ const rpcs = {
       carga_horaria_minutos: 90, concluido_em: iso(6), emitido_em: iso(6), empresa: "Horizonte Alimentos" };
   },
   codigos_recuperacao_mfa_restantes: () => 8,
+  obter_chave_push_publica: () => null,
+  resumo_push: () => ({ configurado: false, dispositivos: 0, pessoas: 0 }),
   // Situação da avaliação calculada no servidor (o colaborador não lê as questões da tabela)
   status_avaliacao: (b) => {
     const total = questoes.filter((q) => q.treinamento_id === (b && b.p_treinamento_id)).length;

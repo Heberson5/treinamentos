@@ -184,6 +184,72 @@ teste("Admin vê o modelo do certificado com pré-visualização", { como: "admi
   await p.getByTestId("certificado-visual").getByText("Helena Prado").waitFor()
 })
 
+// Busca global (Ctrl+K): cada pessoa só encontra o que pode acessar
+async function buscar(p, texto) {
+  await p.keyboard.press("Control+k")
+  const campo = p.getByPlaceholder(/Buscar páginas/)
+  await campo.waitFor()
+  await campo.fill(texto)
+  await p.waitForTimeout(400)
+  return p.getByRole("dialog")
+}
+
+teste("Busca: colaborador não encontra telas de gestão nem pessoas", { como: "usuario", url: "/meus-treinamentos" }, async (p) => {
+  await p.getByRole("heading", { name: /Meus treinamentos/i }).first().waitFor()
+  let d = await buscar(p, "Configurações")
+  await d.getByText("Nada encontrado.").waitFor()
+  await p.keyboard.press("Escape")
+  d = await buscar(p, "Usuários")
+  assert.equal(await d.getByRole("option", { name: "Usuários", exact: true }).count(), 0, "a tela Usuários não pode aparecer")
+  await p.keyboard.press("Escape")
+  d = await buscar(p, "Rafael")
+  await d.getByText("Nada encontrado.").waitFor()
+  await p.keyboard.press("Escape")
+  d = await buscar(p, "Meus dados")
+  await d.getByText("Meus dados e privacidade").waitFor()
+  assert.equal(await d.getByText("Criar novo treinamento").count(), 0)
+})
+
+teste("Busca: administrador acha pessoas da empresa, mas não as telas exclusivas do Master", { como: "admin", url: "/dashboard" }, async (p) => {
+  await p.getByRole("heading", { name: /^(Bom dia|Boa tarde|Boa noite|Início)/ }).first().waitFor()
+  let d = await buscar(p, "Rafael")
+  await d.getByText("Rafael Souza").waitFor()
+  await p.keyboard.press("Escape")
+  d = await buscar(p, "Planos")
+  assert.equal(await d.getByRole("option", { name: "Planos", exact: true }).count(), 0, "a tela Planos é só do Master")
+  await p.keyboard.press("Escape")
+  d = await buscar(p, "Criar novo")
+  await d.getByText("Criar novo treinamento").waitFor()
+})
+
+teste("Busca: Master encontra as telas de Sistema", { como: "master", url: "/dashboard" }, async (p) => {
+  await p.getByRole("heading", { name: /^(Bom dia|Boa tarde|Boa noite|Início)/ }).first().waitFor()
+  const d = await buscar(p, "Planos")
+  await d.getByText("Planos", { exact: true }).first().waitFor()
+})
+
+teste("Meus dados oferece os avisos no aparelho (push)", { como: "usuario", url: "/meus-dados" }, async (p) => {
+  const cartao = p.getByTestId("avisos-aparelho")
+  await cartao.getByText("Avisos neste aparelho").waitFor()
+  await cartao.getByText(/ainda não foram ativadas pelo administrador/).waitFor()
+})
+
+teste("Master vê o painel de notificações push", { como: "master", url: "/admin/configuracoes" }, async (p) => {
+  await p.getByRole("tab", { name: "Notificações" }).click()
+  const painel = p.getByTestId("push-master")
+  await painel.getByText("Notificações push").waitFor()
+  await painel.getByRole("button", { name: "Ativar notificações" }).waitFor()
+})
+
+teste("Teclado: o primeiro Tab oferece pular para o conteúdo e o foco vai para ele", { como: "usuario", url: "/meus-treinamentos" }, async (p) => {
+  await p.getByRole("heading", { name: /Meus treinamentos/i }).first().waitFor()
+  await p.keyboard.press("Tab")
+  const link = p.getByRole("link", { name: "Pular para o conteúdo" })
+  await link.waitFor({ state: "visible" })
+  await p.keyboard.press("Enter")
+  assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), "conteudo-principal")
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)

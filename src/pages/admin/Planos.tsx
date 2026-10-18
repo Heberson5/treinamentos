@@ -176,7 +176,7 @@ export default function Planos() {
         contentClassName="p-0"
       >
         {descontoAnual.habilitado && ativos.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40 text-xs text-muted-foreground">

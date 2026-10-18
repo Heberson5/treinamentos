@@ -563,7 +563,7 @@ export default function Financeiro() {
         ) : (
           <>
             {/* Tabela (computador) */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden overflow-x-auto md:block" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-xs text-muted-foreground">

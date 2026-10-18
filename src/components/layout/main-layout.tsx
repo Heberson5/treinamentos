@@ -13,6 +13,24 @@ import { useOnlineUsers } from "@/hooks/use-online-users"
 import { TrocaSenhaObrigatoria } from "@/components/auth/trocar-senha-dialog"
 import { AvisoPrivacidade } from "@/components/lgpd/aviso-privacidade"
 
+// Primeiro item ao apertar Tab: pula o menu e vai direto ao conteúdo
+function LinkPularParaConteudo() {
+  return (
+    <a
+      href="#conteudo-principal"
+      onClick={(e) => {
+        e.preventDefault()
+        const alvo = document.getElementById("conteudo-principal")
+        alvo?.focus()
+        alvo?.scrollIntoView({ block: "start" })
+      }}
+      className="sr-only fixed left-3 top-3 z-[100] rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+    >
+      Pular para o conteúdo
+    </a>
+  )
+}
+
 interface MainLayoutProps {
   children: ReactNode
   onLogout?: () => void
@@ -35,7 +53,8 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
     return (
       <SidebarProvider>
         <div className="min-h-screen w-full bg-background pt-[env(safe-area-inset-top)]">
-          {children}
+          <LinkPularParaConteudo />
+          <div id="conteudo-principal" role="main" tabIndex={-1} className="outline-none">{children}</div>
           <PWAInstallPrompt />
           <PopupDisplay />
           <TrocaSenhaObrigatoria />
@@ -49,11 +68,14 @@ export function MainLayout({ children, onLogout }: MainLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background pt-[env(safe-area-inset-top)]">
+        <LinkPularParaConteudo />
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Header onLogout={onLogout} />
           <main
-            className={`flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7 overflow-auto ${
+            id="conteudo-principal"
+            tabIndex={-1}
+            className={`outline-none flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7 overflow-auto ${
               isMobile ? "pb-24" : ""
             }`}
           >

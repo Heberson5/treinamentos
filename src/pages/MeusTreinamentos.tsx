@@ -391,7 +391,7 @@ export default function MeusTreinamentos() {
                 )}
               >
                 {label}
-                {!isLoading && <span className={active ? "opacity-60" : "text-muted-foreground/70"}>{counts[id]}</span>}
+                {!isLoading && <span className={active ? "opacity-60" : "text-muted-foreground"}>{counts[id]}</span>}
               </button>
             )
           })}
@@ -436,7 +436,7 @@ export default function MeusTreinamentos() {
       ) : visiveis.length === 0 ? (
         <Card>
           <CardContent className="py-14 text-center">
-            <BookOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+            <BookOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <h3 className="font-medium">Nenhum treinamento encontrado</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {searchTerm || filtro !== "todos" ? "Tente ajustar a busca ou o filtro." : "Não há treinamentos disponíveis no momento."}

@@ -1,3 +1,5 @@
+import { usePermissions } from "@/hooks/use-permissions"
+import { EstadoVazio } from "@/components/layout/estado-vazio"
 import { useState, useEffect, useMemo } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
@@ -133,6 +135,8 @@ function ProgressBar({ value }: { value: number }) {
 
 export default function GestaoTreinamentos() {
   const { isMaster, empresaSelecionada } = useEmpresaFilter()
+  const { has } = usePermissions()
+  const podeCriar = has("trainings.create")
   const { user } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -468,7 +472,7 @@ export default function GestaoTreinamentos() {
         description="Crie, organize e acompanhe o conteúdo da plataforma"
         actions={
           <>
-            {isMaster && (
+            {isMaster && podeCriar && (
               <Button variant="outline" asChild>
                 <Link to="/admin/treinamentos/novo">
                   <Sparkles className="mr-2 h-4 w-4" />
@@ -476,12 +480,14 @@ export default function GestaoTreinamentos() {
                 </Link>
               </Button>
             )}
-            <Button asChild>
-              <Link to="/admin/treinamentos/novo">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo treinamento
-              </Link>
-            </Button>
+            {podeCriar && (
+              <Button asChild>
+                <Link to="/admin/treinamentos/novo">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo treinamento
+                </Link>
+              </Button>
+            )}
           </>
         }
       />
@@ -503,7 +509,7 @@ export default function GestaoTreinamentos() {
               <span
                 className={cn(
                   "text-xs tabular-nums",
-                  activeTab === tab.value ? "text-primary" : "text-muted-foreground/70"
+                  activeTab === tab.value ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 {tab.count}
@@ -587,25 +593,29 @@ export default function GestaoTreinamentos() {
             ))}
           </div>
         ) : filteredTrainings.length === 0 ? (
-          <div className="p-12 text-center">
-            <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-1 text-lg font-semibold">Nenhum treinamento encontrado</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              {hasFilters
-                ? "Nenhum treinamento corresponde aos filtros."
-                : "Comece criando seu primeiro treinamento."}
-            </p>
-            {hasFilters ? (
-              <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
-            ) : (
-              <Button asChild>
-                <Link to="/admin/treinamentos/novo">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Criar treinamento
-                </Link>
-              </Button>
-            )}
-          </div>
+          hasFilters ? (
+            <EstadoVazio
+              icone={BookOpen}
+              titulo="Nenhum treinamento encontrado"
+              descricao="Nenhum treinamento corresponde aos filtros."
+              acao={<Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>}
+            />
+          ) : (
+            <EstadoVazio
+              icone={BookOpen}
+              titulo="Nenhum treinamento ainda"
+              descricao="Aqui ficam os treinamentos da empresa: conteúdo, avaliação e certificado."
+              acao={podeCriar ? (
+                <Button asChild>
+                  <Link to="/admin/treinamentos/novo">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Criar o primeiro treinamento
+                  </Link>
+                </Button>
+              ) : undefined}
+              semPermissao="Você não tem permissão para criar treinamentos. Peça a um administrador da sua empresa."
+            />
+          )
         ) : view === "grade" ? (
           <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
             {paginated.map((training) => {
@@ -652,7 +662,7 @@ export default function GestaoTreinamentos() {
         ) : (
           <>
             {/* Tabela (desktop) */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-xs text-muted-foreground">

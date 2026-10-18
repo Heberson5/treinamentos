@@ -1912,7 +1912,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
       {/* Barra superior fixa: título, cronômetro compacto e ação principal */}
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1.5 px-2.5 text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} aria-label="Voltar" className="gap-1.5 px-2.5 text-muted-foreground">
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Voltar</span>
           </Button>

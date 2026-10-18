@@ -107,6 +107,15 @@ continua no GitHub.
 - **Verificação em duas etapas (Master)**: no serviço `auth`, em `environment`, confirme `GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"` e `GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"`. Sem isso, a tela Configurações → Segurança avisa que o recurso está desligado no servidor.
 - Depois de mudar: `cd ~/supabase-selfhosted && sudo docker compose up -d`.
 
+### Notificações push (avisos no celular e no computador)
+Não há nada para configurar na VPS. O **Master** ativa em **Configurações →
+Notificações → Notificações push** (o sistema cria as chaves de envio uma única
+vez; a chave privada fica só no banco, sem acesso pelo navegador) e cada pessoa
+liga o aviso no próprio aparelho em **Meus dados**. Para funcionar:
+- o site precisa estar em **HTTPS** e o **Endereço da plataforma** preenchido (Configurações → Geral);
+- no iPhone/iPad, o app precisa estar instalado ("Adicionar à Tela de Início").
+Os avisos saem junto com os e-mails automáticos (novo treinamento, prazo, renovação).
+
 ### Mercado Pago
 Em *Suas integrações → Webhooks*, a URL de notificação deve ser
 `https://api.sauberlich.com.br/functions/v1/mercadopago-webhook` (evento

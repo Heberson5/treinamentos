@@ -595,7 +595,7 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-y bg-muted/40 text-xs text-muted-foreground">
@@ -671,7 +671,7 @@ export default function Dashboard() {
                         <span className="block text-sm font-medium leading-snug">{item.titulo}</span>
                         <span className="block truncate text-xs text-muted-foreground">{item.detalhe}</span>
                       </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 group-hover:text-foreground" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
                     </button>
                   );
                 })
@@ -708,7 +708,7 @@ export default function Dashboard() {
                           <p className="text-muted-foreground line-clamp-2">
                             {a.descricao || ACTIVITY_LABELS[a.tipo] || "Registrou uma atividade"}
                           </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground/80">
+                          <p className="mt-0.5 text-xs text-muted-foreground">
                             {a.criado_em ? formatDistanceToNow(new Date(a.criado_em), { addSuffix: true, locale: ptBR }) : ""}
                           </p>
                         </div>
@@ -729,7 +729,7 @@ export default function Dashboard() {
             <CardTitle className="text-base">Tentativas de avaliação</CardTitle>
             <CardDescription>Número de tentativas e notas de cada colaborador no período</CardDescription>
           </CardHeader>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-y bg-muted/40 text-xs text-muted-foreground">

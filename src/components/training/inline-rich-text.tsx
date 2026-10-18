@@ -162,7 +162,7 @@ export const InlineRichText = forwardRef<InlineRichTextHandle, InlineRichTextPro
       }}
       className={cn(
         "min-h-[1.8em] whitespace-pre-wrap break-words outline-none",
-        "empty:before:pointer-events-none empty:before:text-muted-foreground/60 empty:before:content-[attr(data-placeholder)]",
+        "empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]",
         className
       )}
     />

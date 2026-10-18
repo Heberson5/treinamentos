@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { usePoliticaPrivacidade } from "@/pages/Privacidade"
+import { AvisosNoAparelho } from "@/components/notifications/avisos-aparelho"
 
 export const TIPOS_SOLICITACAO: Record<string, { label: string; ajuda: string }> = {
   confirmacao: { label: "Confirmar se meus dados são tratados", ajuda: "Saber se a plataforma trata dados seus." },
@@ -153,7 +154,7 @@ export default function MeusDados() {
             {(politica?.encarregadoEmail || politica?.emailContato) && (
               <>
                 {" — "}
-                <a className="text-primary hover:underline" href={`mailto:${politica?.encarregadoEmail || politica?.emailContato}`}>
+                <a className="text-primary underline underline-offset-2 hover:no-underline" href={`mailto:${politica?.encarregadoEmail || politica?.emailContato}`}>
                   {politica?.encarregadoEmail || politica?.emailContato}
                 </a>
               </>
@@ -171,6 +172,8 @@ export default function MeusDados() {
           <Switch id="receber-emails" checked={perfil?.receber_emails !== false} onCheckedChange={alternarEmails} />
         </SettingRow>
       </SettingsSection>
+
+      <AvisosNoAparelho />
 
       <SettingsSection
         icon={Download}

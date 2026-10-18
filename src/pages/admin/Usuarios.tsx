@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react"
+import { usePermissions } from "@/hooks/use-permissions"
+import { useSearchParams } from "react-router-dom"
+import React, { useEffect, useMemo, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Card,
@@ -297,6 +299,7 @@ export default function Usuarios() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { isMaster, empresaSelecionada } = useEmpresaFilter()
+  const { has } = usePermissions()
   const onlineIds = useOnlineUsers()
   const queryClient = useQueryClient()
 
@@ -341,13 +344,19 @@ export default function Usuarios() {
     )
   }
 
-  const [searchTerm, setSearchTerm] = useState("")
+  // A busca global (Ctrl+K) abre esta tela já filtrada (?busca=) ou com a importação aberta (?importar=1)
+  const [parametrosUrl, setParametrosUrl] = useSearchParams()
+  const [searchTerm, setSearchTerm] = useState(parametrosUrl.get("busca") || "")
   const [statusFilter, setStatusFilter] = useState<StatusUsuario | "todos">("todos")
   const [empresaFilter, setEmpresaFilter] = useState<string>("todas")
 
   // Modal states
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(parametrosUrl.get("importar") === "1")
+  useEffect(() => {
+    if (parametrosUrl.has("importar") || parametrosUrl.has("busca")) setParametrosUrl({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -836,20 +845,24 @@ export default function Usuarios() {
         description="Gerencie acessos, papéis e o progresso de cada colaborador"
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Importar planilha
-            </Button>
-            <Button onClick={handleOpenCreate}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Novo usuário
-            </Button>
+            {has("users.create") && has("users.import") && (
+              <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Importar planilha
+              </Button>
+            )}
+            {has("users.create") && (
+              <Button onClick={handleOpenCreate}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Novo usuário
+              </Button>
+            )}
           </div>
         }
       />
 
       <ImportarUsuariosDialog
-        open={isImportOpen}
+        open={isImportOpen && has("users.create") && has("users.import")}
         onOpenChange={setIsImportOpen}
         isMaster={isMaster}
         empresas={empresas}
@@ -939,7 +952,7 @@ export default function Usuarios() {
         ) : (
           <>
             {/* Tabela (desktop) */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-xs text-muted-foreground">

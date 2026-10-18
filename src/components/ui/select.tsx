@@ -13,21 +13,47 @@ const SelectValue = SelectPrimitive.Value
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(16,24,40,0.03)] placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
-    </SelectPrimitive.Icon>
-  </SelectPrimitive.Trigger>
-))
+>(({ className, children, ...props }, ref) => {
+  // Acessibilidade: o botão precisa de nome para o leitor de tela. Se a tela não
+  // informou aria-label nem <label>, usa o texto que o botão está mostrando.
+  const interno = React.useRef<HTMLButtonElement | null>(null)
+  const [textoAtual, setTextoAtual] = React.useState<string | undefined>()
+  React.useEffect(() => {
+    const el = interno.current
+    if (!el) return
+    const ler = () => {
+      const texto = el.textContent?.trim() || undefined
+      setTextoAtual((antes) => (antes === texto ? antes : texto))
+    }
+    ler()
+    // O texto do valor escolhido é inserido pelo Radix depois da renderização
+    const obs = new MutationObserver(ler)
+    obs.observe(el, { childList: true, subtree: true, characterData: true })
+    return () => obs.disconnect()
+  }, [])
+  const temRotulo = !!interno.current?.labels?.length
+  const nomeAutomatico = !props["aria-label"] && !props["aria-labelledby"] && !temRotulo ? textoAtual : undefined
+  return (
+    <SelectPrimitive.Trigger
+      ref={(el) => {
+        interno.current = el
+        if (typeof ref === "function") ref(el)
+        else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el
+      }}
+      aria-label={props["aria-label"] ?? nomeAutomatico}
+      className={cn(
+        "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(16,24,40,0.03)] placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <SelectPrimitive.Icon asChild>
+        <ChevronDown className="h-4 w-4 opacity-50" />
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+  )
+})
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
 
 const SelectScrollUpButton = React.forwardRef<

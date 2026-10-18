@@ -27,12 +27,12 @@ All colors MUST be HSL.
     --secondary-foreground: 222 47% 11%;
 
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 16% 41%;
 
     --accent: 262 83% 95%;
     --accent-foreground: 262 83% 58%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 142 76% 36%;
@@ -157,5 +157,19 @@ All colors MUST be HSL.
   }
   @page {
     margin: 14mm;
+  }
+}
+
+
+/* Acessibilidade: quem pede menos movimento no sistema (vestibular, enxaqueca)
+   não vê animações nem transições longas. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

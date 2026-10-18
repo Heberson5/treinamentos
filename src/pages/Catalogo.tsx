@@ -171,10 +171,10 @@ export default function Catalogo() {
 
   const getNivelColor = (nivel: string) => {
     switch (nivel) {
-      case "basico": return "bg-green-500"
-      case "intermediario": return "bg-yellow-500"
-      case "avancado": return "bg-red-500"
-      default: return "bg-gray-500"
+      case "basico": return "bg-green-700"
+      case "intermediario": return "bg-amber-700"
+      case "avancado": return "bg-red-700"
+      default: return "bg-gray-600"
     }
   }
 
@@ -432,7 +432,7 @@ export default function Catalogo() {
                     </Badge>
                   )}
                   {training.novo && (
-                    <Badge className="bg-green-500 text-white">
+                    <Badge className="bg-green-700 text-white hover:bg-green-700">
                       Novo
                     </Badge>
                   )}

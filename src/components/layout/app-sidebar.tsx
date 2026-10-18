@@ -122,7 +122,7 @@ export function AppSidebar() {
     const isOpen = openGroups[group.id]
     return (
       <Collapsible key={group.id} open={isOpen} onOpenChange={(v) => setGroupOpen(group.id, v)} className="mt-5 first:mt-1">
-        <CollapsibleTrigger className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 hover:text-foreground">
+        <CollapsibleTrigger className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground">
           {group.label}
           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !isOpen && "-rotate-90")} />
         </CollapsibleTrigger>

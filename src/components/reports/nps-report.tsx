@@ -187,7 +187,7 @@ function TabelaNps({ titulo, colunaNome, linhas }: { titulo: string; colunaNome:
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2"><CardTitle className="text-base">{titulo}</CardTitle></CardHeader>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-y bg-muted/40 text-xs text-muted-foreground">

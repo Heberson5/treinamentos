@@ -1,3 +1,5 @@
+import { usePermissions } from "@/hooks/use-permissions"
+import { EstadoVazio } from "@/components/layout/estado-vazio"
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -57,6 +59,8 @@ export default function Departamentos() {
   const { toast } = useToast()
   const { isMaster, empresaSelecionada } = useEmpresaFilter()
   const { user } = useAuth()
+  const { has } = usePermissions()
+  const podeCriar = has("departments.create")
   const queryClient = useQueryClient()
   const empresaFiltro = isMaster && empresaSelecionada && empresaSelecionada !== "todas" ? empresaSelecionada : null
 
@@ -187,12 +191,14 @@ export default function Departamentos() {
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm() }}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Departamento
-            </Button>
-          </DialogTrigger>
+          {podeCriar && (
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-primary">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Departamento
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingDepartamento ? "Editar Departamento" : "Criar Novo Departamento"}</DialogTitle>
@@ -288,7 +294,13 @@ export default function Departamentos() {
       </div>
 
       {filteredDepartamentos.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8">Nenhum departamento encontrado. Crie o primeiro!</p>
+        <EstadoVazio
+          icone={Building2}
+          titulo={searchTerm ? "Nenhum departamento encontrado" : "Nenhum departamento ainda"}
+          descricao={searchTerm ? "Nenhum departamento corresponde à busca." : "Departamentos organizam as pessoas e deixam treinamentos restritos a uma área."}
+          acao={!searchTerm && podeCriar ? <Button onClick={() => setIsCreateOpen(true)}><Plus className="mr-2 h-4 w-4" />Criar o primeiro departamento</Button> : undefined}
+          semPermissao={!searchTerm ? "Você não tem permissão para criar departamentos. Peça a um administrador." : undefined}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDepartamentos.map((departamento) => (

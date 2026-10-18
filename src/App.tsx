@@ -16,6 +16,7 @@ import { DepartmentProvider } from "@/contexts/department-context";
 import { EmpresaFilterProvider } from "@/contexts/empresa-filter-context";
 import { useSystemBranding } from "@/hooks/use-system-branding";
 import { useSegundoFator } from "@/hooks/use-segundo-fator";
+import { ExigePermissao } from "@/components/auth/exige-permissao";
 import { TelaSegundoFator } from "@/components/auth/tela-segundo-fator";
 
 // Rotas carregadas sob demanda (code-splitting) para reduzir o bundle inicial em dispositivos móveis
@@ -186,7 +187,7 @@ function AppContent() {
 
         {/* Rotas administrativas */}
         <Route path="/admin/treinamentos" element={isAdminOrHigher ? <GestaoTreinamentos /> : <Navigate to="/meus-treinamentos" replace />} />
-        <Route path="/admin/treinamentos/novo" element={isAdminOrHigher ? <NovoTreinamentoModerno /> : <Navigate to="/meus-treinamentos" replace />} />
+        <Route path="/admin/treinamentos/novo" element={isAdminOrHigher ? <ExigePermissao permissao="trainings.create" destino="/admin/treinamentos"><NovoTreinamentoModerno /></ExigePermissao> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/treinamentos/editar/:id" element={isAdminOrHigher ? <EditarTreinamentoModerno /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/usuarios" element={isAdminOrMaster ? <Usuarios /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/admin/cargos" element={isAdminOrMaster ? <Cargos /> : <Navigate to="/meus-treinamentos" replace />} />

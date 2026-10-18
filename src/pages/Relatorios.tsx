@@ -479,7 +479,19 @@ export default function Relatorios() {
           {isLoading ? <CardContent className="pt-6">{ChartSkeleton({ h: 200 })}</CardContent> : departmentReports.length === 0 ? (
             EmptyState({ icon: Building2, text: "Nenhum departamento com atividade no período" })
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="divide-y md:hidden">
+              {departmentReports.map((d) => (
+                <li key={d.nome} className="space-y-2 px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium">{d.nome}</span>
+                    <span className="text-xs text-muted-foreground">{d.conclusoes} de {d.participantes} concluíram</span>
+                  </div>
+                  <RateBar value={d.taxa} />
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
@@ -501,6 +513,7 @@ export default function Relatorios() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </Card>
       )}
@@ -511,7 +524,17 @@ export default function Relatorios() {
           {isLoading ? <CardContent className="pt-6">{ChartSkeleton({ h: 240 })}</CardContent> : trainingReports.length === 0 ? (
             EmptyState({ icon: BookOpen, text: "Nenhum treinamento encontrado" })
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="divide-y md:hidden">
+              {trainingReports.map((t, i) => (
+                <li key={`${t.titulo}-${i}`} className="space-y-2 px-4 py-3">
+                  <div className="font-medium leading-snug">{t.titulo}</div>
+                  <div className="text-xs text-muted-foreground">{t.departamento} · {t.conclusoes} de {t.participantes} concluíram{t.avaliacao > 0 ? ` · ★ ${t.avaliacao.toLocaleString("pt-BR")}` : ""}</div>
+                  <RateBar value={Math.round(t.taxa)} />
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
@@ -545,6 +568,7 @@ export default function Relatorios() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </Card>
       )}
@@ -610,7 +634,7 @@ export default function Relatorios() {
           </CardHeader>
           <CardContent>{isLoading ? ChartSkeleton({ h: 300 }) : MonthlyChart({ height: 300 })}</CardContent>
           {!isLoading && (
-            <div className="overflow-x-auto border-t">
+            <div className="overflow-x-auto border-t" tabIndex={0} role="region" aria-label="Tabela com rolagem lateral">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
