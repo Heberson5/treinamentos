@@ -531,4 +531,62 @@ export const guiasAdministrador: Guia[] = [
       },
     ],
   },
+
+  {
+    id: "admin-atribuir-treinamentos",
+    papel: "admin",
+    tema: "Treinamentos",
+    titulo: "Atribuir treinamentos com prazo",
+    resumo: "Defina quem precisa fazer cada treinamento — empresa, departamento, cargo ou pessoa — e até quando.",
+    icone: "UserPlus",
+    minutos: 4,
+    passos: [
+      {
+        titulo: "Abra a atribuição",
+        texto:
+          "Em **Gestão de Treinamentos**, no menu **⋯** de um treinamento publicado, clique em **Atribuir**. O topo mostra quantas pessoas foram alcançadas, quantas concluíram e quantas estão atrasadas, e a lista do que já foi atribuído.",
+      },
+      {
+        titulo: "Escolha para quem e o prazo",
+        texto:
+          "Em **Para quem**, escolha **Toda a empresa**, **Departamentos**, **Cargos** ou **Pessoas**, marque os destinos e, se quiser, um **prazo**. Clique em **Atribuir**. Atribuir de novo o mesmo destino só atualiza o prazo.",
+        pontos: [
+          "As pessoas recebem e-mail e aviso no aparelho em até 15 minutos.",
+          "Em Meus Treinamentos aparece **Atribuído a você** com o prazo.",
+          "Os lembretes de prazo passam a usar o prazo da atribuição (vale o mais cedo).",
+        ],
+      },
+      {
+        titulo: "Remova quando não fizer mais sentido",
+        texto: "Use a lixeira ao lado de cada atribuição. Tudo fica registrado na Auditoria.",
+      },
+    ],
+  },
+
+  {
+    id: "admin-textos-email",
+    papel: "admin",
+    tema: "Comunicação",
+    titulo: "Textos dos e-mails e relatório para a diretoria",
+    resumo: "Personalize o assunto e a mensagem dos avisos e mande o relatório mensal para mais pessoas.",
+    icone: "Megaphone",
+    minutos: 4,
+    rotas: ["/admin/integracoes"],
+    passos: [
+      {
+        titulo: "Mude o texto dos avisos",
+        texto:
+          "Em **Integrações → Notificações**, no quadro **Textos dos e-mails desta empresa**, escolha o tipo (novo treinamento, atribuído, lembrete de prazo, lembrete para quem parou, conclusão, renovação, relatório mensal). Altere o **assunto** ou escreva uma **mensagem de abertura** e veja a pré-visualização na hora. Clique em **Salvar texto**.",
+        pontos: [
+          "Pode usar {nome}, {treinamento}, {prazo} e {empresa}, conforme o tipo.",
+          "Em branco, vale o texto padrão da plataforma. **Voltar ao padrão** desfaz a personalização.",
+        ],
+      },
+      {
+        titulo: "Relatório mensal para mais pessoas",
+        texto:
+          "No mesmo quadro de e-mails automáticos, em **Relatório mensal**, inclua até 10 endereços (ex.: diretoria) e clique em **Salvar preferências**. Todo dia 1 eles recebem o resumo do mês com uma **planilha (CSV)** do resultado de cada treinamento.",
+      },
+    ],
+  },
 ]

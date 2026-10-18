@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { CheckCircle, XCircle, Award, Clock, ArrowRight, ArrowLeft } from "lucide-react"
+import { CheckCircle, XCircle, Award, Clock, ArrowRight, ArrowLeft, BookOpen } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
@@ -52,6 +52,9 @@ interface QuizViewerProps {
   tempoEstudoSegundos?: number
   onAprovado?: () => void
   onTentativaFinalizada?: (info: { nota: number; aprovado: boolean; duracaoSegundos: number; tempoEstudoSegundos: number; numeroTentativa: number }) => void
+  /** Depois de uma tentativa sem aprovação: sai da avaliação e volta ao conteúdo
+   *  (opcionalmente direto na parte a revisar) */
+  onVoltarAoEstudo?: (topico?: string) => void
 }
 
 const TIPO_COLORS: Record<string, string> = {
@@ -72,13 +75,15 @@ const KAHOOT_COLORS = [
   "bg-orange-500 hover:bg-orange-600",
 ]
 
-export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, tempoLimite: tempoLimiteProp = 0, tempoEstudoSegundos = 0, onAprovado, onTentativaFinalizada }: QuizViewerProps) {
+export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, tempoLimite: tempoLimiteProp = 0, tempoEstudoSegundos = 0, onAprovado, onTentativaFinalizada, onVoltarAoEstudo }: QuizViewerProps) {
   const { toast } = useToast()
   const { user } = useAuth()
   const [questoes, setQuestoes] = useState<Questao[]>([])
   const [respostas, setRespostas] = useState<Record<string, string>>({})
   const [currentIndex, setCurrentIndex] = useState(0)
   const [resultado, setResultado] = useState<{ nota: number; aprovado: boolean; detalhes: Record<string, boolean> } | null>(null)
+  /** Parte do conteúdo a revisar em cada questão errada (definida pelo instrutor) */
+  const [topicos, setTopicos] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [jaAprovado, setJaAprovado] = useState(false)
@@ -228,6 +233,12 @@ export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, temp
       }
 
       setResultado({ nota: result.nota, aprovado: result.aprovado, detalhes: result.detalhes ?? {} })
+      const erradas = Object.entries(result.detalhes ?? {}).filter(([, ok]) => !ok).map(([id]) => id)
+      setTopicos({})
+      if (erradas.length) {
+        const { data: tps } = await supabase.rpc("topicos_para_revisar", { p_treinamento_id: treinamentoId, p_questoes: erradas })
+        if (tps && typeof tps === "object") setTopicos(tps as Record<string, string>)
+      }
       onTentativaFinalizada?.({
         nota: result.nota,
         aprovado: result.aprovado,
@@ -344,6 +355,19 @@ export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, temp
   const currentQ = questoes[currentIndex]
   const pontoPorQuestao = (10 / questoes.length).toFixed(2)
   const letterKeys = "abcdefghij".split("")
+  const textoResposta = (q: Questao) => {
+    const r = respostas[q.id]
+    if (!r) return "—"
+    if (q.tipo === "quiz" || q.tipo === "verdadeiro-falso") {
+      const i = letterKeys.indexOf(r)
+      return q.opcoes[i] ?? r
+    }
+    if (q.tipo === "puzzle") return r.split(",").map((n) => q.opcoes[Number(n)] ?? n).join(" → ")
+    return r
+  }
+  const paraRevisar = resultado
+    ? [...new Set(questoes.filter((q) => resultado.detalhes[q.id] === false && topicos[q.id]).map((q) => topicos[q.id]))]
+    : []
   const respondida = resultado !== null
 
   // Results screen
@@ -368,13 +392,31 @@ export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, temp
                 <p className="text-sm text-muted-foreground">
                   Você precisa revisar o conteúdo antes de tentar novamente.
                 </p>
-                <Button onClick={handleRetry} size="lg" variant="outline">
+                <Button onClick={() => (onVoltarAoEstudo ? onVoltarAoEstudo() : handleRetry())} size="lg" variant="outline">
                   Voltar ao Estudo e Tentar Novamente
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
+
+        {!resultado.aprovado && paraRevisar.length > 0 && (
+          <Card className="border-primary/30" data-testid="o-que-revisar">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BookOpen className="h-4 w-4 text-primary" aria-hidden /> O que revisar
+              </CardTitle>
+              <CardDescription>As questões que você errou tratam destas partes do conteúdo.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {paraRevisar.map((t) => (
+                <Button key={t} variant="secondary" size="sm" onClick={() => (onVoltarAoEstudo ? onVoltarAoEstudo(t) : handleRetry())}>
+                  {t.replace(/^Seção\s+\d+\s*:\s*/i, "")} <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Review questions */}
         {questoes.map((q, i) => {
@@ -390,8 +432,11 @@ export function QuizViewer({ treinamentoId, notaMinima: notaMinimaProp = 7, temp
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Sua resposta: <strong>{respostas[q.id] || "—"}</strong> — {correta ? "Correta" : "Incorreta"}
+                  Sua resposta: <strong>{textoResposta(q)}</strong> — {correta ? "Correta" : "Incorreta"}
                 </p>
+                {!correta && topicos[q.id] && (
+                  <p className="mt-1 text-sm">Revise: <strong>{topicos[q.id].replace(/^Seção\s+\d+\s*:\s*/i, "")}</strong></p>
+                )}
               </CardContent>
             </Card>
           )

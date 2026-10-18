@@ -229,6 +229,78 @@ export function prazoLgpd(c: ConfigModelo, d: DadosPrazoLgpd): EmailMontado {
   };
 }
 
+export interface DadosAtribuicao {
+  nome: string;
+  treinamentos: Array<{ titulo: string; treinamentoId: string; prazo?: string | null }>;
+}
+export function atribuicao(c: ConfigModelo, d: DadosAtribuicao): EmailMontado {
+  const lista = d.treinamentos;
+  const itens = lista.slice(0, 10).map((t) =>
+    `<li style="margin:6px 0"><strong>${esc(t.titulo)}</strong>${t.prazo ? ` — concluir até ${esc(t.prazo)}` : ""}</li>`).join("");
+  return {
+    assunto: lista.length === 1
+      ? `Treinamento atribuído a você: ${lista[0].titulo}${lista[0].prazo ? ` (até ${lista[0].prazo})` : ""}`
+      : `${lista.length} treinamentos atribuídos a você`,
+    corpoHtml: `<p>Olá, ${esc(primeiroNome(d.nome))}!</p><p>${lista.length === 1 ? "Este treinamento foi atribuído" : "Estes treinamentos foram atribuídos"} a você pela sua empresa:</p><ul>${itens}</ul>${botao(lista.length === 1 ? "Começar agora" : "Ver meus treinamentos", link(c, lista.length === 1 ? `/executar-treinamento/${lista[0].treinamentoId}` : "/meus-treinamentos"))}${rodapePreferencias(c)}`,
+  };
+}
+
+export interface DadosLembreteParado {
+  nome: string;
+  titulo: string;
+  treinamentoId: string;
+  /** Percentual já estudado (0 a 100) */
+  progresso: number;
+}
+export function lembreteParado(c: ConfigModelo, d: DadosLembreteParado): EmailMontado {
+  return {
+    assunto: `Que tal continuar ${d.titulo}?`,
+    corpoHtml: `<p>Olá, ${esc(primeiroNome(d.nome))}!</p><p>Você começou o treinamento <strong>${esc(d.titulo)}</strong>${d.progresso > 0 ? ` e já estudou ${Math.round(d.progresso)}%` : ""}. Ao abrir, você continua da parte em que parou.</p>${botao("Continuar de onde parei", link(c, `/executar-treinamento/${d.treinamentoId}`))}${rodapePreferencias(c)}`,
+  };
+}
+
+// ------------------------------------------------------------------
+// Textos editáveis (assunto e mensagem de abertura) — por empresa ou padrão
+// ------------------------------------------------------------------
+
+export interface TextoPersonalizado {
+  assunto?: string | null;
+  abertura?: string | null;
+}
+
+/** Modelos com texto editável e as variáveis que cada um aceita. */
+export const TEXTOS_EDITAVEIS: Array<{ id: ModeloEmailId; nome: string; variaveis: string[] }> = [
+  { id: "novo_treinamento", nome: "Novo treinamento", variaveis: ["{nome}", "{empresa}"] },
+  { id: "atribuicao", nome: "Treinamento atribuído", variaveis: ["{nome}", "{treinamento}", "{prazo}", "{empresa}"] },
+  { id: "lembrete_prazo", nome: "Lembrete de prazo", variaveis: ["{nome}", "{treinamento}", "{prazo}", "{empresa}"] },
+  { id: "lembrete_parado", nome: "Lembrete para quem parou", variaveis: ["{nome}", "{treinamento}", "{empresa}"] },
+  { id: "conclusao", nome: "Conclusão", variaveis: ["{nome}", "{treinamento}", "{empresa}"] },
+  { id: "recertificacao", nome: "Renovação (validade)", variaveis: ["{nome}", "{treinamento}", "{prazo}", "{empresa}"] },
+  { id: "relatorio_mensal", nome: "Relatório mensal", variaveis: ["{empresa}"] },
+];
+
+const trocarVariaveis = (texto: string, vars: Record<string, string>) =>
+  texto.replace(/\{(nome|treinamento|prazo|empresa)\}/g, (_, k: string) => (k === "nome" ? primeiroNome(vars.nome || "") : vars[k] || ""));
+
+/**
+ * Aplica o texto personalizado: troca o assunto e acrescenta a mensagem de abertura
+ * logo depois da saudação. Todo texto vindo da tela passa por esc().
+ */
+export function personalizar(email: EmailMontado, texto: TextoPersonalizado | null | undefined, vars: Record<string, string>): EmailMontado {
+  if (!texto) return email;
+  const assunto = texto.assunto?.trim()
+    ? trocarVariaveis(texto.assunto.trim(), vars).replace(/[\r\n]+/g, " ").slice(0, 150)
+    : email.assunto;
+  let corpoHtml = email.corpoHtml;
+  const abertura = texto.abertura?.trim();
+  if (abertura) {
+    const html = `<p>${esc(trocarVariaveis(abertura, vars)).replace(/\r?\n/g, "<br>")}</p>`;
+    const fim = corpoHtml.indexOf("</p>");
+    corpoHtml = fim >= 0 ? corpoHtml.slice(0, fim + 4) + html + corpoHtml.slice(fim + 4) : html + corpoHtml;
+  }
+  return { assunto, corpoHtml };
+}
+
 export function teste(c: ConfigModelo): EmailMontado {
   return {
     assunto: `Teste de e-mail — ${c.nomeSistema}`,
@@ -240,7 +312,7 @@ export function teste(c: ConfigModelo): EmailMontado {
 // Catálogo — usado pela pré-visualização em Configurações → Email
 // ------------------------------------------------------------------
 
-export type ModeloEmailId = "novo_treinamento" | "conclusao" | "lembrete_prazo" | "recertificacao" | "recertificacao_gestao" | "relatorio_mensal" | "pagamento" | "alerta_servidor" | "revisao_lgpd" | "prazo_lgpd" | "teste";
+export type ModeloEmailId = "novo_treinamento" | "atribuicao" | "lembrete_parado" | "conclusao" | "lembrete_prazo" | "recertificacao" | "recertificacao_gestao" | "relatorio_mensal" | "pagamento" | "alerta_servidor" | "revisao_lgpd" | "prazo_lgpd" | "teste";
 
 export interface VarianteModelo {
   id: string;
@@ -421,6 +493,23 @@ export const MODELOS_EMAIL: InfoModeloEmail[] = [
     ],
   },
   {
+    id: "atribuicao",
+    nome: "Treinamento atribuído",
+    quando: "Quando a gestão atribui um treinamento à pessoa (por empresa, departamento, cargo ou nome).",
+    para: "Quem recebeu a atribuição.",
+    variantes: [
+      { id: "com-prazo", nome: "Com prazo", montar: (c) => atribuicao(c, { nome: "Lucas Ferreira", treinamentos: [{ titulo: "LGPD na prática", treinamentoId: ID_EXEMPLO, prazo: dataBR(15) }] }) },
+      { id: "varios", nome: "Vários de uma vez", montar: (c) => atribuicao(c, { nome: "Lucas Ferreira", treinamentos: [{ titulo: "LGPD na prática", treinamentoId: ID_EXEMPLO, prazo: dataBR(15) }, { titulo: "Atendimento ao cliente", treinamentoId: ID_EXEMPLO }] }) },
+    ],
+  },
+  {
+    id: "lembrete_parado",
+    nome: "Lembrete para quem parou",
+    quando: "Quando o instrutor clica em “Lembrar parados” no Acompanhamento.",
+    para: "Quem começou o treinamento e não volta há mais de 7 dias.",
+    variantes: [{ id: "padrao", nome: "Padrão", montar: (c) => lembreteParado(c, { nome: "Lucas Ferreira", titulo: "LGPD na prática", treinamentoId: ID_EXEMPLO, progresso: 40 }) }],
+  },
+  {
     id: "teste",
     nome: "E-mail de teste",
     quando: "Quando o Master clica em “Testar Email” nesta tela.",
@@ -433,10 +522,11 @@ export const MODELOS_EMAIL: InfoModeloEmail[] = [
  * Monta a pré-visualização: assunto e HTML final (com a moldura do modelo),
  * do mesmo jeito que o servidor monta antes de enviar.
  */
-export function previaEmail(c: ConfigModelo, modeloId: ModeloEmailId, varianteId?: string): { assunto: string; html: string } | null {
+export function previaEmail(c: ConfigModelo, modeloId: ModeloEmailId, varianteId?: string, texto?: TextoPersonalizado | null): { assunto: string; html: string } | null {
   const modelo = MODELOS_EMAIL.find((m) => m.id === modeloId);
   if (!modelo) return null;
   const variante = modelo.variantes.find((v) => v.id === varianteId) || modelo.variantes[0];
-  const { assunto, corpoHtml } = variante.montar(c);
+  const { assunto, corpoHtml } = personalizar(variante.montar(c), texto,
+    { nome: "Lucas Ferreira", treinamento: "LGPD na prática", prazo: dataBR(15), empresa: c.nomeEmpresa || "Horizonte Alimentos" });
   return { assunto, html: montarHtml(c, corpoHtml) };
 }

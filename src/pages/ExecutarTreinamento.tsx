@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import {
   Eye,
   EyeOff,
   Award,
+  Minus,
+  Plus,
   Lock,
   CircleHelp,
 } from "lucide-react";
@@ -39,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { registrarEventoTentativa } from "@/lib/exam-events";
+import { indiceDaSecao, splitSections } from "@/lib/secoes-conteudo";
 
 interface TrainingData {
   id: string;
@@ -58,6 +61,20 @@ interface ProgressData {
   tempo_assistido_minutos: number;
   concluido: boolean;
   data_inicio: string | null;
+  secao_atual?: number;
+  secoes_visitadas?: number[];
+}
+
+// Tamanho da letra na leitura (preferência de cada pessoa neste aparelho)
+const ESCALAS_LEITURA = [0.9, 1, 1.12, 1.25, 1.4];
+const CHAVE_ESCALA = "leitura-escala";
+function escalaInicial() {
+  try {
+    const v = Number(localStorage.getItem(CHAVE_ESCALA));
+    return ESCALAS_LEITURA.includes(v) ? v : 1;
+  } catch {
+    return 1;
+  }
 }
 
 // Estrelas (1 a 5) que acompanham o NPS; o servidor aplica a mesma conversão
@@ -67,6 +84,17 @@ export default function ExecutarTreinamento() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Pré-visualização da equipe: mostra o que o colaborador vê, sem registrar nada
+  const previa = searchParams.get("previa") === "1" && !!user?.role && user.role !== "usuario";
+  const [escalaLeitura, setEscalaLeitura] = useState<number>(escalaInicial);
+  const mudarEscala = (passo: number) => {
+    const i = Math.min(ESCALAS_LEITURA.length - 1, Math.max(0, ESCALAS_LEITURA.indexOf(escalaLeitura) + passo));
+    setEscalaLeitura(ESCALAS_LEITURA[i]);
+    try { localStorage.setItem(CHAVE_ESCALA, String(ESCALAS_LEITURA[i])); } catch { /* sem armazenamento */ }
+  };
+  const posicaoRestaurada = useRef(false);
+  const salvarPosicaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [training, setTraining] = useState<TrainingData | null>(null);
   const [progressData, setProgressData] = useState<ProgressData | null>(null);
@@ -154,7 +182,7 @@ export default function ExecutarTreinamento() {
 
   // Se já iniciou a avaliação anteriormente (e não foi aprovado), volta direto ao modo avaliação
   useEffect(() => {
-    if (!examStorageKey) return;
+    if (!examStorageKey || previa) return;
     if (quizApproved) {
       localStorage.removeItem(examStorageKey);
       return;
@@ -194,7 +222,7 @@ export default function ExecutarTreinamento() {
 
   // Registrar início de estudo e detectar pausas (timer.isPageVisible)
   useEffect(() => {
-    if (!id || examMode) return;
+    if (!id || examMode || previa) return;
     if (prevVisibleRef.current && !timer.isPageVisible) {
       registrarEventoTentativa("estudo_pausado", id, { tempoAtivoSeg: timer.activeTime });
     } else if (!prevVisibleRef.current && timer.isPageVisible) {
@@ -204,11 +232,11 @@ export default function ExecutarTreinamento() {
   }, [timer.isPageVisible, id, examMode, timer.activeTime]);
 
   useEffect(() => {
-    if (id) {
+    if (id && !previa) {
       studyStartRef.current = Date.now();
       registrarEventoTentativa("estudo_iniciado", id, {});
     }
-  }, [id]);
+  }, [id, previa]);
 
   const startExam = () => {
     if (examStorageKey) localStorage.setItem(examStorageKey, "1");
@@ -241,7 +269,7 @@ export default function ExecutarTreinamento() {
   // Carregar ou criar progresso
   useEffect(() => {
     async function loadProgress() {
-      if (!id || !user?.id) return;
+      if (!id || !user?.id || previa) return;
 
       const { data, error } = await supabase
         .from("progresso_treinamentos")
@@ -277,7 +305,26 @@ export default function ExecutarTreinamento() {
     }
 
     loadProgress();
-  }, [id, user?.id]);
+  }, [id, user?.id, previa]);
+
+  // Retoma a leitura na seção em que a pessoa parou (uma vez, ao abrir)
+  useEffect(() => {
+    if (!progressData || posicaoRestaurada.current) return;
+    posicaoRestaurada.current = true;
+    const secao = progressData.secao_atual || 0;
+    if (progressData.secoes_visitadas?.length) {
+      setVisitedSections(new Set([0, ...progressData.secoes_visitadas]));
+    }
+    if (secao > 0 && !progressData.concluido) {
+      setCurrentSection(secao);
+      toast.info(`Continuando da seção ${secao + 1}, onde você parou.`, {
+        duration: 6000,
+        action: { label: "Ir ao início", onClick: () => setCurrentSection(0) },
+      });
+    }
+  }, [progressData]);
+
+  useEffect(() => () => { if (salvarPosicaoRef.current) clearTimeout(salvarPosicaoRef.current); }, []);
 
   // Salvar progresso periodicamente
   useEffect(() => {
@@ -1883,11 +1930,36 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
 
   const goToSection = (index: number) => {
     setCurrentSection(index);
-    setVisitedSections((prev) => new Set(prev).add(index));
+    const visitadas = new Set(visitedSections).add(index);
+    setVisitedSections(visitadas);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    // Guarda onde a pessoa está, para continuar dali da próxima vez
+    if (progressData?.id && !previa) {
+      if (salvarPosicaoRef.current) clearTimeout(salvarPosicaoRef.current);
+      const progressoId = progressData.id;
+      salvarPosicaoRef.current = setTimeout(() => {
+        void supabase.from("progresso_treinamentos")
+          .update({ secao_atual: Math.min(index, 999), secoes_visitadas: [...visitadas].filter((i) => i < 1000).sort((a, b) => a - b) })
+          .eq("id", progressoId);
+      }, 800);
+    }
   };
 
-  const acaoPrincipal = precisaAvaliacao ? (
+  // Depois de uma tentativa sem aprovação: volta ao conteúdo (direto na parte a revisar, se houver)
+  const voltarAoEstudo = (topico?: string) => {
+    if (examStorageKey) localStorage.removeItem(examStorageKey);
+    setExamMode(false);
+    const alvo = topico ? indiceDaSecao(sections, topico) : -1;
+    if (alvo >= 0) goToSection(alvo);
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const acaoPrincipal = previa ? (
+    <Button variant="secondary" disabled className="gap-2" title="Na pré-visualização nada é registrado">
+      <Eye className="h-4 w-4" />
+      <span className="hidden sm:inline">Pré-visualização</span>
+    </Button>
+  ) : precisaAvaliacao ? (
     canComplete ? (
       <Button onClick={() => setShowExamWarning(true)} className="gap-2">
         <Award className="h-4 w-4" />
@@ -1923,6 +1995,23 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
               {emProva ? "Avaliação em andamento" : totalSections > 1 ? `Seção ${current + 1} de ${totalSections}` : training.categoria || "Treinamento"}
             </p>
           </div>
+
+          {/* Tamanho da letra (leitura confortável) */}
+          {!emProva && (
+            <div className="hidden items-center rounded-lg border sm:flex" role="group" aria-label="Tamanho da letra">
+              <button type="button" onClick={() => mudarEscala(-1)} disabled={escalaLeitura <= ESCALAS_LEITURA[0]}
+                aria-label="Diminuir a letra" title="Diminuir a letra"
+                className="grid h-9 w-9 place-items-center rounded-l-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40">
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="px-1 text-xs font-semibold text-muted-foreground" aria-live="polite">{Math.round(escalaLeitura * 100)}%</span>
+              <button type="button" onClick={() => mudarEscala(1)} disabled={escalaLeitura >= ESCALAS_LEITURA[ESCALAS_LEITURA.length - 1]}
+                aria-label="Aumentar a letra" title="Aumentar a letra"
+                className="grid h-9 w-9 place-items-center rounded-r-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40">
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Ajuda abre em outra aba para não interromper o estudo (nunca durante a avaliação) */}
           {!emProva && (
@@ -1962,6 +2051,13 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
           </div>
         )}
       </header>
+
+      {previa && (
+        <div className="flex items-center justify-center gap-2 border-b border-primary/20 bg-primary/5 px-4 py-2 text-[13px] font-medium text-primary" data-testid="aviso-previa">
+          <Eye className="h-3.5 w-3.5" />
+          Pré-visualização: é assim que o colaborador vê este treinamento. Nada é registrado.
+        </div>
+      )}
 
       {!emProva && !timer.isPageVisible && (
         <div className="flex items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[13px] font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
@@ -2034,6 +2130,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
                     notaMinima={7}
                     tempoEstudoSegundos={timer.activeTime}
                     onTentativaFinalizada={handleExamFinalizada}
+                    onVoltarAoEstudo={voltarAoEstudo}
                     onAprovado={() => {
                       setQuizApproved(true);
                       if (examStorageKey) localStorage.removeItem(examStorageKey);
@@ -2068,7 +2165,7 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
                   </header>
                 )}
 
-                <div className="study-content">{section ? renderTextSection(section.body) : null}</div>
+                <div className="study-content" style={escalaLeitura !== 1 ? { zoom: escalaLeitura } : undefined}>{section ? renderTextSection(section.body) : null}</div>
 
                 {/* Navegação entre seções / conclusão */}
                 <div className="mt-12 flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -2276,42 +2373,6 @@ Continue aplicando o que aprendeu e busque sempre aprimorar seus conhecimentos.
       </Dialog>
     </div>
   );
-}
-
-// Divide o conteúdo em seções a partir das linhas "## Título" (não "###").
-// O texto antes do primeiro título vira uma seção própria só se tiver conteúdo.
-function splitSections(text: string): { title: string; displayTitle: string; body: string }[] {
-  if (!text) return [{ title: "", displayTitle: "", body: "" }];
-  const lines = text.split("\n");
-  const parts: { title: string; lines: string[] }[] = [];
-  let current: { title: string; lines: string[] } = { title: "", lines: [] };
-  for (const line of lines) {
-    const m = line.match(/^##\s+(?!#)(.*)$/);
-    if (m) {
-      if (current.title || current.lines.some((l) => l.trim() !== "" && l.trim() !== "---")) {
-        parts.push(current);
-      }
-      current = { title: m[1].trim(), lines: [] };
-    } else {
-      current.lines.push(line);
-    }
-  }
-  if (current.title || current.lines.some((l) => l.trim() !== "" && l.trim() !== "---")) {
-    parts.push(current);
-  }
-  if (parts.length === 0) return [{ title: "", displayTitle: "", body: text }];
-
-  return parts.map(({ title, lines: bodyLines }) => {
-    const body = [...bodyLines];
-    const isFiller = (l: string) => l.trim() === "" || l.trim() === "---";
-    while (body.length && isFiller(body[0])) body.shift();
-    while (body.length && isFiller(body[body.length - 1])) body.pop();
-    return {
-      title,
-      displayTitle: title.replace(/^Seção\s+\d+\s*:\s*/i, ""),
-      body: body.join("\n"),
-    };
-  });
 }
 
 // Anel de progresso do tempo mínimo de estudo.

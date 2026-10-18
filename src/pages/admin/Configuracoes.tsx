@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { Fragment, useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { TabsContent } from "@/components/ui/tabs"
 import { VerificacaoDuasEtapas } from "@/components/auth/verificacao-duas-etapas"
 import { PushMaster } from "@/components/notifications/push-master"
 import { PreviaEmails } from "@/components/email/previa-emails"
+import { useEdicaoTextosEmail } from "@/components/email/textos-email"
 import { politicaPadrao, proximaVersao } from "@/content/lgpd/politica-padrao"
 import { renderSafeMarkdown } from "@/lib/markdown"
 import { PageHeader } from "@/components/layout/page-header"
@@ -27,6 +28,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import { registrarAuditoria } from "@/lib/audit-utils"
+import { baixarCsv } from "@/lib/exportar"
 import { dataLocal, fimDoDia, inicioDoDia } from "@/lib/data-local"
 import { TIMEZONE_GROUPS } from "@/lib/timezones"
 
@@ -166,6 +168,8 @@ interface AuditEntry {
   local: string | null
   descricao: string
   criado_em: string
+  dados_anteriores: unknown
+  dados_novos: unknown
 }
 
 const COLUNAS_CONFIG = [
@@ -188,6 +192,8 @@ export default function Configuracoes() {
   const [loading, setLoading] = useState(false)
   const [testingEmail, setTestingEmail] = useState(false)
   const [auditSearch, setAuditSearch] = useState("")
+  const [auditAcao, setAuditAcao] = useState("todas")
+  const [auditAberto, setAuditAberto] = useState<string | null>(null)
   // Privacidade (LGPD)
   const [privacidade, setPrivacidade] = useState({ encarregadoNome: "", encarregadoEmail: "", texto: "", versao: "1.0", atualizadaEm: "" })
   const [novaVersao, setNovaVersao] = useState(false)
@@ -294,7 +300,7 @@ export default function Configuracoes() {
     queryFn: async () => {
       let query = supabase
         .from("auditoria" as any)
-        .select("id, usuario_nome, acao, menu, local, descricao, criado_em")
+        .select("id, usuario_nome, acao, menu, local, descricao, criado_em, dados_anteriores, dados_novos")
         .order("criado_em", { ascending: false })
         .limit(500)
 
@@ -510,13 +516,21 @@ export default function Configuracoes() {
   }
 
   const filteredAuditLogs = auditLogs.filter(log =>
+    (auditAcao === "todas" || log.acao === auditAcao) && (
     !auditSearch ||
     log.usuario_nome.toLowerCase().includes(auditSearch.toLowerCase()) ||
     log.descricao.toLowerCase().includes(auditSearch.toLowerCase()) ||
-    log.menu.toLowerCase().includes(auditSearch.toLowerCase())
+    log.menu.toLowerCase().includes(auditSearch.toLowerCase()))
   )
+  const acoesAuditoria = [...new Set(auditLogs.map((l) => l.acao))].sort()
+  const exportarAuditoria = () => baixarCsv(`auditoria-${dataLocal()}`, {
+    titulo: "Auditoria",
+    cabecalhos: ["Data/hora", "Usuário", "Ação", "Menu", "Local", "Descrição"],
+    linhas: filteredAuditLogs.map((l) => [new Date(l.criado_em).toLocaleString("pt-BR"), l.usuario_nome, l.acao, l.menu, l.local || "", l.descricao]),
+  })
 
   const somenteLeitura = user?.role !== "master"
+  const textosPadrao = useEdicaoTextosEmail(null, somenteLeitura)
 
   return (
     <div className="space-y-6">
@@ -703,8 +717,8 @@ export default function Configuracoes() {
           </SettingsSection>
         
           <SettingsSection
-            title="Pré-visualização dos e-mails"
-            description="Cada tipo de e-mail da plataforma, como a pessoa vai ver, com a moldura acima. Escolha o tipo e a situação."
+            title="Pré-visualização e textos dos e-mails"
+            description="Cada tipo de e-mail, como a pessoa vai ver, com a moldura acima. Nos avisos aos colaboradores você pode mudar o assunto e acrescentar uma mensagem de abertura (padrão da plataforma; cada empresa pode ter o seu em Integrações → Notificações)."
           >
             <PreviaEmails
               modeloHtml={config.emailTemplateHtml}
@@ -713,6 +727,7 @@ export default function Configuracoes() {
               urlPlataforma={config.urlPlataforma}
               onEnviarExemplo={somenteLeitura ? undefined : (modelo, variante) => handleTestEmail({ modelo, variante })}
               enviando={testingEmail}
+              edicao={textosPadrao}
             />
           </SettingsSection>
         </TabsContent>
@@ -836,7 +851,17 @@ export default function Configuracoes() {
               <Button variant="ghost" size="sm" className="h-9 text-muted-foreground" onClick={() => { setAuditDataInicio(""); setAuditDataFim("") }}>
                 Limpar
               </Button>
-              <Button variant="ghost" size="icon" className="ml-auto h-9 w-9" onClick={() => loadAuditLogs()} disabled={auditLoading} aria-label="Atualizar">
+              <Select value={auditAcao} onValueChange={setAuditAcao}>
+                <SelectTrigger className="h-9 w-[150px]" aria-label="Filtrar por ação"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as ações</SelectItem>
+                  {acoesAuditoria.map((a) => <SelectItem key={a} value={a} className="capitalize">{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="ml-auto h-9" onClick={exportarAuditoria} disabled={filteredAuditLogs.length === 0}>
+                <Download className="mr-1.5 h-4 w-4" /> CSV
+              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => loadAuditLogs()} disabled={auditLoading} aria-label="Atualizar">
                 <RefreshCw className={`h-4 w-4 ${auditLoading ? "animate-spin" : ""}`} />
               </Button>
             </div>
@@ -863,7 +888,8 @@ export default function Configuracoes() {
                   </thead>
                   <tbody>
                     {filteredAuditLogs.map((log) => (
-                      <tr key={log.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <Fragment key={log.id}>
+                      <tr className="border-b last:border-0 hover:bg-muted/30">
                         <td className="whitespace-nowrap px-4 py-2.5 text-xs tabular-nums text-muted-foreground">
                           {new Date(log.criado_em).toLocaleDateString("pt-BR")} {new Date(log.criado_em).toLocaleTimeString("pt-BR")}
                         </td>
@@ -873,8 +899,30 @@ export default function Configuracoes() {
                         </td>
                         <td className="px-3 py-2.5 capitalize">{log.menu}</td>
                         <td className="px-3 py-2.5 text-muted-foreground">{log.local || "—"}</td>
-                        <td className="max-w-[320px] truncate px-3 py-2.5" title={log.descricao}>{log.descricao}</td>
+                        <td className="max-w-[320px] px-3 py-2.5">
+                          {(log.dados_anteriores || log.dados_novos) ? (
+                            <button type="button" className="block max-w-full truncate text-left underline-offset-2 hover:underline" title={log.descricao}
+                              aria-expanded={auditAberto === log.id} onClick={() => setAuditAberto(auditAberto === log.id ? null : log.id)}>
+                              {log.descricao}
+                            </button>
+                          ) : <span className="block truncate" title={log.descricao}>{log.descricao}</span>}
+                        </td>
                       </tr>
+                      {auditAberto === log.id && (
+                        <tr className="border-b bg-muted/20">
+                          <td colSpan={6} className="px-4 py-3">
+                            <div className="grid gap-3 text-xs sm:grid-cols-2">
+                              {[["Antes", log.dados_anteriores], ["Depois", log.dados_novos]].map(([rotulo, dados]) => (
+                                <div key={rotulo as string}>
+                                  <div className="mb-1 font-medium text-muted-foreground">{rotulo as string}</div>
+                                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md border bg-background p-2 font-mono">{dados ? JSON.stringify(dados, null, 2) : "—"}</pre>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

@@ -8,6 +8,8 @@ import {
   TrainingData,
 } from "@/components/training/modern-training-editor";
 import { sectionsToText } from "@/lib/training-content";
+import { limparRascunho } from "@/lib/rascunho-editor";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function NovoTreinamentoModerno() {
   const navigate = useNavigate();
@@ -15,6 +17,8 @@ export default function NovoTreinamentoModerno() {
   const { departments } = useDepartments();
   const { toast } = useToast();
   const { planos, getLimiteRecurso } = usePlans();
+  const { user } = useAuth();
+  const rascunhoChave = user?.id ? `${user.id}:novo` : undefined;
 
   // Plano do portal para cálculo de limite de treinamentos
   const planoPortalId = import.meta.env.VITE_PLANO_PORTAL_ID || "premium";
@@ -127,6 +131,7 @@ export default function NovoTreinamentoModerno() {
       description: "O treinamento foi criado com sucesso.",
     });
 
+    limparRascunho(rascunhoChave);
     navigate("/admin/treinamentos");
   };
 
@@ -138,6 +143,7 @@ export default function NovoTreinamentoModerno() {
     <ModernTrainingEditor
       onSave={handleSave}
       onCancel={handleCancel}
+      rascunhoChave={rascunhoChave}
     />
   );
 }

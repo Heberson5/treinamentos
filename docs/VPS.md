@@ -71,6 +71,13 @@ lista aparece em Usuários, onde o administrador corrige o endereço ou reativa.
 Sistema (só Master), sem e-mail, CPF, chaves ou parâmetros de endereço. Os
 registros resolvidos são apagados pela limpeza automática.
 
+**Atribuições e lembretes do instrutor**: a rotina de 15 minutos (`rotinas.sh
+notificacoes`) também avisa quem recebeu uma atribuição de treinamento e envia os
+lembretes pedidos pelo instrutor em Acompanhamento ("Lembrar parados", no máximo
+um por treinamento a cada 24 horas). Os prazos das atribuições entram nos lembretes
+diários de prazo. O relatório mensal pode ir para até 10 e-mails extras por empresa,
+com uma planilha CSV anexa.
+
 **Inventário LGPD**: o catálogo está na tabela `lgpd_inventario_tabelas`. Ao criar
 uma tabela nova, inclua uma linha ali (migração): o teste `inventario.sql`
 falha enquanto houver tabela sem classificação.

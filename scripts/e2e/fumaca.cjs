@@ -10,7 +10,7 @@
 const assert = require("assert/strict")
 const { carregarPlaywright, caminhoChromium, esperarServidor, subirVite, subirProducao } = require("../ajuda/navegador.cjs")
 const { instalarBackendFicticio, desconhecidos, treinamentos } = require("../ajuda/mock-backend.cjs")
-const { abrirProva } = require("../ajuda/capturas/_util.cjs")
+const { abrirProva, responderProva } = require("../ajuda/capturas/_util.cjs")
 
 const PORTA = Number(process.env.E2E_PORTA || 5302)
 const BASE = `http://127.0.0.1:${PORTA}`
@@ -352,6 +352,101 @@ teste("Auditoria: à noite (23h32 do dia 17) o filtro \"Hoje\" continua sendo di
   assert.equal(await p.locator("#audit-de").inputValue(), "2026-10-17")
 })
 
+teste("Prova sem aprovação mostra o que revisar e volta ao conteúdo naquela parte", { como: "usuario", url: `/executar-treinamento/${treinamentos[0].id}`, relogio: true, prova: "reprovado" }, async (p) => {
+  await abrirProva(p)
+  await responderProva(p)
+  await p.getByRole("dialog").getByRole("button", { name: "Fechar" }).first().click()
+  const revisar = p.getByTestId("o-que-revisar")
+  await revisar.waitFor()
+  await revisar.getByRole("button", { name: /Conceitos principais/ }).click()
+  assert.equal(await p.getByText("Avaliação em andamento").count(), 0, "saiu da avaliação")
+  await p.getByRole("button", { name: /Iniciar avaliação|Avaliação/ }).first().waitFor()
+})
+
+teste("Continua da seção em que a pessoa parou e ajusta o tamanho da letra", { como: "usuario", url: `/executar-treinamento/${treinamentos[2].id}` }, async (p) => {
+  await p.getByText(/Continuando da seção 3/).waitFor()
+  const maior = p.getByRole("button", { name: "Aumentar a letra" })
+  await maior.click()
+  await p.getByText("112%").waitFor()
+  assert.equal(await p.evaluate(() => localStorage.getItem("leitura-escala")), "1.12")
+})
+
+teste("Meus treinamentos: atribuído com prazo e prazos na agenda (.ics)", { como: "usuario", url: "/meus-treinamentos" }, async (p) => {
+  await p.getByText("Atribuído a você").first().waitFor()
+  const [arq] = await Promise.all([p.waitForEvent("download"), p.getByRole("button", { name: /Prazos na agenda/ }).click()])
+  assert.equal(arq.suggestedFilename(), "prazos-treinamentos.ics")
+  const texto = require("fs").readFileSync(await arq.path(), "utf8")
+  assert.match(texto, /BEGIN:VCALENDAR/)
+  assert.match(texto, /BEGIN:VEVENT/)
+})
+
+teste("Instrutor: acompanhamento com parados, lembrete em um clique e questão difícil", { como: "instrutor", url: "/acompanhamento" }, async (p) => {
+  const tela = p.getByTestId("acompanhamento")
+  await tela.getByText("Questão com mais erros: 35% de acerto").waitFor()
+  await tela.getByRole("heading", { name: "Quem está parado" }).waitFor()
+  await tela.getByText("Carlos Eduardo Lima").waitFor()
+  await tela.getByRole("button", { name: /Lembrar parados \(3\)/ }).click()
+  await p.getByText("Lembrete a caminho").waitFor()
+})
+
+teste("Colaborador não abre o acompanhamento", { como: "usuario", url: "/acompanhamento" }, async (p) => {
+  await p.waitForURL("**/meus-treinamentos")
+})
+
+teste("Instrutor vê o treinamento como o colaborador, sem registrar nada", { como: "instrutor", url: `/executar-treinamento/${treinamentos[1].id}?previa=1` }, async (p) => {
+  await p.getByTestId("aviso-previa").waitFor()
+  await p.getByRole("button", { name: /Pré-visualização/ }).first().waitFor()
+})
+
+teste("Gestão: atribuir treinamento por departamento com prazo", { como: "admin", url: "/admin/treinamentos" }, async (p) => {
+  await p.getByRole("button", { name: /^Ações de / }).first().click()
+  await p.getByRole("menuitem", { name: "Ver como colaborador" }).waitFor()
+  await p.getByRole("menuitem", { name: "Atribuir" }).click()
+  const d = p.getByTestId("atribuir-dialog")
+  await d.getByText("Financeiro").first().waitFor()
+  await d.getByText("Pessoas", { exact: true }).waitFor()
+  await d.getByRole("checkbox").first().click()
+  await d.getByRole("button", { name: "Atribuir" }).click()
+  await p.getByText("Treinamento atribuído").first().waitFor()
+})
+
+teste("Auditoria: filtra por ação, mostra antes e depois e exporta CSV", { como: "master", url: "/admin/configuracoes" }, async (p) => {
+  await p.getByRole("tab", { name: /Auditoria/ }).click()
+  await p.getByRole("button", { name: "Limpar" }).click()
+  await p.getByRole("button", { name: /Papel de Rafael Souza/ }).click()
+  await p.getByText('"role": "instrutor"').waitFor()
+  const [csv] = await Promise.all([p.waitForEvent("download"), p.getByRole("button", { name: "CSV" }).click()])
+  assert.match(csv.suggestedFilename(), /^auditoria-.*\.csv$/)
+})
+
+teste("Master muda o assunto do e-mail e a pré-visualização acompanha", { como: "master", url: "/admin/configuracoes" }, async (p) => {
+  await p.getByRole("tab", { name: /Email/ }).click()
+  await p.getByRole("button", { name: "Lembrete de prazo" }).click()
+  await p.getByLabel("Assunto (opcional)").fill("{nome}, faltam poucos dias!")
+  await p.getByTestId("assunto-previa").getByText("Lucas, faltam poucos dias!").waitFor()
+})
+
+teste("Administrador inclui destinatário extra no relatório mensal", { como: "admin", url: "/admin/integracoes" }, async (p) => {
+  await p.getByRole("tab", { name: /Notifica/ }).click()
+  const bloco = p.getByTestId("relatorio-destinatarios")
+  await bloco.getByLabel(/Enviar o relatório também para/).fill("diretoria@horizonte.exemplo")
+  await bloco.getByRole("button", { name: "Adicionar" }).click()
+  await bloco.getByText("diretoria@horizonte.exemplo").waitFor()
+  await p.getByText("Textos dos e-mails desta empresa").waitFor()
+})
+
+teste("Editor guarda rascunho automático e oferece restaurar ao reabrir", { como: "admin", url: `/admin/treinamentos/editar/${treinamentos[1].id}` }, async (p) => {
+  const titulo = p.getByPlaceholder("Título do treinamento").first()
+  await titulo.fill("Título alterado e não salvo")
+  await p.getByText(/Rascunho guardado às/).waitFor({ timeout: 10000 })
+  p.on("dialog", (d) => d.accept().catch(() => {}))
+  await p.goto(p.url(), { waitUntil: "networkidle" })
+  const aviso = p.getByTestId("rascunho-encontrado")
+  await aviso.waitFor()
+  await aviso.getByRole("button", { name: "Restaurar" }).click()
+  assert.equal(await p.getByPlaceholder("Título do treinamento").first().inputValue(), "Título alterado e não salvo")
+})
+
 teste("Integrações mostram o calendário real (sem simulação)", { como: "admin", url: "/admin/integracoes" }, async (p) => {
   await p.getByText("Prazos no calendário").waitFor()
   assert.equal(await p.getByText(/usuario@exemplo\.com|mock/i).count(), 0)
@@ -390,6 +485,7 @@ async function main() {
           semCiencia: !!t.opcoes.semCiencia,
           segundoFator: !!t.opcoes.segundoFator,
           emailsComProblema: !!t.opcoes.emailsComProblema,
+          prova: t.opcoes.prova || "aprovado",
         })
         if (t.opcoes.relogio) await page.clock.install()
         if (t.opcoes.horaFixa) await page.clock.install({ time: new Date(t.opcoes.horaFixa) })

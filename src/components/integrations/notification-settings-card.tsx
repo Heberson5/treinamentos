@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Award, BarChart3, BookOpen, Clock, Mail, Save } from "lucide-react"
+import { Award, BarChart3, BookOpen, Clock, Mail, Save, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/integrations/supabase/client"
@@ -9,6 +9,11 @@ import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useToast } from "@/hooks/use-toast"
 import { InfoNote, SettingList, SettingRow, SettingsSection, StatusPill } from "@/components/layout/settings"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { PreviaEmails } from "@/components/email/previa-emails"
+import { MODELOS_COM_TEXTO, useEdicaoTextosEmail } from "@/components/email/textos-email"
+import { useSystemBranding } from "@/hooks/use-system-branding"
 
 // Preferências de e-mail automático da empresa (tabela preferencias_notificacao).
 // Os envios são feitos pela rotina agendada do servidor (função "rotinas").
@@ -19,6 +24,8 @@ interface Preferencias {
   lembrete_prazo: boolean
   lembrete_dias: number[]
   relatorio_mensal: boolean
+  /** E-mails extras do relatório mensal (ex.: diretoria) */
+  relatorio_destinatarios: string[]
 }
 
 const PADRAO: Preferencias = {
@@ -27,7 +34,9 @@ const PADRAO: Preferencias = {
   lembrete_prazo: true,
   lembrete_dias: [7, 3, 1],
   relatorio_mensal: true,
+  relatorio_destinatarios: [],
 }
+const EMAIL_VALIDO = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i
 
 const OPCOES_DIAS = [30, 15, 7, 3, 1]
 
@@ -35,6 +44,8 @@ const ROTULO_TIPO: Record<string, string> = {
   novo_treinamento: "Novo treinamento",
   conclusao: "Conclusão",
   lembrete_prazo: "Lembrete de prazo",
+  atribuicao: "Treinamento atribuído",
+  lembrete_parado: "Lembrete (parou)",
   relatorio_mensal: "Relatório mensal",
   pagamento: "Pagamento",
   alerta_servidor: "Alerta do servidor",
@@ -52,6 +63,9 @@ export function NotificationSettingsCard() {
 
   const [prefs, setPrefs] = useState<Preferencias>(PADRAO)
   const [salvando, setSalvando] = useState(false)
+  const [novoDestinatario, setNovoDestinatario] = useState("")
+  const textos = useEdicaoTextosEmail(empresaId)
+  const { systemNameFull } = useSystemBranding()
 
   const { data: salvas, isLoading } = useQuery({
     queryKey: ["preferencias-notificacao", empresaId],
@@ -59,7 +73,7 @@ export function NotificationSettingsCard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("preferencias_notificacao")
-        .select("novo_treinamento, conclusao, lembrete_prazo, lembrete_dias, relatorio_mensal")
+        .select("novo_treinamento, conclusao, lembrete_prazo, lembrete_dias, relatorio_mensal, relatorio_destinatarios")
         .eq("empresa_id", empresaId!)
         .maybeSingle()
       return (data as Preferencias | null) ?? null
@@ -98,6 +112,15 @@ export function NotificationSettingsCard() {
     }
     queryClient.invalidateQueries({ queryKey: ["preferencias-notificacao", empresaId] })
     toast({ title: "Preferências salvas", description: "Os próximos envios automáticos seguirão estas escolhas." })
+  }
+
+  const adicionarDestinatario = () => {
+    const e = novoDestinatario.trim().toLowerCase()
+    if (!EMAIL_VALIDO.test(e)) return toast({ title: "E-mail inválido", description: "Confira o endereço digitado.", variant: "destructive" })
+    if (prefs.relatorio_destinatarios.includes(e)) return setNovoDestinatario("")
+    if (prefs.relatorio_destinatarios.length >= 10) return toast({ title: "Limite de 10 destinatários", variant: "destructive" })
+    setPrefs({ ...prefs, relatorio_destinatarios: [...prefs.relatorio_destinatarios, e] })
+    setNovoDestinatario("")
   }
 
   const alternarDia = (dia: number) =>
@@ -181,11 +204,49 @@ export function NotificationSettingsCard() {
           >
             <Switch id="pref-relatorio" checked={prefs.relatorio_mensal} onCheckedChange={(v) => setPrefs({ ...prefs, relatorio_mensal: v })} />
           </SettingRow>
+          {prefs.relatorio_mensal && (
+            <div className="space-y-2 py-3.5 pl-6" data-testid="relatorio-destinatarios">
+              <Label htmlFor="pref-dest" className="text-sm font-medium">Enviar o relatório também para (ex.: diretoria)</Label>
+              <div className="flex max-w-md gap-2">
+                <Input id="pref-dest" type="email" placeholder="diretoria@empresa.com.br" value={novoDestinatario}
+                  onChange={(e) => setNovoDestinatario(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); adicionarDestinatario() } }} />
+                <Button type="button" variant="outline" onClick={adicionarDestinatario}>Adicionar</Button>
+              </div>
+              {prefs.relatorio_destinatarios.length > 0 && (
+                <ul className="flex flex-wrap gap-1.5">
+                  {prefs.relatorio_destinatarios.map((e) => (
+                    <li key={e} className="inline-flex items-center gap-1 rounded-full border bg-muted/40 py-0.5 pl-2.5 pr-1 text-xs">
+                      {e}
+                      <button type="button" aria-label={`Remover ${e}`} className="grid h-5 w-5 place-items-center rounded-full hover:bg-muted"
+                        onClick={() => setPrefs({ ...prefs, relatorio_destinatarios: prefs.relatorio_destinatarios.filter((x) => x !== e) })}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-muted-foreground">Até 10 endereços. O e-mail traz uma planilha (CSV) com o resultado de cada treinamento no mês. Clique em Salvar preferências.</p>
+            </div>
+          )}
         </SettingList>
         <InfoNote icon={Mail}>
           Os e-mails usam o servidor configurado pelo Master em <strong className="font-medium text-foreground">Configurações → Email</strong>.
           Cada pessoa pode deixar de receber os avisos em <strong className="font-medium text-foreground">Meus dados e privacidade</strong> (menu do nome).
         </InfoNote>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Textos dos e-mails desta empresa"
+        description="Mude o assunto ou acrescente uma mensagem de abertura nos avisos aos colaboradores. Em branco, vale o texto padrão da plataforma."
+      >
+        <PreviaEmails
+          modeloHtml=""
+          nomeSistema={systemNameFull}
+          nomeEmpresa=""
+          urlPlataforma={typeof window !== "undefined" ? window.location.origin : ""}
+          somenteModelos={MODELOS_COM_TEXTO}
+          edicao={textos}
+        />
       </SettingsSection>
 
       <SettingsSection title="Últimos e-mails enviados" description="Os oito envios mais recentes desta empresa. O histórico é guardado por 6 meses." contentClassName="p-0">

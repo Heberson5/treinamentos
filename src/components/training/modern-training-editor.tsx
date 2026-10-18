@@ -1,5 +1,6 @@
 // Editor moderno de treinamentos estilo Word com seções/páginas
 import { useState, useRef, useCallback, useEffect, useMemo, type ReactNode } from "react";
+import { gravarRascunho, lerRascunho, limparRascunho, type Rascunho } from "@/lib/rascunho-editor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,6 +156,8 @@ interface ModernTrainingEditorProps {
   headerCenter?: ReactNode;
   /** Quando informado, substitui a área de edição (mantendo o cabeçalho) */
   bodyOverride?: ReactNode;
+  /** Chave do rascunho automático neste navegador (ex.: "<pessoa>:<treinamento>") */
+  rascunhoChave?: string;
 }
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -268,6 +271,7 @@ export function ModernTrainingEditor({
   isEditing = false,
   headerCenter,
   bodyOverride,
+  rascunhoChave,
 }: ModernTrainingEditorProps) {
   const { user } = useAuth();
   const { canUploadVideo } = usePermissions();
@@ -390,6 +394,23 @@ export function ModernTrainingEditor({
   const serialized = useMemo(() => JSON.stringify(formData), [formData]);
   const initialSnapshot = useRef(serialized);
   const isDirty = serialized !== initialSnapshot.current;
+
+  // Rascunho automático: guarda as alterações neste navegador a cada poucos segundos
+  const [rascunhoEncontrado, setRascunhoEncontrado] = useState<Rascunho<TrainingData> | null>(() => {
+    if (!rascunhoChave) return null;
+    const r = lerRascunho<TrainingData>(rascunhoChave);
+    return r && JSON.stringify(r.dados) !== serialized ? r : null;
+  });
+  const [rascunhoSalvoEm, setRascunhoSalvoEm] = useState<number | null>(null);
+  useEffect(() => {
+    if (!rascunhoChave || !isDirty || rascunhoEncontrado) return;
+    const t = setTimeout(() => {
+      const agora = Date.now();
+      gravarRascunho(rascunhoChave, JSON.parse(serialized) as TrainingData, agora);
+      setRascunhoSalvoEm(agora);
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [serialized, isDirty, rascunhoChave, rascunhoEncontrado]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -1460,6 +1481,11 @@ export function ModernTrainingEditor({
             </Tooltip>
           )}
 
+          {rascunhoSalvoEm && isDirty && (
+            <span className="hidden text-xs text-muted-foreground lg:inline" aria-live="polite">
+              Rascunho guardado às {new Date(rascunhoSalvoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
           <Button onClick={() => onSave(formData)} className="h-9">
             <Save className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Salvar</span>
@@ -1467,6 +1493,18 @@ export function ModernTrainingEditor({
         </div>
       </header>
       {headerCenter && <div className="flex justify-center border-b bg-card px-3 py-2 md:hidden">{headerCenter}</div>}
+      {rascunhoEncontrado && (
+        <div className="flex flex-wrap items-center justify-center gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm" role="status" data-testid="rascunho-encontrado">
+          <span>
+            Há alterações não salvas deste treinamento, guardadas neste navegador em{" "}
+            <strong>{new Date(rascunhoEncontrado.salvoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</strong>.
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => { setFormData(rascunhoEncontrado.dados); setRascunhoEncontrado(null); }}>Restaurar</Button>
+            <Button size="sm" variant="outline" onClick={() => { limparRascunho(rascunhoChave); setRascunhoEncontrado(null); }}>Descartar</Button>
+          </div>
+        </div>
+      )}
 
       {bodyOverride ? (
         <div className="flex-1 overflow-y-auto bg-muted/30">

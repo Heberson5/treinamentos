@@ -1,13 +1,30 @@
 import { useMemo, useRef, useState } from "react"
-import { Monitor, Send, Smartphone } from "lucide-react"
+import { Monitor, RotateCcw, Save, Send, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { InfoNote } from "@/components/layout/settings"
 import { cn } from "@/lib/utils"
 import {
   MODELOS_EMAIL,
+  TEXTOS_EDITAVEIS,
   previaEmail,
   type ModeloEmailId,
+  type TextoPersonalizado,
 } from "../../../supabase/functions/_shared/modelos-email"
+
+/** Edição do assunto e da mensagem de abertura de cada modelo (padrão da plataforma ou da empresa). */
+export interface EdicaoTextos {
+  valores: Partial<Record<ModeloEmailId, TextoPersonalizado>>
+  /** Texto que vale quando este estiver vazio (ex.: o padrão da plataforma, para a empresa) */
+  herdado?: Partial<Record<ModeloEmailId, TextoPersonalizado>>
+  onChange: (modelo: ModeloEmailId, texto: TextoPersonalizado) => void
+  onSalvar: (modelo: ModeloEmailId) => Promise<void> | void
+  onRestaurar: (modelo: ModeloEmailId) => Promise<void> | void
+  salvando?: boolean
+  somenteLeitura?: boolean
+}
 
 // Pré-visualização de cada modelo de e-mail da plataforma. Usa os mesmos
 // construtores do servidor (supabase/functions/_shared/modelos-email.ts) e
@@ -22,24 +39,35 @@ interface Props {
   /** Se informado, mostra o botão "Enviar exemplo para mim" */
   onEnviarExemplo?: (modelo: ModeloEmailId, variante: string) => Promise<void> | void
   enviando?: boolean
+  /** Mostra só estes modelos (ex.: os que têm texto editável) */
+  somenteModelos?: ModeloEmailId[]
+  edicao?: EdicaoTextos
 }
 
-export function PreviaEmails({ modeloHtml, nomeSistema, nomeEmpresa, urlPlataforma, onEnviarExemplo, enviando }: Props) {
-  const [modeloId, setModeloId] = useState<ModeloEmailId>(MODELOS_EMAIL[0].id)
-  const [varianteId, setVarianteId] = useState<string>(MODELOS_EMAIL[0].variantes[0].id)
+export function PreviaEmails({ modeloHtml, nomeSistema, nomeEmpresa, urlPlataforma, onEnviarExemplo, enviando, somenteModelos, edicao }: Props) {
+  const lista = somenteModelos ? MODELOS_EMAIL.filter((m) => somenteModelos.includes(m.id)) : MODELOS_EMAIL
+  const [modeloId, setModeloId] = useState<ModeloEmailId>(lista[0].id)
+  const [varianteId, setVarianteId] = useState<string>(lista[0].variantes[0].id)
   const [celular, setCelular] = useState(false)
   const [altura, setAltura] = useState(420)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const modelo = MODELOS_EMAIL.find((m) => m.id === modeloId) ?? MODELOS_EMAIL[0]
+  const modelo = lista.find((m) => m.id === modeloId) ?? lista[0]
+  const editavel = TEXTOS_EDITAVEIS.find((t) => t.id === modeloId)
+  const textoAtual = edicao?.valores[modeloId]
+  const textoHerdado = edicao?.herdado?.[modeloId]
+  const textoEfetivo: TextoPersonalizado | null = edicao
+    ? { assunto: textoAtual?.assunto?.trim() || textoHerdado?.assunto || null, abertura: textoAtual?.abertura?.trim() || textoHerdado?.abertura || null }
+    : null
 
   const previa = useMemo(
-    () => previaEmail({ modeloHtml, nomeSistema, nomeEmpresa, urlPlataforma: urlPlataforma.replace(/\/+$/, "") }, modeloId, varianteId),
-    [modeloHtml, nomeSistema, nomeEmpresa, urlPlataforma, modeloId, varianteId],
+    () => previaEmail({ modeloHtml, nomeSistema, nomeEmpresa, urlPlataforma: urlPlataforma.replace(/\/+$/, "") }, modeloId, varianteId, textoEfetivo),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [modeloHtml, nomeSistema, nomeEmpresa, urlPlataforma, modeloId, varianteId, textoEfetivo?.assunto, textoEfetivo?.abertura],
   )
 
   const escolherModelo = (id: ModeloEmailId) => {
-    const novo = MODELOS_EMAIL.find((m) => m.id === id)!
+    const novo = lista.find((m) => m.id === id)!
     setModeloId(id)
     setVarianteId(novo.variantes[0].id)
   }
@@ -54,7 +82,7 @@ export function PreviaEmails({ modeloHtml, nomeSistema, nomeEmpresa, urlPlatafor
     <div className="grid gap-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
       {/* Lista de modelos */}
       <nav aria-label="Modelos de e-mail" className="flex flex-wrap gap-1.5 lg:flex-col">
-        {MODELOS_EMAIL.map((m) => {
+        {lista.map((m) => {
           const ativo = m.id === modeloId
           return (
             <button
@@ -107,6 +135,38 @@ export function PreviaEmails({ modeloHtml, nomeSistema, nomeEmpresa, urlPlatafor
             </Button>
           </div>
         </div>
+
+        {edicao && editavel && (
+          <div className="space-y-3 rounded-xl border p-4" data-testid="editar-texto-email">
+            <div className="grid gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="texto-assunto">Assunto (opcional)</Label>
+                <Input id="texto-assunto" maxLength={150} disabled={edicao.somenteLeitura}
+                  placeholder={textoHerdado?.assunto || "Deixe em branco para usar o assunto padrão"}
+                  value={textoAtual?.assunto ?? ""} onChange={(e) => edicao.onChange(modeloId, { ...textoAtual, assunto: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="texto-abertura">Mensagem de abertura (opcional)</Label>
+                <Textarea id="texto-abertura" rows={3} maxLength={1000} disabled={edicao.somenteLeitura}
+                  placeholder={textoHerdado?.abertura || "Ex.: Este treinamento faz parte do nosso programa de qualidade. Contamos com você!"}
+                  value={textoAtual?.abertura ?? ""} onChange={(e) => edicao.onChange(modeloId, { ...textoAtual, abertura: e.target.value })} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Pode usar: {editavel.variaveis.map((v) => <code key={v} className="mx-0.5 rounded bg-muted px-1">{v}</code>)}. A abertura entra logo depois do “Olá”. O restante do e-mail (botões e avisos) não muda.
+            </p>
+            {!edicao.somenteLeitura && (
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" onClick={() => void edicao.onSalvar(modeloId)} disabled={edicao.salvando}>
+                  <Save className="mr-1.5 h-3.5 w-3.5" /> Salvar texto
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => void edicao.onRestaurar(modeloId)} disabled={edicao.salvando}>
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Voltar ao padrão
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {previa && (
           <div className="overflow-hidden rounded-xl border bg-muted/30">

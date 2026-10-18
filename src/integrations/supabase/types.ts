@@ -75,6 +75,61 @@ export type Database = {
         }
         Relationships: []
       }
+      atribuicoes_treinamento: {
+        Row: {
+          alvo_id: string | null
+          alvo_tipo: string
+          criado_em: string
+          criado_por: string | null
+          empresa_id: string
+          id: string
+          notificado_em: string | null
+          prazo: string | null
+          treinamento_id: string
+        }
+        Insert: {
+          alvo_id?: string | null
+          alvo_tipo: string
+          criado_em?: string
+          criado_por?: string | null
+          empresa_id: string
+          id?: string
+          notificado_em?: string | null
+          prazo?: string | null
+          treinamento_id: string
+        }
+        Update: {
+          alvo_id?: string | null
+          alvo_tipo?: string
+          criado_em?: string
+          criado_por?: string | null
+          empresa_id?: string
+          id?: string
+          notificado_em?: string | null
+          prazo?: string | null
+          treinamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atribuicoes_treinamento_criado_por_fkey"
+            columns: ["criado_por"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atribuicoes_treinamento_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atribuicoes_treinamento_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria: {
         Row: {
           acao: string
@@ -1346,6 +1401,55 @@ export type Database = {
           },
         ]
       }
+      lembretes_manuais: {
+        Row: {
+          criado_em: string
+          empresa_id: string | null
+          enviados: number
+          id: string
+          processado_em: string | null
+          solicitado_por: string | null
+          treinamento_id: string
+        }
+        Insert: {
+          criado_em?: string
+          empresa_id?: string | null
+          enviados?: number
+          id?: string
+          processado_em?: string | null
+          solicitado_por?: string | null
+          treinamento_id: string
+        }
+        Update: {
+          criado_em?: string
+          empresa_id?: string | null
+          enviados?: number
+          id?: string
+          processado_em?: string | null
+          solicitado_por?: string | null
+          treinamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lembretes_manuais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lembretes_manuais_solicitado_por_fkey"
+            columns: ["solicitado_por"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lembretes_manuais_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            referencedRelation: "treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lembretes_prazo_enviados: {
         Row: {
           enviado_em: string
@@ -1816,6 +1920,7 @@ export type Database = {
           lembrete_dias: number[]
           lembrete_prazo: boolean
           novo_treinamento: boolean
+          relatorio_destinatarios: string[]
           relatorio_mensal: boolean
         }
         Insert: {
@@ -1825,6 +1930,7 @@ export type Database = {
           lembrete_dias?: number[]
           lembrete_prazo?: boolean
           novo_treinamento?: boolean
+          relatorio_destinatarios?: string[]
           relatorio_mensal?: boolean
         }
         Update: {
@@ -1834,6 +1940,7 @@ export type Database = {
           lembrete_dias?: number[]
           lembrete_prazo?: boolean
           novo_treinamento?: boolean
+          relatorio_destinatarios?: string[]
           relatorio_mensal?: boolean
         }
         Relationships: [
@@ -1857,6 +1964,8 @@ export type Database = {
           nota_avaliacao: number | null
           numero: number | null
           percentual_concluido: number | null
+          secao_atual: number
+          secoes_visitadas: number[]
           tempo_assistido_minutos: number | null
           treinamento_id: string
           usuario_id: string
@@ -1872,6 +1981,8 @@ export type Database = {
           nota_avaliacao?: number | null
           numero?: number | null
           percentual_concluido?: number | null
+          secao_atual?: number
+          secoes_visitadas?: number[]
           tempo_assistido_minutos?: number | null
           treinamento_id: string
           usuario_id: string
@@ -1887,6 +1998,8 @@ export type Database = {
           nota_avaliacao?: number | null
           numero?: number | null
           percentual_concluido?: number | null
+          secao_atual?: number
+          secoes_visitadas?: number[]
           tempo_assistido_minutos?: number | null
           treinamento_id?: string
           usuario_id?: string
@@ -1949,6 +2062,7 @@ export type Database = {
           pergunta: string
           resposta_correta: string
           tipo: string
+          topico: string | null
           treinamento_id: string
           valor_maximo: number | null
           valor_minimo: number | null
@@ -1968,6 +2082,7 @@ export type Database = {
           pergunta: string
           resposta_correta?: string
           tipo?: string
+          topico?: string | null
           treinamento_id: string
           valor_maximo?: number | null
           valor_minimo?: number | null
@@ -1987,6 +2102,7 @@ export type Database = {
           pergunta?: string
           resposta_correta?: string
           tipo?: string
+          topico?: string | null
           treinamento_id?: string
           valor_maximo?: number | null
           valor_minimo?: number | null
@@ -2382,6 +2498,49 @@ export type Database = {
         }
         Relationships: []
       }
+      textos_email: {
+        Row: {
+          abertura: string | null
+          assunto: string | null
+          atualizado_em: string
+          atualizado_por: string | null
+          empresa_id: string | null
+          id: string
+          modelo: string
+        }
+        Insert: {
+          abertura?: string | null
+          assunto?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          empresa_id?: string | null
+          id?: string
+          modelo: string
+        }
+        Update: {
+          abertura?: string | null
+          assunto?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          empresa_id?: string | null
+          id?: string
+          modelo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textos_email_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textos_email_empresa_id_fkey"
+            columns: ["empresa_id"]
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       treinamento_prerequisitos: {
         Row: {
           prerequisito_id: string
@@ -2646,7 +2805,19 @@ export type Database = {
     Functions: {
       _acesso_avaliacao: { Args: { p_treinamento: string }; Returns: boolean }
       _acesso_tabela: { Args: { p_tabela: string }; Returns: string[] }
+      _auditar: {
+        Args: {
+          p_acao: string
+          p_antes: Json
+          p_depois: Json
+          p_descricao: string
+          p_local: string
+          p_menu: string
+        }
+        Returns: undefined
+      }
       _coluna_dado_pessoal: { Args: { p_coluna: string }; Returns: boolean }
+      _emails_validos: { Args: { p: string[] }; Returns: boolean }
       _gerar_codigo_certificado: { Args: never; Returns: string }
       _inicio_ciclo: {
         Args: { p_treinamento: string; p_usuario: string }
@@ -2657,6 +2828,18 @@ export type Database = {
         Returns: undefined
       }
       _limpar_texto_erro: { Args: { p_texto: string }; Returns: string }
+      _pode_gerir_treinamento: {
+        Args: { p_treinamento: string }
+        Returns: boolean
+      }
+      _prazos_atribuidos: {
+        Args: { p_usuario?: string }
+        Returns: {
+          prazo: string
+          treinamento_id: string
+          usuario_id: string
+        }[]
+      }
       _registrar_erro: {
         Args: {
           p_contexto: Json
@@ -2689,6 +2872,16 @@ export type Database = {
         Args: { p_executor: string; p_usuario_id: string }
         Returns: string
       }
+      atribuir_treinamento: {
+        Args: {
+          p_alvo_ids: string[]
+          p_alvo_tipo: string
+          p_empresa_id?: string
+          p_prazo: string
+          p_treinamento_id: string
+        }
+        Returns: number
+      }
       atualizar_erro_sistema: {
         Args: { p_id: string; p_nota?: string; p_status: string }
         Returns: undefined
@@ -2711,6 +2904,8 @@ export type Database = {
           nota_avaliacao: number | null
           numero: number | null
           percentual_concluido: number | null
+          secao_atual: number
+          secoes_visitadas: number[]
           tempo_assistido_minutos: number | null
           treinamento_id: string
           usuario_id: string
@@ -2794,6 +2989,10 @@ export type Database = {
         Args: { p_sessao_id: string }
         Returns: undefined
       }
+      duplicar_treinamento: {
+        Args: { p_treinamento_id: string }
+        Returns: string
+      }
       eh_admin_ou_master: { Args: { usuario_id: string }; Returns: boolean }
       emitir_certificado: {
         Args: { p_treinamento_id: string }
@@ -2819,6 +3018,8 @@ export type Database = {
           nota_avaliacao: number | null
           numero: number | null
           percentual_concluido: number | null
+          secao_atual: number
+          secoes_visitadas: number[]
           tempo_assistido_minutos: number | null
           treinamento_id: string
           usuario_id: string
@@ -2831,6 +3032,7 @@ export type Database = {
         }
       }
       inventario_lgpd: { Args: never; Returns: Json }
+      lembrar_parados: { Args: { p_treinamento_id: string }; Returns: Json }
       listar_erros_sistema: {
         Args: { p_dias?: number; p_status?: string }
         Returns: {
@@ -2870,6 +3072,13 @@ export type Database = {
       mesma_empresa_que_usuario: {
         Args: { p_usuario_alvo: string }
         Returns: boolean
+      }
+      meus_prazos: {
+        Args: never
+        Returns: {
+          prazo: string
+          treinamento_id: string
+        }[]
       }
       obter_avisos_popup_pendentes: {
         Args: never
@@ -2922,6 +3131,14 @@ export type Database = {
           treinamento_id: string
           valor_maximo: number
           valor_minimo: number
+        }[]
+      }
+      painel_instrutor: { Args: { p_empresa_id?: string }; Returns: Json }
+      parados_do_lembrete: {
+        Args: { p_lembrete_id: string }
+        Returns: {
+          progresso: number
+          usuario_id: string
         }[]
       }
       pode_gerenciar_questoes_treinamento: {
@@ -2991,6 +3208,7 @@ export type Database = {
         Args: { p_empresa_id?: string; p_fim?: string; p_inicio?: string }
         Returns: Json
       }
+      remover_atribuicao: { Args: { p_id: string }; Returns: undefined }
       resumo_ciencia_politica: {
         Args: { p_empresa_id?: string }
         Returns: {
@@ -3002,11 +3220,19 @@ export type Database = {
       resumo_push: { Args: never; Returns: Json }
       revogar_token_calendario: { Args: never; Returns: undefined }
       segundo_fator_pendente: { Args: { p_uid: string }; Returns: boolean }
+      situacao_atribuicoes: {
+        Args: { p_empresa_id?: string; p_treinamento_id: string }
+        Returns: Json
+      }
       status_avaliacao: { Args: { p_treinamento_id: string }; Returns: Json }
       tem_permissao: { Args: { p_permissao: string }; Returns: boolean }
       tem_permissao_de: {
         Args: { p_permissao: string; p_usuario: string }
         Returns: boolean
+      }
+      topicos_para_revisar: {
+        Args: { p_questoes: string[]; p_treinamento_id: string }
+        Returns: Json
       }
       treinamento_liberado: {
         Args: { p_treinamento_id: string }

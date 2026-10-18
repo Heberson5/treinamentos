@@ -125,6 +125,8 @@ export class Carteiro {
     tipo: string;
     empresaId?: string | null;
     usuarioId?: string | null;
+    /** Arquivos anexos (ex.: CSV do relatório mensal) */
+    anexos?: Array<{ nome: string; conteudo: string; tipo: string }>;
   }): Promise<boolean> {
     const para = opcoes.para.trim().toLowerCase();
     if (!emailValido(para)) return false;
@@ -138,6 +140,11 @@ export class Carteiro {
         subject: opcoes.assunto.replace(/[\r\n]+/g, " "),
         text: htmlParaTexto(html),
         html,
+        attachments: (opcoes.anexos || []).slice(0, 3).map((a) => ({
+          filename: a.nome.replace(/[^\w.\- ]+/g, "_").slice(0, 80),
+          content: a.conteudo,
+          contentType: a.tipo,
+        })),
       });
       this.enviados++;
     } catch (e) {

@@ -273,4 +273,60 @@ export const guiasInstrutor: Guia[] = [
       },
     ],
   },
+
+  {
+    id: "instrutor-acompanhamento",
+    papel: "instrutor",
+    tema: "Acompanhamento",
+    titulo: "Acompanhar os alunos e lembrar quem parou",
+    resumo: "Veja quem está parado, a questão com mais erros e os comentários, e mande um lembrete em um clique.",
+    icone: "ChartColumnBig",
+    minutos: 4,
+    rotas: ["/acompanhamento"],
+    passos: [
+      {
+        titulo: "Abra o Acompanhamento",
+        texto:
+          "Em **Gestão → Acompanhamento**, cada treinamento que você conduz mostra quantos concluíram, quantos estão **parados há mais de 7 dias**, o **NPS** (0 a 100) e os **comentários novos** da semana.",
+      },
+      {
+        titulo: "Lembre quem parou",
+        texto:
+          "Clique em **Lembrar parados**: quem começou e não volta há mais de 7 dias recebe um e-mail e um aviso no aparelho com o botão **Continuar de onde parei**. O envio sai em até 15 minutos.",
+        aviso: "Para não incomodar, cada treinamento aceita um lembrete a cada 24 horas.",
+      },
+      {
+        titulo: "Corrija o que confunde",
+        texto:
+          "Quando uma questão tem menos de 60% de acerto, ela aparece em destaque com a parte do conteúdo relacionada. Revise o texto ou a pergunta. Mais abaixo ficam a lista de quem está parado e os comentários recentes.",
+      },
+    ],
+  },
+
+  {
+    id: "instrutor-ferramentas",
+    papel: "instrutor",
+    tema: "Treinamentos",
+    titulo: "Ver como colaborador, duplicar e rascunho automático",
+    resumo: "Confira o treinamento como o aluno vê, reaproveite um treinamento pronto e nunca perca uma edição.",
+    icone: "Copy",
+    minutos: 3,
+    passos: [
+      {
+        titulo: "Ver como colaborador",
+        texto:
+          "Na Gestão de Treinamentos (menu **⋯** do treinamento) ou no Acompanhamento, use **Ver como colaborador**. A tela mostra o conteúdo exatamente como o aluno vê, com o aviso **Pré-visualização**: nada é registrado.",
+      },
+      {
+        titulo: "Duplicar",
+        texto:
+          "**Duplicar** cria uma cópia como rascunho com o conteúdo, as regras da avaliação e todas as questões. É o jeito mais rápido de montar uma nova turma ou uma versão atualizada.",
+      },
+      {
+        titulo: "Rascunho automático e o que revisar",
+        texto:
+          "Enquanto você edita, o editor guarda um **rascunho neste navegador** a cada poucos segundos. Se a conexão cair ou a aba fechar, ao reabrir aparece **Restaurar** ou **Descartar**. Na aba Avaliação, cada questão pode indicar a parte do conteúdo que o aluno deve revisar se errar (**Se errar, revisar**).",
+      },
+    ],
+  },
 ]

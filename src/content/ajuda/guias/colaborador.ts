@@ -413,4 +413,32 @@ export const guiasColaborador: Guia[] = [
       },
     ],
   },
+
+  {
+    id: "colaborador-continuar-revisar",
+    papel: "usuario",
+    tema: "Treinamentos",
+    titulo: "Continuar de onde parou, revisar e organizar prazos",
+    resumo: "Retome a leitura na mesma parte, veja o que revisar depois da prova e leve os prazos para a sua agenda.",
+    icone: "BookOpen",
+    minutos: 3,
+    passos: [
+      {
+        titulo: "Continue de onde parou",
+        texto:
+          "Ao abrir um treinamento que você já começou, a leitura volta para a **seção em que você parou** (aparece um aviso com a opção **Ir ao início**). Em Meus Treinamentos, o quadro **Continue de onde parou** leva direto ao último treinamento em andamento.",
+        dica: "No topo da leitura, os botões **−** e **+** mudam o tamanho da letra. A escolha fica guardada neste aparelho.",
+      },
+      {
+        titulo: "Depois da prova: o que revisar",
+        texto:
+          "Se não atingir a nota mínima, o resultado mostra **O que revisar**: as partes do conteúdo ligadas às questões que você errou (sem mostrar a resposta certa). Clique numa delas para voltar ao conteúdo exatamente naquela parte e, depois, tente de novo.",
+      },
+      {
+        titulo: "Treinamentos atribuídos e prazos na agenda",
+        texto:
+          "Os treinamentos que a sua empresa atribuiu a você aparecem com a marca **Atribuído a você** e o prazo. Use **Prazos na agenda** para baixar um arquivo que adiciona todos os prazos ao Google Agenda, Outlook ou celular, com lembrete na véspera.",
+      },
+    ],
+  },
 ]

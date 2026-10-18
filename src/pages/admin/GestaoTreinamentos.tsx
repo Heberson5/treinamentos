@@ -42,6 +42,8 @@ import {
   LayoutList,
   LayoutGrid,
   X,
+  MonitorPlay,
+  UserPlus,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { usePagination } from "@/hooks/use-pagination"
@@ -53,6 +55,7 @@ import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import { cn } from "@/lib/utils"
+import { AtribuirTreinamentoDialog } from "@/components/training/atribuir-treinamento-dialog"
 
 interface TrainingDB {
   id: string
@@ -137,6 +140,8 @@ export default function GestaoTreinamentos() {
   const { isMaster, empresaSelecionada } = useEmpresaFilter()
   const { has } = usePermissions()
   const podeCriar = has("trainings.create")
+  const podeAtribuir = has("trainings.assign")
+  const [atribuindo, setAtribuindo] = useState<TrainingDB | null>(null)
   const { user } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -255,41 +260,24 @@ export default function GestaoTreinamentos() {
     }
   }
 
+  // Cópia feita no servidor: leva conteúdo, regras da avaliação e questões (sempre como rascunho)
   const handleDuplicate = async () => {
     if (!duplicateTraining) return
 
     setIsDuplicating(true)
     try {
-      const { data, error } = await supabase
-        .from("treinamentos")
-        .insert({
-          titulo: `${duplicateTraining.titulo} (Cópia)`,
-          descricao: duplicateTraining.descricao,
-          categoria: duplicateTraining.categoria,
-          nivel: duplicateTraining.nivel,
-          duracao_minutos: duplicateTraining.duracao_minutos,
-          obrigatorio: false,
-          publicado: false, // Sempre como rascunho
-          empresa_id: duplicateTraining.empresa_id || user?.empresa_id || null,
-          departamento_id: duplicateTraining.departamento_id,
-          thumbnail_url: duplicateTraining.thumbnail_url,
-          conteudo_html: duplicateTraining.conteudo_html,
-        })
-        .select()
-        .single()
-
+      const { data: novoId, error } = await supabase.rpc("duplicar_treinamento", { p_treinamento_id: duplicateTraining.id })
       if (error) throw error
-
-      setTrainings(prev => [data, ...prev])
+      const { data } = await supabase.from("treinamentos").select("*").eq("id", novoId as string).maybeSingle()
+      if (data) setTrainings(prev => [data as TrainingDB, ...prev])
       toast({
         title: "Treinamento duplicado",
-        description: "O treinamento foi duplicado como rascunho."
+        description: "A cópia foi criada como rascunho, com as questões e as regras da avaliação.",
       })
     } catch (error) {
-      console.error("Erro ao duplicar:", error)
       toast({
-        title: "Erro",
-        description: "Não foi possível duplicar o treinamento.",
+        title: "Não foi possível duplicar",
+        description: error instanceof Error ? error.message : (error as { message?: string })?.message || "Tente novamente.",
         variant: "destructive"
       })
     } finally {
@@ -429,16 +417,26 @@ export default function GestaoTreinamentos() {
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuItem onClick={() => handleViewTraining(training)}>
           <Eye className="mr-2 h-4 w-4" /> Visualizar
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate(`/admin/treinamentos/editar/${training.id}`)}>
           <Edit3 className="mr-2 h-4 w-4" /> Editar
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setDuplicateTraining(training)}>
-          <Copy className="mr-2 h-4 w-4" /> Duplicar
+        <DropdownMenuItem onClick={() => navigate(`/executar-treinamento/${training.id}?previa=1`)}>
+          <MonitorPlay className="mr-2 h-4 w-4" /> Ver como colaborador
         </DropdownMenuItem>
+        {podeAtribuir && training.publicado && (user?.role !== "instrutor" || training.instrutor_id === user?.id) && (
+          <DropdownMenuItem onClick={() => setAtribuindo(training)}>
+            <UserPlus className="mr-2 h-4 w-4" /> Atribuir
+          </DropdownMenuItem>
+        )}
+        {podeCriar && (
+          <DropdownMenuItem onClick={() => setDuplicateTraining(training)}>
+            <Copy className="mr-2 h-4 w-4" /> Duplicar
+          </DropdownMenuItem>
+        )}
         {isMaster && (
           <>
             <DropdownMenuSeparator />
@@ -813,6 +811,8 @@ export default function GestaoTreinamentos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AtribuirTreinamentoDialog treinamento={atribuindo} onOpenChange={(o) => !o && setAtribuindo(null)} />
     </div>
   )
 }

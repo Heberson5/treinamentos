@@ -29,6 +29,7 @@ const TELAS = [
   ["admin", "/admin/usuarios", "Usuários"],
   ["admin", "/admin/certificado", "Modelo do certificado"],
   ["admin", "/relatorios", "Relatórios"],
+  ["instrutor", "/acompanhamento", "Acompanhamento"],
   ["master", "/admin/erros", "Erros do sistema"],
   ["master", "/admin/privacidade", "Privacidade (LGPD)"],
   ["master", "/admin/configuracoes", "Configurações"],

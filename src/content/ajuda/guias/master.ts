@@ -420,4 +420,26 @@ export const guiasMaster: Guia[] = [
       },
     ],
   },
+
+  {
+    id: "master-auditoria",
+    papel: "master",
+    tema: "Sistema",
+    titulo: "Consultar a auditoria",
+    resumo: "Quem fez o quê e quando, com o antes e o depois, e exportação em CSV.",
+    icone: "ShieldCheck",
+    minutos: 3,
+    passos: [
+      {
+        titulo: "Filtre e veja os detalhes",
+        texto:
+          "Em **Configurações → Auditoria**, filtre pelo período, por texto e pela **ação** (criar, editar, excluir…). Clique na descrição para ver **o antes e o depois** da alteração. **CSV** baixa a lista filtrada.",
+      },
+      {
+        titulo: "O que é registrado sozinho",
+        texto:
+          "O servidor registra automaticamente as mudanças de **papel** das pessoas, de **permissões**, a criação, publicação e exclusão de **treinamentos**, as **atribuições** e os **textos dos e-mails**. O nome de quem fez vem sempre do cadastro, sem possibilidade de ser alterado pela tela.",
+      },
+    ],
+  },
 ]

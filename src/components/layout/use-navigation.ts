@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award, Bug,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award, Bug, Activity,
   type LucideIcon,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client"
 export const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard, BookOpen, Users, Building2, Settings, BarChart3,
   Shield, GraduationCap, FileText, Calendar, Briefcase, CreditCard,
-  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award, Bug,
+  Zap, Sparkles, Palette, DollarSign, Tag, Settings2, Megaphone, LifeBuoy, ShieldCheck, Award, Bug, Activity,
 }
 
 interface MenuItemConfig {
@@ -53,6 +53,7 @@ export const defaultMainItems = [
 export const defaultAdminItems = [
   { id: "executivo", title: "Dashboard Executivo", url: "/admin/executivo", icon: "Sparkles", roles: ["master", "admin"] },
   { id: "treinamentos", title: "Gestão de Treinamentos", url: "/admin/treinamentos", icon: "BookOpen", roles: ["master", "admin", "instrutor"] },
+  { id: "acompanhamento", title: "Acompanhamento", url: "/acompanhamento", icon: "Activity", roles: ["master", "admin", "instrutor"] },
   { id: "usuarios", title: "Usuários", url: "/admin/usuarios", icon: "Users", roles: ["master", "admin"] },
   { id: "cargos", title: "Cargos", url: "/admin/cargos", icon: "Briefcase", roles: ["master", "admin"] },
   { id: "departamentos", title: "Departamentos", url: "/admin/departamentos", icon: "Building2", roles: ["master", "admin"] },
@@ -87,6 +88,7 @@ const GROUP_BY_URL: Record<string, NavGroupId> = {
   "/relatorios": "gestao",
   "/admin/executivo": "gestao",
   "/admin/treinamentos": "gestao",
+  "/acompanhamento": "gestao",
   "/admin/usuarios": "gestao",
   "/admin/avisos-popup": "gestao",
   "/admin/analytics": "gestao",

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { splitSections } from "@/lib/secoes-conteudo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,6 +41,8 @@ interface Questao {
   valor_minimo?: number
   valor_maximo?: number
   passo?: number
+  /** Parte do conteúdo que a pessoa deve revisar se errar (título da seção) */
+  topico?: string | null
 }
 
 interface QuizEditorProps {
@@ -174,6 +177,7 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
         valor_minimo: (q as any).valor_minimo || 0,
         valor_maximo: (q as any).valor_maximo || 10,
         passo: (q as any).passo || 1,
+        topico: (q as any).topico ?? null,
       })))
     }
     setIsLoading(false)
@@ -207,6 +211,11 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
   }
 
   const pontoPorQuestao = questoes.length > 0 ? (10 / questoes.length).toFixed(2) : "0"
+  // Seções do conteúdo, para indicar o que revisar quando a pessoa erra a questão
+  const secoesConteudo = useMemo(
+    () => splitSections(conteudoTreinamento || "").map((s) => s.title).filter((t) => t.trim().length > 0),
+    [conteudoTreinamento],
+  )
 
   const handleSave = async () => {
     const invalidas = questoes.filter(q => !q.pergunta.trim())
@@ -235,6 +244,7 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
             valor_minimo: q.valor_minimo || 0,
             valor_maximo: q.valor_maximo || 10,
             passo: q.passo || 1,
+            topico: q.topico?.trim() ? q.topico.trim().slice(0, 200) : null,
           }))
         )
         if (error) throw error
@@ -338,6 +348,22 @@ export function QuizEditor({ treinamentoId, avaliacaoObrigatoria = false, notaMi
             <Label>Pergunta *</Label>
             <Textarea value={q.pergunta} onChange={(e) => updateQuestao(index, { pergunta: e.target.value })} placeholder="Digite a pergunta..." rows={2} />
           </div>
+
+          {secoesConteudo.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor={`topico-${index}`}>Se errar, revisar (opcional)</Label>
+              <Select value={q.topico || "__nenhum"} onValueChange={(v) => updateQuestao(index, { topico: v === "__nenhum" ? null : v })}>
+                <SelectTrigger id={`topico-${index}`} className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__nenhum">Não indicar</SelectItem>
+                  {[...new Set(q.topico && !secoesConteudo.includes(q.topico) ? [q.topico, ...secoesConteudo] : secoesConteudo)].map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Depois da prova, quem errar vê esta parte do conteúdo para revisar (a resposta certa não aparece).</p>
+            </div>
+          )}
 
           {/* Quiz / Multiple choice */}
           {q.tipo === "quiz" && (

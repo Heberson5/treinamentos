@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
-  AlertCircle, ArrowRight, ArrowUpDown, Award, BookOpen, Building2, Check, ChevronRight,
-  Clock, Eye, Play, RefreshCw, Search, SignalMedium,
+  AlertCircle, ArrowRight, ArrowUpDown, Award, BookOpen, Building2, CalendarPlus, Check, ChevronRight,
+  Clock, Eye, Flag, Play, RefreshCw, Search, SignalMedium,
 } from "lucide-react"
 import { useSupabaseTrainings, type SupabaseTraining } from "@/hooks/use-supabase-trainings"
 import { useAuth } from "@/contexts/auth-context"
@@ -23,6 +23,8 @@ import { TrainingViewer } from "@/components/training/training-viewer"
 import { TrainingCertificate } from "@/components/training/training-certificate"
 import { TrainingThumb } from "@/components/training/training-thumb"
 import { cn } from "@/lib/utils"
+import { baixarAgenda, icsDosPrazos } from "@/lib/agenda-prazos"
+import { useSystemBranding } from "@/hooks/use-system-branding"
 
 type Status = "concluido" | "em-progresso" | "nao-iniciado"
 type Filtro = "todos" | Status
@@ -43,6 +45,8 @@ interface Item {
   /** Dias até o vencimento (negativo = vencido); null se o treinamento não vence */
   diasParaVencer: number | null
   venceEm: Date | null
+  /** Atribuído à pessoa pela gestão (com ou sem prazo) */
+  atribuido: boolean
   original: SupabaseTraining
 }
 
@@ -129,6 +133,20 @@ export default function MeusTreinamentos() {
   const { trainings: supabaseTrainings, isLoading, error, startTraining } = useSupabaseTrainings()
   const { user } = useAuth()
   const { empresaSelecionadaNome, isMaster } = useEmpresaFilter()
+  const { systemNameFull } = useSystemBranding()
+
+  // Treinamentos atribuídos à pessoa (por empresa, departamento, cargo ou nome) e o prazo de cada um
+  const { data: atribuidos = {} } = useQuery({
+    queryKey: ["meus-prazos", user?.id],
+    enabled: !!user?.id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("meus_prazos")
+      const mapa: Record<string, string | null> = {}
+      ;((data || []) as Array<{ treinamento_id: string; prazo: string | null }>).forEach((p) => { mapa[p.treinamento_id] = p.prazo })
+      return mapa
+    },
+  })
 
   // Melhor nota aprovada na avaliação de cada treinamento (0 a 10)
   const { data: notas = {} } = useQuery({
@@ -181,6 +199,9 @@ export default function MeusTreinamentos() {
           venceEm = new Date(t.progresso.data_conclusao)
           venceEm.setMonth(venceEm.getMonth() + t.validade_meses)
         }
+        // Prazo da pessoa: o menor entre o do treinamento e o da atribuição
+        const prazoAtribuido = atribuidos[t.id] ?? null
+        const deadline = [t.data_limite?.slice(0, 10), prazoAtribuido].filter((d): d is string => !!d).sort()[0] ?? null
         return {
           id: t.id,
           title: t.titulo,
@@ -189,7 +210,8 @@ export default function MeusTreinamentos() {
           level: NIVEL_LABEL[t.nivel || ""] || "",
           progress: completed ? 100 : progress,
           status: completed ? "concluido" : progress > 0 ? "em-progresso" : "nao-iniciado",
-          deadline: t.data_limite,
+          deadline,
+          atribuido: t.id in atribuidos,
           lastActivity: t.progresso?.atualizado_em || null,
           instructor: t.instrutor?.nome || "Não definido",
           empresaNome: t.empresa?.nome_fantasia || t.empresa?.nome || "Não definida",
@@ -198,7 +220,7 @@ export default function MeusTreinamentos() {
           original: t,
         }
       }),
-    [supabaseTrainings]
+    [supabaseTrainings, atribuidos]
   )
 
   const counts = useMemo(
@@ -254,6 +276,16 @@ export default function MeusTreinamentos() {
 
   const paraRenovar = items.filter(podeRenovar)
 
+  const comPrazo = items.filter((i) => i.status !== "concluido" && i.deadline)
+  const baixarPrazos = () => {
+    const base = window.location.origin
+    baixarAgenda(icsDosPrazos(
+      comPrazo.map((i) => ({ id: i.id, titulo: i.title, prazo: i.deadline!.slice(0, 10), url: `${base}/executar-treinamento/${i.id}` })),
+      systemNameFull,
+    ))
+    toast({ title: "Agenda baixada", description: "Abra o arquivo para adicionar os prazos ao Google Agenda, Outlook ou celular." })
+  }
+
   const openPreview = (item: Item) => {
     setViewingTraining(item.original)
     setIsViewOpen(true)
@@ -296,6 +328,11 @@ export default function MeusTreinamentos() {
   return (
     <div className="space-y-6">
       <PageHeader
+        actions={comPrazo.length > 0 ? (
+          <Button variant="outline" onClick={baixarPrazos} title="Baixa um arquivo .ics com os prazos, para a sua agenda">
+            <CalendarPlus className="h-4 w-4" /> Prazos na agenda
+          </Button>
+        ) : undefined}
         title="Meus treinamentos"
         description={
           <>
@@ -463,6 +500,9 @@ export default function MeusTreinamentos() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="line-clamp-2 text-[14px] font-medium leading-snug">{item.title}</div>
+                    {item.atribuido && item.status !== "concluido" && (
+                      <div className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-medium text-primary"><Flag className="h-3 w-3" aria-hidden /> Atribuído a você</div>
+                    )}
                     <div className={cn("mt-0.5 text-[12px]", TONE_CLASS[prazo.tone])}>{prazo.text}</div>
                     <div className="mt-1.5 flex items-center gap-2">
                       <ProgressBar value={item.progress} done={item.status === "concluido"} />
@@ -500,6 +540,11 @@ export default function MeusTreinamentos() {
                 </button>
                 <div className="flex flex-1 flex-col p-4">
                   <h3 className="line-clamp-2 min-h-[40px] text-[14.5px] font-semibold leading-snug">{item.title}</h3>
+                  {item.atribuido && !done && (
+                    <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11.5px] font-medium text-primary">
+                      <Flag className="h-3 w-3" aria-hidden /> Atribuído a você
+                    </span>
+                  )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{item.duration}</span>
                     {item.level && <span className="inline-flex items-center gap-1"><SignalMedium className="h-3.5 w-3.5" />{item.level}</span>}

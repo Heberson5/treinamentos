@@ -1,5 +1,5 @@
 // Rotinas agendadas da plataforma. Chamada pelo agendador (cron) da VPS:
-//   POST /functions/v1/rotinas   { "tarefa": "notificacoes" | "lembretes" | "recertificacao" | "relatorio_mensal" | "limpeza" | "todas" | "alerta" }
+//   POST /functions/v1/rotinas   { "tarefa": "notificacoes" | "lembretes" | "conformidade" | "recertificacao" | "relatorio_mensal" | "limpeza" | "todas" | "alerta" }
 //   Authorization: Bearer <SERVICE_ROLE_KEY>
 // Só a chave de serviço (que fica apenas no servidor) pode disparar.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
@@ -12,6 +12,8 @@ import { assuntoVapid, carregarChavesPush, Mensageiro } from "../_shared/push.ts
 import {
   alertaServidor, conclusao, lembretePrazo, novoTreinamento, recertificacao as modeloRecertificacao,
   recertificacaoGestao, relatorioMensal as modeloRelatorioMensal, revisaoLgpd, prazoLgpd,
+  atribuicao as modeloAtribuicao, lembreteParado as modeloLembreteParado, personalizar,
+  type EmailMontado, type TextoPersonalizado,
 } from "../_shared/modelos-email.ts";
 
 const FUSO = "America/Sao_Paulo";
@@ -53,6 +55,8 @@ interface Pessoa {
   email: string;
   empresa_id: string | null;
   departamento_id: string | null;
+  /** Nome do cargo (texto do cadastro) */
+  cargo: string | null;
   receber_emails: boolean;
   /** Endereço com recusas seguidas: avisos por e-mail pausados */
   email_suspenso: boolean;
@@ -65,13 +69,17 @@ interface Preferencias {
   lembrete_prazo: boolean;
   lembrete_dias: number[];
   relatorio_mensal: boolean;
+  /** E-mails extras que recebem o relatório mensal (ex.: diretoria) */
+  relatorio_destinatarios: string[];
 }
-const PREF_PADRAO: Preferencias = { novo_treinamento: true, conclusao: true, lembrete_prazo: true, lembrete_dias: [7, 3, 1], relatorio_mensal: true };
+const PREF_PADRAO: Preferencias = { novo_treinamento: true, conclusao: true, lembrete_prazo: true, lembrete_dias: [7, 3, 1], relatorio_mensal: true, relatorio_destinatarios: [] };
 
 class Contexto {
   pessoas = new Map<string, Pessoa>();
   empresasAtivas = new Map<string, string>(); // id → nome
   prefs = new Map<string, Preferencias>();
+  /** Textos personalizados dos e-mails: "<empresa ou *>:<modelo>" */
+  textos = new Map<string, TextoPersonalizado>();
   /** Envio de notificações push (undefined = desligado ou sem chaves) */
   mensageiro?: Mensageiro;
 
@@ -86,16 +94,27 @@ class Contexto {
     const papeis = await todos<any>((de, ate) => this.admin.from("usuario_roles").select("usuario_id, role").range(de, ate));
     const papelDe = new Map(papeis.map((p) => [p.usuario_id, p.role]));
     const perfis = await todos<any>((de, ate) =>
-      this.admin.from("perfis").select("id, nome, email, empresa_id, departamento_id, ativo, receber_emails, email_suspenso_em").range(de, ate));
+      this.admin.from("perfis").select("id, nome, email, empresa_id, departamento_id, cargo, ativo, receber_emails, email_suspenso_em").range(de, ate));
     for (const p of perfis) {
       if (p.ativo === false) continue;
       this.pessoas.set(p.id, {
-        id: p.id, nome: p.nome, email: p.email, empresa_id: p.empresa_id, departamento_id: p.departamento_id,
+        id: p.id, nome: p.nome, email: p.email, empresa_id: p.empresa_id, departamento_id: p.departamento_id, cargo: p.cargo ?? null,
         receber_emails: p.receber_emails !== false, email_suspenso: !!p.email_suspenso_em, papel: papelDe.get(p.id) || "usuario",
       });
     }
     const prefs = await todos<any>((de, ate) => this.admin.from("preferencias_notificacao").select("*").range(de, ate));
-    for (const p of prefs) this.prefs.set(p.empresa_id, { ...PREF_PADRAO, ...p, lembrete_dias: p.lembrete_dias?.length ? p.lembrete_dias : PREF_PADRAO.lembrete_dias });
+    for (const p of prefs) this.prefs.set(p.empresa_id, { ...PREF_PADRAO, ...p, lembrete_dias: p.lembrete_dias?.length ? p.lembrete_dias : PREF_PADRAO.lembrete_dias, relatorio_destinatarios: p.relatorio_destinatarios || [] });
+    const { data: textos } = await this.admin.from("textos_email").select("empresa_id, modelo, assunto, abertura");
+    for (const t of textos || []) this.textos.set(`${t.empresa_id || "*"}:${t.modelo}`, { assunto: t.assunto, abertura: t.abertura });
+  }
+
+  /** Aplica o texto da empresa (ou o padrão da plataforma) ao e-mail montado. */
+  personalizado(email: EmailMontado, modelo: string, empresaId: string | null, vars: Record<string, string>): EmailMontado {
+    const daEmpresa = empresaId ? this.textos.get(`${empresaId}:${modelo}`) : undefined;
+    const padrao = this.textos.get(`*:${modelo}`);
+    if (!daEmpresa && !padrao) return email;
+    const texto = { assunto: daEmpresa?.assunto || padrao?.assunto || null, abertura: daEmpresa?.abertura || padrao?.abertura || null };
+    return personalizar(email, texto, { empresa: (empresaId && this.empresasAtivas.get(empresaId)) || "", ...vars });
   }
 
   pref(empresaId: string | null): Preferencias {
@@ -127,7 +146,7 @@ class Contexto {
 // Novos treinamentos e conclusões (a cada 15 minutos)
 // ------------------------------------------------------------------
 async function notificacoes(ctx: Contexto) {
-  const resumo = { novos_treinamentos: 0, avisos_novos: 0, conclusoes: 0 };
+  const resumo = { novos_treinamentos: 0, avisos_novos: 0, conclusoes: 0, atribuicoes: 0, lembretes_manuais: 0 };
   const { admin, config, carteiro } = ctx;
 
   // 1) Treinamentos publicados ainda não avisados
@@ -152,10 +171,10 @@ async function notificacoes(ctx: Contexto) {
     for (const [pessoaId, lista] of porPessoa) {
       const p = ctx.pessoas.get(pessoaId)!;
       if (config.avisosLigados && ctx.podeAvisar(p) && !carteiro.esgotado) {
-        const modelo = novoTreinamento(modeloCfg(config), {
+        const modelo = ctx.personalizado(novoTreinamento(modeloCfg(config), {
           nome: p.nome,
           treinamentos: lista.map((t) => ({ titulo: t.titulo, obrigatorio: !!t.obrigatorio, prazo: t.data_limite ? dataBR(t.data_limite) : null })),
-        });
+        }), "novo_treinamento", p.empresa_id, { nome: p.nome });
         const ok = await carteiro.enviar({
           para: p.email, tipo: "novo_treinamento", empresaId: p.empresa_id, usuarioId: p.id,
           assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
@@ -189,7 +208,7 @@ async function notificacoes(ctx: Contexto) {
       const p = ctx.pessoas.get(c.usuario_id);
       if (!config.avisosLigados || !config.conclusaoLigada || !ctx.podeAvisar(p) || !ctx.pref(p.empresa_id).conclusao) continue;
       const t = titulo.get(c.treinamento_id) || "treinamento";
-      const modelo = conclusao(modeloCfg(config), { nome: p.nome, treinamento: t });
+      const modelo = ctx.personalizado(conclusao(modeloCfg(config), { nome: p.nome, treinamento: t }), "conclusao", p.empresa_id, { nome: p.nome, treinamento: t });
       const ok = await carteiro.enviar({
         para: p.email, tipo: "conclusao", empresaId: p.empresa_id, usuarioId: p.id,
         assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
@@ -199,6 +218,79 @@ async function notificacoes(ctx: Contexto) {
     if (marcados.length) {
       await admin.from("progresso_treinamentos").update({ email_conclusao_em: new Date().toISOString() }).in("id", marcados);
     }
+  }
+  // 3) Atribuições novas: avisa quem recebeu (uma vez por atribuição)
+  const atribs = await todos<any>((de, ate) =>
+    admin.from("atribuicoes_treinamento").select("id, treinamento_id, empresa_id, alvo_tipo, alvo_id, prazo")
+      .is("notificado_em", null).range(de, ate));
+  if (atribs.length) {
+    const tIds = [...new Set(atribs.map((a) => a.treinamento_id))];
+    const { data: treinos } = await admin.from("treinamentos").select("id, titulo, publicado").in("id", tIds);
+    const treino = new Map((treinos || []).map((t: any) => [t.id, t]));
+    const cargoIds = atribs.filter((a) => a.alvo_tipo === "cargo").map((a) => a.alvo_id);
+    const { data: cargos } = cargoIds.length ? await admin.from("cargos").select("id, nome").in("id", cargoIds) : { data: [] };
+    const cargoNome = new Map((cargos || []).map((c: any) => [c.id, String(c.nome || "").trim().toLowerCase()]));
+    const { data: concl } = await admin.from("progresso_treinamentos").select("usuario_id, treinamento_id").eq("concluido", true).in("treinamento_id", tIds);
+    const jaConcluiu = new Set((concl || []).map((c: any) => `${c.usuario_id}:${c.treinamento_id}`));
+
+    const porPessoa = new Map<string, Map<string, string | null>>(); // pessoa → treinamento → prazo
+    for (const a of atribs) {
+      const t = treino.get(a.treinamento_id);
+      if (!t?.publicado || !ctx.empresasAtivas.has(a.empresa_id)) continue;
+      for (const p of ctx.pessoas.values()) {
+        if (p.empresa_id !== a.empresa_id || p.papel === "master") continue;
+        const alcanca = a.alvo_tipo === "empresa"
+          || (a.alvo_tipo === "departamento" && p.departamento_id === a.alvo_id)
+          || (a.alvo_tipo === "cargo" && !!p.cargo && p.cargo.trim().toLowerCase() === cargoNome.get(a.alvo_id))
+          || (a.alvo_tipo === "usuario" && p.id === a.alvo_id);
+        if (!alcanca || jaConcluiu.has(`${p.id}:${a.treinamento_id}`)) continue;
+        const m = porPessoa.get(p.id) || new Map<string, string | null>();
+        const atual = m.get(a.treinamento_id);
+        m.set(a.treinamento_id, atual && a.prazo ? (atual < a.prazo ? atual : a.prazo) : (atual ?? a.prazo ?? null));
+        porPessoa.set(p.id, m);
+      }
+    }
+    for (const [pessoaId, mapa] of porPessoa) {
+      const p = ctx.pessoas.get(pessoaId)!;
+      const lista = [...mapa.entries()].map(([id, prazo]) => ({ titulo: treino.get(id)?.titulo || "Treinamento", treinamentoId: id, prazo: prazo ? dataBR(prazo) : null }));
+      if (config.avisosLigados && ctx.podeAvisar(p) && !carteiro.esgotado) {
+        const modelo = ctx.personalizado(modeloAtribuicao(modeloCfg(config), { nome: p.nome, treinamentos: lista }), "atribuicao", p.empresa_id,
+          { nome: p.nome, treinamento: lista[0].titulo, prazo: lista[0].prazo || "" });
+        if (await carteiro.enviar({ para: p.email, tipo: "atribuicao", empresaId: p.empresa_id, usuarioId: p.id, assunto: modelo.assunto, corpoHtml: modelo.corpoHtml })) {
+          resumo.atribuicoes++;
+        }
+      }
+      if (ctx.podeAvisarPush(p)) {
+        await ctx.push(p, lista.length === 1 ? "Treinamento atribuído a você" : `${lista.length} treinamentos atribuídos a você`,
+          lista.map((t) => t.titulo + (t.prazo ? ` (até ${t.prazo})` : "")).slice(0, 3).join(", "),
+          lista.length === 1 ? `/executar-treinamento/${lista[0].treinamentoId}` : "/meus-treinamentos", "atribuicao");
+      }
+    }
+    // Marca sempre (nunca repete o aviso da mesma atribuição)
+    await admin.from("atribuicoes_treinamento").update({ notificado_em: new Date().toISOString() }).in("id", atribs.map((a) => a.id));
+  }
+
+  // 4) Lembretes pedidos pelo instrutor ("Lembrar parados")
+  const pedidos = await todos<any>((de, ate) =>
+    admin.from("lembretes_manuais").select("id, treinamento_id").is("processado_em", null).order("criado_em").range(de, ate));
+  for (const pedido of pedidos) {
+    const { data: t } = await admin.from("treinamentos").select("id, titulo").eq("id", pedido.treinamento_id).maybeSingle();
+    const { data: alvos } = await admin.rpc("parados_do_lembrete", { p_lembrete_id: pedido.id });
+    let enviados = 0;
+    for (const alvo of (alvos || []) as Array<{ usuario_id: string; progresso: number }>) {
+      const p = ctx.pessoas.get(alvo.usuario_id);
+      if (!t || !p) continue;
+      let ok = false;
+      if (config.avisosLigados && ctx.podeAvisar(p) && ctx.pref(p.empresa_id).lembrete_prazo && !carteiro.esgotado) {
+        const modelo = ctx.personalizado(modeloLembreteParado(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, progresso: alvo.progresso }),
+          "lembrete_parado", p.empresa_id, { nome: p.nome, treinamento: t.titulo });
+        ok = await carteiro.enviar({ para: p.email, tipo: "lembrete_parado", empresaId: p.empresa_id, usuarioId: p.id, assunto: modelo.assunto, corpoHtml: modelo.corpoHtml });
+      }
+      if (ctx.podeAvisarPush(p)) ok = (await ctx.push(p, "Continue de onde parou", t.titulo, `/executar-treinamento/${t.id}`, `parado-${t.id}`)) || ok;
+      if (ok) enviados++;
+    }
+    resumo.lembretes_manuais += enviados;
+    await admin.from("lembretes_manuais").update({ processado_em: new Date().toISOString(), enviados }).eq("id", pedido.id);
   }
   return resumo;
 }
@@ -216,6 +308,56 @@ async function lembretes(ctx: Contexto) {
     admin.from("treinamentos").select("id, titulo, empresa_id, departamento_id, data_limite")
       .eq("publicado", true).not("data_limite", "is", null).range(de, ate));
 
+  // Prazos pessoais das atribuições: valem no lugar do prazo geral do treinamento
+  const { data: pessoais } = await admin.rpc("_prazos_atribuidos", {});
+  const prazoPessoal = new Map<string, string>();
+  for (const x of (pessoais || []) as Array<{ usuario_id: string; treinamento_id: string; prazo: string | null }>) {
+    if (x.prazo) prazoPessoal.set(`${x.usuario_id}:${x.treinamento_id}`, x.prazo);
+  }
+
+  const avisar = async (p: Pessoa, t: { id: string; titulo: string }, prazoIso: string, emailOk: boolean, pushOk: boolean) => {
+    const dias = diasEntre(hoje, hojeBR(new Date(`${prazoIso.slice(0, 10)}T12:00:00-03:00`)));
+    const pref = ctx.pref(p.empresa_id);
+    if (!pref.lembrete_prazo) return;
+    const marco = dias === -1 ? "vencido" : pref.lembrete_dias.includes(dias) ? String(dias) : dias === 0 ? "hoje" : null;
+    if (!marco) return;
+    // Registra antes de enviar: se já existia, não manda de novo
+    const { error } = await admin.from("lembretes_prazo_enviados").insert({ usuario_id: p.id, treinamento_id: t.id, marco });
+    if (error) return;
+    const prazoBR = dataBR(prazoIso);
+    const modelo = ctx.personalizado(lembretePrazo(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, prazo: prazoBR, dias }),
+      "lembrete_prazo", p.empresa_id, { nome: p.nome, treinamento: t.titulo, prazo: prazoBR });
+    if (emailOk) {
+      const ok = await carteiro.enviar({
+        para: p.email, tipo: "lembrete_prazo", empresaId: p.empresa_id, usuarioId: p.id,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+      });
+      if (ok) resumo.lembretes++;
+    }
+    if (pushOk) await ctx.push(p, dias < 0 ? "Prazo vencido" : "Lembrete de prazo", modelo.assunto, `/executar-treinamento/${t.id}`, `prazo-${t.id}`);
+  };
+
+  if (prazoPessoal.size) {
+    const ids = [...new Set([...prazoPessoal.keys()].map((k) => k.split(":")[1]))];
+    const { data: tt } = await admin.from("treinamentos").select("id, titulo, publicado, data_limite").in("id", ids);
+    const titulo = new Map((tt || []).filter((t: any) => t.publicado).map((t: any) => [t.id, t.titulo]));
+    const limiteGeral = new Map((tt || []).filter((t: any) => t.data_limite).map((t: any) => [t.id, String(t.data_limite).slice(0, 10)]));
+    const { data: concl } = await admin.from("progresso_treinamentos").select("usuario_id, treinamento_id").eq("concluido", true).in("treinamento_id", ids);
+    const jaConcluiu = new Set((concl || []).map((c: any) => `${c.usuario_id}:${c.treinamento_id}`));
+    for (const [chave, prazo] of prazoPessoal) {
+      const [uid, tid] = chave.split(":");
+      const p = ctx.pessoas.get(uid);
+      const tTitulo = titulo.get(tid);
+      if (!p || !tTitulo || jaConcluiu.has(chave)) continue;
+      const emailOk = config.avisosLigados && ctx.podeAvisar(p) && !carteiro.esgotado;
+      const pushOk = ctx.podeAvisarPush(p);
+      if (!emailOk && !pushOk) continue;
+      // Vale o prazo mais cedo entre o da atribuição e o geral do treinamento (como na tela da pessoa)
+      const geral = limiteGeral.get(tid);
+      await avisar(p, { id: tid, titulo: tTitulo }, geral && geral < prazo ? geral : prazo, emailOk, pushOk);
+    }
+  }
+
   for (const t of treinos) {
     if (carteiro.esgotado && !ctx.mensageiro) break;
     const dias = diasEntre(hoje, hojeBR(new Date(t.data_limite)));
@@ -230,6 +372,7 @@ async function lembretes(ctx: Contexto) {
       if ((!emailOk && !pushOk) || concluiu.has(p.id)) continue;
       if (t.empresa_id && t.empresa_id !== p.empresa_id) continue;
       if (t.departamento_id && t.departamento_id !== p.departamento_id) continue;
+      if (prazoPessoal.has(`${p.id}:${t.id}`)) continue; // já avisado pelo prazo da atribuição
       const pref = ctx.pref(p.empresa_id);
       if (!pref.lembrete_prazo) continue;
       const marco = dias === -1 ? "vencido" : pref.lembrete_dias.includes(dias) ? String(dias) : dias === 0 ? "hoje" : null;
@@ -239,7 +382,8 @@ async function lembretes(ctx: Contexto) {
       const { error } = await admin.from("lembretes_prazo_enviados").insert({ usuario_id: p.id, treinamento_id: t.id, marco });
       if (error) continue;
 
-      const modelo = lembretePrazo(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, prazo: dataBR(t.data_limite), dias });
+      const modelo = ctx.personalizado(lembretePrazo(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, prazo: dataBR(t.data_limite), dias }),
+        "lembrete_prazo", p.empresa_id, { nome: p.nome, treinamento: t.titulo, prazo: dataBR(t.data_limite) });
       if (emailOk) {
         const ok = await carteiro.enviar({
           para: p.email, tipo: "lembrete_prazo", empresaId: p.empresa_id, usuarioId: p.id,
@@ -303,7 +447,8 @@ async function recertificacao(ctx: Contexto, forcar = false) {
       const { error } = await admin.from("recertificacao_avisos_enviados")
         .insert({ usuario_id: p.id, treinamento_id: t.id, concluido_em: c.data_conclusao, tipo });
       if (error) continue;
-      const modelo = modeloRecertificacao(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, venceEm: dataBR(venceIso), dias });
+      const modelo = ctx.personalizado(modeloRecertificacao(modeloCfg(config), { nome: p.nome, titulo: t.titulo, treinamentoId: t.id, venceEm: dataBR(venceIso), dias }),
+        "recertificacao", p.empresa_id, { nome: p.nome, treinamento: t.titulo, prazo: dataBR(venceIso) });
       if (emailOk) {
         const ok = await carteiro.enviar({
           para: p.email, tipo: "recertificacao", empresaId: p.empresa_id, usuarioId: p.id,
@@ -426,7 +571,11 @@ async function relatorioMensal(ctx: Contexto, forcar: boolean) {
     if (carteiro.esgotado) break;
     if (!ctx.pref(empresaId).relatorio_mensal) continue;
     const admins = [...ctx.pessoas.values()].filter((p) => p.empresa_id === empresaId && p.papel === "admin" && p.receber_emails && p.email);
-    if (!admins.length) continue;
+    // Destinatários extras (ex.: diretoria), sem repetir quem já é administrador
+    const emailsAdmins = new Set(admins.map((a) => a.email.trim().toLowerCase()));
+    const extras = (ctx.pref(empresaId).relatorio_destinatarios || [])
+      .map((e) => String(e).trim().toLowerCase()).filter((e) => e && !emailsAdmins.has(e)).slice(0, 10);
+    if (!admins.length && !extras.length) continue;
 
     const { error: jaEnviado } = await admin.from("relatorios_mensais_enviados").insert({ empresa_id: empresaId, mes: mesISO });
     if (jaEnviado) continue;
@@ -435,6 +584,7 @@ async function relatorioMensal(ctx: Contexto, forcar: boolean) {
     const ids = pessoasEmpresa.map((p) => p.id);
     let concluidos = 0, iniciados = 0;
     const porTreino = new Map<string, number>();
+    const iniciadosPorTreino = new Map<string, number>();
     for (let i = 0; i < ids.length; i += 200) {
       const lote = ids.slice(i, i + 200);
       const { data } = await admin.from("progresso_treinamentos")
@@ -443,7 +593,7 @@ async function relatorioMensal(ctx: Contexto, forcar: boolean) {
         const conc = r.data_conclusao && r.data_conclusao >= inicio.toISOString() && r.data_conclusao < fim.toISOString();
         const ini = r.data_inicio && r.data_inicio >= inicio.toISOString() && r.data_inicio < fim.toISOString();
         if (r.concluido && conc) { concluidos++; porTreino.set(r.treinamento_id, (porTreino.get(r.treinamento_id) || 0) + 1); }
-        if (ini) iniciados++;
+        if (ini) { iniciados++; iniciadosPorTreino.set(r.treinamento_id, (iniciadosPorTreino.get(r.treinamento_id) || 0) + 1); }
       }
     }
     const top = [...porTreino.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
@@ -453,15 +603,40 @@ async function relatorioMensal(ctx: Contexto, forcar: boolean) {
       const nome = new Map((tt || []).map((t: any) => [t.id, t.titulo]));
       maisConcluidos = top.map(([id, total]) => ({ titulo: nome.get(id) || "Treinamento", total }));
     }
-    const modelo = modeloRelatorioMensal(modeloCfg(config), {
+    const modelo = ctx.personalizado(modeloRelatorioMensal(modeloCfg(config), {
       nomeMes, nomeEmpresa, colaboradores: pessoasEmpresa.length, iniciados, concluidos, maisConcluidos,
-    });
+    }), "relatorio_mensal", empresaId, {});
+
+    // Planilha anexa (CSV, abre no Excel) com o resultado de cada treinamento no mês
+    const idsMes = [...new Set([...porTreino.keys(), ...iniciadosPorTreino.keys()])];
+    let anexos: Array<{ nome: string; conteudo: string; tipo: string }> | undefined;
+    if (idsMes.length) {
+      const { data: tt } = await admin.from("treinamentos").select("id, titulo").in("id", idsMes);
+      const nomeT = new Map((tt || []).map((t: any) => [t.id, t.titulo]));
+      const cel = (v: unknown) => {
+        let x = String(v ?? "");
+        if (/^[=+\-@]/.test(x)) x = "'" + x;
+        return /[";\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x;
+      };
+      const linhas = [["Treinamento", "Iniciados no mês", "Concluídos no mês"],
+        ...idsMes.map((id) => [nomeT.get(id) || "Treinamento", iniciadosPorTreino.get(id) || 0, porTreino.get(id) || 0])
+          .sort((a, b) => Number(b[2]) - Number(a[2]))];
+      anexos = [{ nome: `resumo-${mesISO.slice(0, 7)}.csv`, conteudo: "\uFEFF" + linhas.map((l) => l.map(cel).join(";")).join("\r\n"), tipo: "text/csv; charset=utf-8" }];
+    }
 
     for (const a of admins) {
       if (carteiro.esgotado) break;
       const ok = await carteiro.enviar({
         para: a.email, tipo: "relatorio_mensal", empresaId, usuarioId: a.id,
-        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml, anexos,
+      });
+      if (ok) resumo.relatorios++;
+    }
+    for (const email of extras) {
+      if (carteiro.esgotado) break;
+      const ok = await carteiro.enviar({
+        para: email, tipo: "relatorio_mensal", empresaId,
+        assunto: modelo.assunto, corpoHtml: modelo.corpoHtml, anexos,
       });
       if (ok) resumo.relatorios++;
     }

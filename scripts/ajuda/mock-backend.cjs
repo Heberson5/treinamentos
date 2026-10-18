@@ -87,6 +87,12 @@ perfis.forEach((p, pi) => {
   });
 });
 
+// Quem parou na 3ª seção de um treinamento (para testar "continuar de onde parou")
+{
+  const pg = progresso_treinamentos.find((x) => x.usuario_id === IDS.usuario && x.treinamento_id === treinamentos[2].id)
+  if (pg) Object.assign(pg, { secao_atual: 2, secoes_visitadas: [0, 1, 2] })
+}
+
 const atividades = perfis.slice(1, 7).flatMap((p, i) => [
   { id: `a${i}1`, usuario_id: p.id, tipo: "treinamento_iniciado", descricao: `Iniciou o treinamento "${treinamentos[i + 2].titulo}"`, criado_em: iso(i * 0.2), metadata: {} },
   { id: `a${i}2`, usuario_id: p.id, tipo: "treinamento_concluido", descricao: `Concluiu o treinamento "${treinamentos[i].titulo}"`, criado_em: iso(i * 0.3 + 0.1), metadata: {} },
@@ -156,7 +162,11 @@ const tables = {
     tentativas_login_max: 5, bloqueio_horas: 1, backup_destino: "local", backup_config: {},
     email_contato: "suporte@aprendamais.exemplo", telefone_contato: "(11) 4000-1000",
   }],
-  auditoria: [], notificacoes: [],
+  auditoria: [
+    { id: "au1", usuario_id: IDS.admin, usuario_nome: "Juliana Martins", acao: "criar", menu: "treinamentos", local: "atribuição", descricao: "Atribuiu \"LGPD na prática\" (departamento)", criado_em: iso(0.05), dados_anteriores: null, dados_novos: { prazo: dia(10) } },
+    { id: "au2", usuario_id: IDS.master, usuario_nome: "Ana Ribeiro", acao: "editar", menu: "usuarios", local: "papel", descricao: "Papel de Rafael Souza: usuario → instrutor", criado_em: iso(0.1), dados_anteriores: { role: "usuario" }, dados_novos: { role: "instrutor" } },
+  ],
+  notificacoes: [], textos_email: [], atribuicoes_treinamento: [], lembretes_manuais: [],
   // LGPD e e-mails
   aceites_politica: Object.values(IDS).map((uid, i) => ({ id: `ac${i}`, usuario_id: uid, versao: "1.0", aceito_em: iso(20 - i) })),
   solicitacoes_lgpd: [
@@ -196,6 +206,25 @@ const rpcs = {
       carga_horaria_minutos: 90, concluido_em: iso(6), emitido_em: iso(6), empresa: "Horizonte Alimentos" };
   },
   codigos_recuperacao_mfa_restantes: () => 8,
+  meus_prazos: () => [{ treinamento_id: treinamentos[2].id, prazo: dia(6) }],
+  topicos_para_revisar: (b) => Object.fromEntries(((b && b.p_questoes) || []).map((id) => [id, "Seção 2: Conceitos principais"])),
+  painel_instrutor: () => ({
+    treinamentos: [
+      { id: treinamentos[1].id, titulo: treinamentos[1].titulo, publicado: true, inscritos: 12, concluidos: 7, em_andamento: 5, parados: 3, respostas: 6, nps: 75, comentarios_novos: 2,
+        questao_dificil: { pergunta: "Qual é o prazo legal para responder um pedido do titular?", topico: "Seção 3: Direitos do titular", pct_acerto: 35, respondidas: 9 }, ultimo_lembrete: null },
+      { id: treinamentos[4].id, titulo: treinamentos[4].titulo, publicado: true, inscritos: 8, concluidos: 8, em_andamento: 0, parados: 0, respostas: 4, nps: 87.5, comentarios_novos: 0, questao_dificil: null, ultimo_lembrete: null },
+    ],
+    parados: [
+      { nome: "Carlos Eduardo Lima", treinamento: treinamentos[1].titulo, treinamento_id: treinamentos[1].id, progresso: 40, dias: 12 },
+      { nome: "Lucas Ferreira", treinamento: treinamentos[1].titulo, treinamento_id: treinamentos[1].id, progresso: 15, dias: 9 },
+    ],
+    comentarios: [{ nome: "Rafael Souza", treinamento: treinamentos[1].titulo, nps: 9, comentario: "Exemplos muito práticos.", data: iso(1) }],
+  }),
+  lembrar_parados: () => ({ pessoas: 3 }),
+  duplicar_treinamento: () => treinamentos[1].id,
+  situacao_atribuicoes: () => ({ atribuicoes: [{ id: "at1", alvo_tipo: "departamento", alvo_id: D2, alvo_nome: "Financeiro", prazo: dia(10), criado_em: iso(1) }], pessoas: 4, concluidos: 1, atrasados: 0 }),
+  atribuir_treinamento: () => 1,
+  remover_atribuicao: () => null,
   obter_chave_push_publica: () => null,
   registrar_revisao_lgpd: () => null,
   inventario_lgpd: () => ({

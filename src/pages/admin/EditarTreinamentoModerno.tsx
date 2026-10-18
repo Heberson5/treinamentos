@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { limparRascunho } from "@/lib/rascunho-editor";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTraining, Training } from "@/contexts/training-context";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,7 @@ export default function EditarTreinamentoModerno() {
   const [loading, setLoading] = useState(true);
   const [isFromDatabase, setIsFromDatabase] = useState(false);
   const [aba, setAba] = useState<"conteudo" | "avaliacao">("conteudo");
+  const rascunhoChave = user?.id && id ? `${user.id}:${id}` : undefined;
 
   useEffect(() => {
     const loadTraining = async () => {
@@ -341,6 +343,7 @@ export default function EditarTreinamentoModerno() {
       });
     }
 
+    limparRascunho(rascunhoChave);
     navigate("/admin/treinamentos");
   };
 
@@ -406,6 +409,7 @@ export default function EditarTreinamentoModerno() {
       isEditing
       headerCenter={tabs}
       bodyOverride={aba === "avaliacao" ? quizEditor : undefined}
+      rascunhoChave={rascunhoChave}
     />
   );
 }

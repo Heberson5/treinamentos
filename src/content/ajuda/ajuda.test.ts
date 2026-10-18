@@ -8,10 +8,10 @@ const manifesto = prints as unknown as Record<string, { w: number; h: number; ma
 describe("Central de Ajuda — conteúdo", () => {
   it("tem os guias previstos", () => {
     const porPapel = (p: string) => todosOsGuias.filter((g) => g.papel === p).length
-    expect(porPapel("usuario")).toBe(9)
-    expect(porPapel("instrutor")).toBe(5)
-    expect(porPapel("admin")).toBe(15)
-    expect(porPapel("master")).toBe(11)
+    expect(porPapel("usuario")).toBe(10)
+    expect(porPapel("instrutor")).toBe(7)
+    expect(porPapel("admin")).toBe(17)
+    expect(porPapel("master")).toBe(12)
   })
 
   it("não repete o id de nenhum guia", () => {

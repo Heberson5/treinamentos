@@ -38,6 +38,7 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const TermosDeUso = lazy(() => import("./pages/TermosDeUso"));
 const SobreNos = lazy(() => import("./pages/SobreNos"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Acompanhamento = lazy(() => import("./pages/Acompanhamento"));
 const Calendario = lazy(() => import("./pages/Calendario"));
 const EmpresasSupabase = lazy(() => import("./pages/admin/EmpresasSupabase"));
 const Planos = lazy(() => import("./pages/admin/Planos"));
@@ -186,6 +187,7 @@ function AppContent() {
         {/* Rotas para admin/instrutor/master */}
         <Route path="/dashboard" element={isAdminOrHigher ? <Dashboard /> : <Navigate to="/meus-treinamentos" replace />} />
         <Route path="/relatorios" element={isAdminOrHigher ? <Relatorios /> : <Navigate to="/meus-treinamentos" replace />} />
+        <Route path="/acompanhamento" element={isAdminOrHigher ? <Acompanhamento /> : <Navigate to="/meus-treinamentos" replace />} />
 
         {/* Rotas administrativas */}
         <Route path="/admin/treinamentos" element={isAdminOrHigher ? <GestaoTreinamentos /> : <Navigate to="/meus-treinamentos" replace />} />

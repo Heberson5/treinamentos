@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest"
-import {
-  MODELOS_EMAIL,
-  conclusao,
-  lembretePrazo,
-  montarHtml,
-  novoTreinamento,
-  previaEmail,
-  type ConfigModelo,
-} from "../../supabase/functions/_shared/modelos-email"
+import { MODELOS_EMAIL, atribuicao, conclusao, lembreteParado, lembretePrazo, montarHtml, novoTreinamento, personalizar, previaEmail, type ConfigModelo } from "../../supabase/functions/_shared/modelos-email"
 
 const cfg: ConfigModelo = {
   modeloHtml: "",
@@ -69,5 +61,31 @@ describe("modelos de e-mail", () => {
     )
     expect(html).not.toContain("LINK_WHATSAPP")
     expect(html).not.toContain("w.png")
+  })
+})
+
+describe("textos personalizados", () => {
+  const c = { modeloHtml: "", nomeSistema: "Treinamentos", nomeEmpresa: "Horizonte", urlPlataforma: "https://exemplo.com.br" }
+  const base = lembretePrazo(c, { nome: "Ana Souza", titulo: "LGPD", treinamentoId: "t1", prazo: "31/10/2026", dias: 3 })
+
+  it("troca o assunto e as variáveis", () => {
+    const r = personalizar(base, { assunto: "{nome}, faltam poucos dias para {treinamento} ({prazo})" }, { nome: "Ana Souza", treinamento: "LGPD", prazo: "31/10/2026" })
+    expect(r.assunto).toBe("Ana, faltam poucos dias para LGPD (31/10/2026)")
+  })
+  it("põe a abertura depois da saudação, escapando HTML", () => {
+    const r = personalizar(base, { abertura: "Contamos com você!\n<script>x</script>" }, { nome: "Ana" })
+    expect(r.corpoHtml.indexOf("Contamos com você!")).toBeGreaterThan(r.corpoHtml.indexOf("Olá"))
+    expect(r.corpoHtml).toContain("&lt;script&gt;")
+    expect(r.corpoHtml).not.toContain("<script>")
+    expect(r.corpoHtml).toContain("<br>")
+  })
+  it("sem texto, o e-mail fica igual; assunto sem quebra de linha", () => {
+    expect(personalizar(base, null, {})).toEqual(base)
+    expect(personalizar(base, { assunto: "a\r\nBcc: x@y.com" }, {}).assunto).not.toMatch(/[\r\n]/)
+  })
+  it("os novos modelos têm pré-visualização", () => {
+    for (const id of ["atribuicao", "lembrete_parado"] as const) expect(previaEmail(c, id)?.html).toContain("Lucas")
+    expect(atribuicao(c, { nome: "Ana", treinamentos: [{ titulo: "X", treinamentoId: "t", prazo: "01/12/2026" }] }).assunto).toContain("até 01/12/2026")
+    expect(lembreteParado(c, { nome: "Ana", titulo: "X", treinamentoId: "t", progresso: 40 }).corpoHtml).toContain("40%")
   })
 })
