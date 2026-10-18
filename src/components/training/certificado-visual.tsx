@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Award, BookOpen, Calendar, User } from "lucide-react"
-import { COR_PADRAO, corValida, misturar, partesDoTitulo, rgbCss, type ModeloCertificado } from "@/lib/certificado-modelo"
+import { COR_PADRAO, MARCA_CERTIFICADO, corValida, misturar, partesDoTitulo, rgbCss, type ModeloCertificado } from "@/lib/certificado-modelo"
 import type { DadosCertificado } from "@/lib/certificado-pdf"
 
 // Prévia do certificado na tela (proporção A4 paisagem), com o modelo da empresa.
@@ -55,6 +55,7 @@ function FolhaCertificado({ dados, modelo, qrDataUrl }: { dados: DadosCertificad
 
       {modelo.mostrar_qr && qrDataUrl && (
         <div className="absolute right-[5%] top-[7%] z-20 flex flex-col items-center gap-1">
+          <span className="text-[9px] text-slate-400">{MARCA_CERTIFICADO}</span>
           <img src={qrDataUrl} alt="QR Code para validar o certificado" className="h-20 w-20 rounded bg-white p-1" />
           <span className="text-[9px] text-slate-500">Valide este certificado</span>
         </div>

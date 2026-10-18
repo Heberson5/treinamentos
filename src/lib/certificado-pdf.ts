@@ -1,6 +1,6 @@
 import jsPDF from "jspdf"
 import {
-  COR_PADRAO, corValida, imagemComoDataUrl, misturar, partesDoTitulo, type ModeloCertificado,
+  COR_PADRAO, MARCA_CERTIFICADO, corValida, imagemComoDataUrl, misturar, partesDoTitulo, type ModeloCertificado,
 } from "@/lib/certificado-modelo"
 
 // Desenho do certificado em PDF (A4 paisagem), com o modelo da empresa.
@@ -67,6 +67,10 @@ export async function gerarPdfCertificado(dados: DadosCertificado, modelo: Model
     const qr = 24
     const qx = W - 22 - qr
     const qy = 22
+    pdf.setFontSize(7)
+    pdf.setFont("helvetica", "normal")
+    pdf.setTextColor(130, 130, 130)
+    pdf.text(MARCA_CERTIFICADO, qx + qr / 2, qy - 3.2, { align: "center" })
     pdf.setFillColor(255, 255, 255)
     pdf.rect(qx - 1.5, qy - 1.5, qr + 3, qr + 3, "F")
     pdf.addImage(qrDataUrl, "PNG", qx, qy, qr, qr)

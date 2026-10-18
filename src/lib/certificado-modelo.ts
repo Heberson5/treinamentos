@@ -15,6 +15,9 @@ export interface ModeloCertificado {
   mostrar_qr: boolean
 }
 
+/** Marca discreta impressa acima do QR Code de todos os certificados. */
+export const MARCA_CERTIFICADO = "Sauberlich System ©"
+
 export const COR_PADRAO = "#D4AF37"
 
 export const MODELO_PADRAO: ModeloCertificado = {
