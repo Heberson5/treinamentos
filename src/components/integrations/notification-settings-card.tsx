@@ -4,6 +4,7 @@ import { Award, BarChart3, BookOpen, Clock, Mail, Save, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/integrations/supabase/client"
+import { mensagemDeErro } from "@/lib/explicar-erro"
 import { useAuth } from "@/contexts/auth-context"
 import { useEmpresaFilter } from "@/contexts/empresa-filter-context"
 import { useToast } from "@/hooks/use-toast"
@@ -107,7 +108,7 @@ export function NotificationSettingsCard() {
       : await supabase.from("preferencias_notificacao").insert(linha)
     setSalvando(false)
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+      toast({ title: "Erro ao salvar", description: mensagemDeErro(error), variant: "destructive" })
       return
     }
     queryClient.invalidateQueries({ queryKey: ["preferencias-notificacao", empresaId] })

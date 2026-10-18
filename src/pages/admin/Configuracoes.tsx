@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/integrations/supabase/client"
 import { registrarAuditoria } from "@/lib/audit-utils"
 import { baixarCsv } from "@/lib/exportar"
+import { mensagemDeErro } from "@/lib/explicar-erro"
 import { dataLocal, fimDoDia, inicioDoDia } from "@/lib/data-local"
 import { TIMEZONE_GROUPS } from "@/lib/timezones"
 
@@ -352,7 +353,7 @@ export default function Configuracoes() {
       queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
       await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: "segurança", descricao: "Atualizou políticas de segurança e logoff automático" })
     } else {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+      toast({ title: "Erro ao salvar", description: mensagemDeErro(error), variant: "destructive" })
     }
   }
 
@@ -378,7 +379,7 @@ export default function Configuracoes() {
       .not("id", "is", null)
     setLoading(false)
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+      toast({ title: "Erro ao salvar", description: mensagemDeErro(error), variant: "destructive" })
       return
     }
     setNovaVersao(false)
@@ -454,7 +455,7 @@ export default function Configuracoes() {
       queryClient.invalidateQueries({ queryKey: ["configuracoes-sistema"] })
       await registrarAuditoria({ acao: "editar", menu: "configuracoes", local: categoria, descricao: `Atualizou configurações de ${categoria}` })
     } else {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" })
+      toast({ title: "Erro ao salvar", description: mensagemDeErro(error), variant: "destructive" })
     }
   }
 

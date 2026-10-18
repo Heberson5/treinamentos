@@ -78,6 +78,46 @@ verificar_api() {
   fi
 }
 
+# Confere se a API (PostgREST) já enxerga a estrutura nova do banco. Se não
+# enxergar, recarrega o cache e, se preciso, reinicia o serviço "rest".
+# Erro típico quando isso falha: "Could not find the 'x' column ... in the schema cache".
+SONDAS_ESQUEMA=(
+  "configuracoes_sistema?select=url_plataforma,lgpd_revisado_em&limit=1"
+  "progresso_treinamentos?select=secao_atual&limit=1"
+  "textos_email?select=id&limit=1"
+)
+sondar_esquema() {
+  local API CHAVE s corpo
+  API="$(api_url)"
+  CHAVE="$(supa_env SERVICE_ROLE_KEY)"
+  [[ -n "$CHAVE" ]] || return 0
+  for s in "${SONDAS_ESQUEMA[@]}"; do
+    corpo="$(curl -sS --max-time 15 "$API/rest/v1/$s" -H "apikey: $CHAVE" -H "Authorization: Bearer $CHAVE" 2>&1 || true)"
+    if grep -qiE 'PGRST20[0-9]|schema cache|does not exist' <<<"$corpo"; then
+      printf '%s\n' "$s"
+      return 1
+    fi
+  done
+  return 0
+}
+verificar_esquema() {
+  psql_db -qc "NOTIFY pgrst, 'reload schema'" >/dev/null 2>&1 || true
+  sleep 3
+  local falha
+  if falha="$(sondar_esquema)"; then
+    log "API enxergando a estrutura atual do banco."
+    return 0
+  fi
+  log "A API ainda não enxerga a estrutura nova ($falha). Reiniciando o serviço rest…"
+  compose_supa restart rest >/dev/null 2>&1 || true
+  sleep 10
+  if falha="$(sondar_esquema)"; then
+    log "API enxergando a estrutura atual do banco (depois de reiniciar o rest)."
+    return 0
+  fi
+  erro "a API continua sem enxergar: $falha. Confira se todas as migrações foram aplicadas: $0 --so-verificar"
+}
+
 garantir_pastas
 cd "$APP_DIR" || morrer "pasta do app não encontrada: $APP_DIR"
 
@@ -223,6 +263,7 @@ else
     nome="$(basename "$f")"
     log "Aplicando $nome"
     if ! psql_db --single-transaction -f - <"$f"; then
+      psql_db -qc "NOTIFY pgrst, 'reload schema'" >/dev/null 2>&1 || true
       morrer "a migração $nome falhou e foi desfeita. As anteriores ficaram aplicadas. Corrija e rode de novo."
     fi
     psql_db -c "INSERT INTO controle.migracoes (arquivo) VALUES ($(sql_txt "$nome")) ON CONFLICT DO NOTHING"
@@ -231,6 +272,9 @@ else
 fi
 
 [[ "$SO_VERIFICAR" == true ]] && exit 0
+
+# Sempre (mesmo sem migrações novas): a API precisa enxergar o banco atual
+verificar_esquema
 
 # ------------------------------------------------------------------ 3) Funções
 atualizar_funcoes

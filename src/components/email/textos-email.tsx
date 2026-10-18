@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { mensagemDeErro } from "@/lib/explicar-erro"
 import { useToast } from "@/hooks/use-toast"
 import { TEXTOS_EDITAVEIS, type ModeloEmailId, type TextoPersonalizado } from "../../../supabase/functions/_shared/modelos-email"
 import type { EdicaoTextos } from "@/components/email/previa-emails"
@@ -63,7 +64,7 @@ export function useEdicaoTextosEmail(empresaId: string | null, somenteLeitura = 
           ? await supabase.from("textos_email").update({ assunto, abertura, atualizado_em: new Date().toISOString() }).eq("id", atual.id)
           : await supabase.from("textos_email").insert({ empresa_id: empresaId, modelo, assunto, abertura })
       setSalvando(false)
-      if (error) return void toast({ title: "Não foi possível salvar o texto", description: error.message, variant: "destructive" })
+      if (error) return void toast({ title: "Não foi possível salvar o texto", description: mensagemDeErro(error), variant: "destructive" })
       toast({ title: "Texto salvo", description: "Os próximos e-mails deste tipo já saem com o novo texto." })
       void queryClient.invalidateQueries({ queryKey: chave })
     },
@@ -74,7 +75,7 @@ export function useEdicaoTextosEmail(empresaId: string | null, somenteLeitura = 
       setSalvando(true)
       const { error } = await supabase.from("textos_email").delete().eq("id", atual.id)
       setSalvando(false)
-      if (error) return void toast({ title: "Não foi possível restaurar", description: error.message, variant: "destructive" })
+      if (error) return void toast({ title: "Não foi possível restaurar", description: mensagemDeErro(error), variant: "destructive" })
       toast({ title: "Texto padrão restaurado" })
       void queryClient.invalidateQueries({ queryKey: chave })
     },

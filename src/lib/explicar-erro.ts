@@ -177,3 +177,16 @@ export function relatorioDoErro(e: ErroParaRelatorio, versao = ""): string {
     e.pilha ? `\nDetalhe técnico:\n${e.pilha}` : "",
   ].filter((l, i, a) => l !== "" || (i > 0 && a[i - 1] !== "")).join("\n")
 }
+
+/**
+ * Texto para mostrar na tela quando uma gravação falha. Erros de banco desatualizado
+ * viram uma instrução clara; os demais seguem com a mensagem original.
+ */
+export function mensagemDeErro(e: unknown): string {
+  const msg = typeof e === "string" ? e : (e as { message?: string } | null)?.message || "Tente novamente."
+  const ex = explicarErro(msg)
+  if (ex.titulo === "Banco de dados desatualizado") {
+    return "O banco de dados do servidor ainda não recebeu a última atualização. Na VPS, rode: cd ~/treinamentos && git pull && scripts/vps/atualizar.sh"
+  }
+  return msg
+}

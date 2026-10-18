@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { explicarErro, relatorioDoErro } from "./explicar-erro"
+import { explicarErro, mensagemDeErro, relatorioDoErro } from "./explicar-erro"
 
 describe("explicar erros", () => {
   it("reconhece os casos comuns", () => {
@@ -27,5 +27,15 @@ describe("explicar erros", () => {
     expect(r).toContain("pessoas afetadas: 2")
     expect(r).toContain("Detalhe técnico:")
     expect(r).toContain("Versão do sistema: 1.0.0")
+  })
+})
+
+describe("mensagemDeErro", () => {
+  it("troca o erro de banco desatualizado por uma instrução", () => {
+    const m = mensagemDeErro({ message: "Could not find the 'url_plataforma' column of 'configuracoes_sistema' in the schema cache" })
+    expect(m).toContain("scripts/vps/atualizar.sh")
+  })
+  it("mantém as demais mensagens", () => {
+    expect(mensagemDeErro(new Error("Sem permissão"))).toBe("Sem permissão")
   })
 })
