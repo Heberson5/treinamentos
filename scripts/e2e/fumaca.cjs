@@ -386,7 +386,7 @@ teste("Instrutor: acompanhamento com parados, lembrete em um clique e questão d
   await tela.getByRole("heading", { name: "Quem está parado" }).waitFor()
   await tela.getByText("Carlos Eduardo Lima").waitFor()
   await tela.getByRole("button", { name: /Lembrar parados \(3\)/ }).click()
-  await p.getByText("Lembrete a caminho").waitFor()
+  await p.getByText("Lembrete a caminho").first().waitFor()
 })
 
 teste("Colaborador não abre o acompanhamento", { como: "usuario", url: "/acompanhamento" }, async (p) => {
