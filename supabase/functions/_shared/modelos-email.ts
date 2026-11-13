@@ -6,6 +6,10 @@
 // para a pré-visualização. Assim, o que se vê na tela é exatamente o que é
 // enviado. Todo texto vindo de pessoas ou do banco passa por esc().
 
+/** Marca de quem desenvolveu o sistema (a mesma de src/lib/marca.ts), no fim de todo e-mail. */
+export const MARCA_EMAIL = "Desenvolvido por Sauberlich System";
+const RODAPE_MARCA = `<p style="margin:16px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#b4bac1;text-align:center">${MARCA_EMAIL}</p>`;
+
 export interface ConfigModelo {
   /** Moldura HTML de Configurações (com a tag {corpo}); vazio = moldura simples */
   modeloHtml: string;
@@ -52,7 +56,7 @@ export function montarHtml(c: ConfigModelo, corpoHtml: string, rodapeExtra = "")
   const ano = String(new Date().getFullYear());
   const corpo = corpoHtml + rodapeExtra;
   if (!c.modeloHtml.includes("{corpo}")) {
-    return `<!DOCTYPE html><html lang="pt-BR"><body style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.6;padding:16px"><div style="max-width:640px;margin:auto"><h2 style="margin:0 0 16px">${esc(c.nomeSistema)}</h2>${corpo}<hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0"><p style="font-size:12px;color:#6b7280">Mensagem automática de ${esc(c.nomeSistema)}. Não responda este e-mail.</p></div></body></html>`;
+    return `<!DOCTYPE html><html lang="pt-BR"><body style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.6;padding:16px"><div style="max-width:640px;margin:auto"><h2 style="margin:0 0 16px">${esc(c.nomeSistema)}</h2>${corpo}<hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0"><p style="font-size:12px;color:#6b7280">Mensagem automática de ${esc(c.nomeSistema)}. Não responda este e-mail.</p>${RODAPE_MARCA}</div></body></html>`;
   }
   let html = c.modeloHtml;
   // Redes sociais sem endereço cadastrado: remove o ícone
@@ -65,7 +69,8 @@ export function montarHtml(c: ConfigModelo, corpoHtml: string, rodapeExtra = "")
     .split("{ANO}").join(ano)
     .split("{LINK_SITE}").join(esc(c.urlPlataforma || "#"));
   // Função de troca: um "$&" no texto não pode ser interpretado como padrão
-  return html.replace("{corpo}", () => corpo);
+  html = html.replace("{corpo}", () => corpo);
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, () => `${RODAPE_MARCA}</body>`) : html + RODAPE_MARCA;
 }
 
 // ------------------------------------------------------------------

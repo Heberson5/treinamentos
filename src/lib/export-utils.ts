@@ -1,3 +1,4 @@
+import { SAUBERLICH_CREDIT } from '@/lib/marca';
 import jsPDF from 'jspdf';
 
 // Tipos de dados para exportação
@@ -161,6 +162,7 @@ export function exportToPDF(options: ExportOptions): void {
       pageHeight - 8,
       { align: 'center' }
     );
+    doc.text(SAUBERLICH_CREDIT, pageWidth - 14, pageHeight - 8, { align: 'right' });
   }
   
   // Download

@@ -1,4 +1,5 @@
 /** Exportação simples de tabelas: CSV (abre direto no Excel, com acentos) e PDF. */
+import { SAUBERLICH_CREDIT } from "@/lib/marca"
 import jsPDF from "jspdf"
 
 export interface Tabela {
@@ -73,6 +74,7 @@ export function baixarPdf(nomeArquivo: string, t: Tabela, cor: [number, number, 
   for (let p = 1; p <= paginas; p++) {
     doc.setPage(p)
     doc.setFontSize(7.5).setTextColor(130).text(`Página ${p} de ${paginas}`, larg - m, alt - 5, { align: "right" })
+    doc.text(SAUBERLICH_CREDIT, m, alt - 5)
   }
   doc.save(`${nomeArquivo}.pdf`)
 }

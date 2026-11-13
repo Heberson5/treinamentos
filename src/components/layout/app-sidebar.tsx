@@ -1,3 +1,4 @@
+import { SAUBERLICH_CREDIT } from "@/lib/marca"
 import { useEffect, useState } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { ChevronDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
@@ -226,6 +227,11 @@ export function AppSidebar() {
             </div>
           </SidebarFooter>
         )}
+
+        {/* Marca de quem desenvolveu o sistema — em todas as páginas; com o menu recolhido, só "SS". */}
+        <p className="shrink-0 px-2 pb-3 pt-1 text-center text-[10px] leading-tight text-muted-foreground" title={SAUBERLICH_CREDIT} data-testid="sauberlich-credit">
+          {collapsed ? "SS" : SAUBERLICH_CREDIT}
+        </p>
       </Sidebar>
       <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} groups={groups} helpItem={helpItem} />
     </>

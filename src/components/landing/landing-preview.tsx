@@ -1,3 +1,4 @@
+import { SAUBERLICH_CREDIT } from "@/lib/marca"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -113,6 +114,8 @@ export function LandingPreview({
         </div>
         <div className="max-w-5xl mx-auto px-4 mt-8 pt-6 border-t border-background/20 text-center text-sm opacity-60">
           &copy; {new Date().getFullYear()} Sauberlich System. Todos os direitos reservados.
+          <br />
+          {SAUBERLICH_CREDIT}
         </div>
       </footer>
     </div>

@@ -1,3 +1,4 @@
+import { sauberlichCopyright } from "@/lib/marca"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -84,6 +85,7 @@ export function LoginForm() {
             onSuccess={() => setAuthMode("login")}
           />
         </div>
+        <p className="absolute inset-x-0 bottom-3 text-center" data-testid="sauberlich-copyright"><span className="rounded-full bg-black/35 px-3 py-1 text-[11px] text-white/90 backdrop-blur-sm">{sauberlichCopyright()}</span></p>
       </div>
     )
   }
@@ -95,6 +97,7 @@ export function LoginForm() {
         <div className="relative animate-fade-in-up">
           <PasswordRecoveryForm onBack={() => setAuthMode("login")} />
         </div>
+        <p className="absolute inset-x-0 bottom-3 text-center" data-testid="sauberlich-copyright"><span className="rounded-full bg-black/35 px-3 py-1 text-[11px] text-white/90 backdrop-blur-sm">{sauberlichCopyright()}</span></p>
       </div>
     )
   }
@@ -212,6 +215,7 @@ export function LoginForm() {
           </CardContent>
         </Card>
       </TiltCard>
+        <p className="absolute inset-x-0 bottom-3 text-center" data-testid="sauberlich-copyright"><span className="rounded-full bg-black/35 px-3 py-1 text-[11px] text-white/90 backdrop-blur-sm">{sauberlichCopyright()}</span></p>
     </div>
   )
 }

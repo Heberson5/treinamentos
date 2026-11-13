@@ -1,3 +1,4 @@
+import { SAUBERLICH_CREDIT } from "@/lib/marca"
 import { useLandingConfig } from "@/hooks/use-landing-config"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Link } from "react-router-dom"
@@ -101,6 +102,7 @@ Para dúvidas sobre estes termos, entre em contato através dos canais oficiais 
       <footer className="bg-background border-t py-8">
         <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</p>
+          <p className="mt-1 text-xs opacity-80">{SAUBERLICH_CREDIT}</p>
         </div>
       </footer>
     </div>

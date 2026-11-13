@@ -1,3 +1,4 @@
+import { SAUBERLICH_CREDIT } from "@/lib/marca"
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -621,6 +622,7 @@ export default function Index() {
           
           <div className="border-t mt-12 pt-8 text-center text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</p>
+            <p className="mt-1 text-xs opacity-80">{SAUBERLICH_CREDIT}</p>
           </div>
         </div>
       </footer>
